@@ -1,71 +1,151 @@
 #pragma once
-#include "Glyphs.h"
-#include "Colors.h"
+#include <Arduino.h>
+#include "HID_Shortcuts.h"
+#include "DisplayColors.h"
 
-// Helper macro to clean up the matrix layout
-#define K_BIND(GLYPH, COLOR, PAYLOAD) { GLYPH, COLOR, PAYLOAD }
+// --- Structuur ---
+enum class HIDPage { KEYBOARD, CONSUMER, SYSTEM, HAPTIC, LIGHTING };
 
-const Binding DECK[9][9] = {
-    // LAYER 0: SYSTEM & SECURITY
-    {
-        K_BIND(K_PC,    K_COLOR_ACTION,   "konsole\n"),              K_BIND(K_LOCK,  K_COLOR_BKA,      "loginctl lock-session\n"), K_BIND(K_GEAR,  K_COLOR_NEUTRAL,  "kcalc\n"),
-        K_BIND(K_FOLD,  K_COLOR_ACTION,   "dolphin\n"),              K_BIND(K_FIRE,  K_COLOR_WARNING,  "librewolf\n"),             K_BIND(K_TRASH, K_COLOR_BKA,      "rm -rf ~/.cache/*\n"),
-        K_BIND(K_BUG,   K_COLOR_CRITICAL, "dmesg -w\n"),             K_BIND(K_CLOUD, K_COLOR_ACTION,   "ssh root@server\n"),       K_BIND(K_SKULL, K_COLOR_CRITICAL, "killall -9 ")
-    },
-
-    // LAYER 1: DEVELOPMENT
-    {
-        K_BIND(K_SNAKE,  K_COLOR_SUCCESS,  "python3\n"),             K_BIND(K_COFFEE, K_COLOR_WARNING,  "java -version\n"),         K_BIND(K_CRAB,   K_COLOR_CRITICAL, "cargo run\n"),
-        K_BIND(K_ROCKET, K_COLOR_ACTION,   "npm start\n"),           K_BIND(K_HAMMER, K_COLOR_NEUTRAL,  "make\n"),                  K_BIND(K_WRENCH, K_COLOR_NEUTRAL,  "cmake\n"),
-        K_BIND(K_LIGHT,  K_COLOR_SUCCESS,  "nvim\n"),                K_BIND(K_LINK,   K_COLOR_ACTION,   "ln -s "),                  K_BIND(K_DB,     K_COLOR_ACTION,   "sqlite3 ")
-    },
-
-    // LAYER 2: GIT OPERATIONS
-    {
-        K_BIND(K_LEAF,   K_COLOR_SUCCESS,  "git status\n"),          K_BIND(K_PLUS,   K_COLOR_ACTION,   "git add .\n"),             K_BIND(K_MINUS,  K_COLOR_CRITICAL, "git reset --hard\n"),
-        K_BIND(K_UP,     K_COLOR_ACTION,   "git push\n"),            K_BIND(K_DOWN,   K_COLOR_ACTION,   "git pull\n"),              K_BIND(K_LEFT,   K_COLOR_NEUTRAL,  "git checkout -\n"),
-        K_BIND(K_RIGHT,  K_COLOR_NEUTRAL,  "git merge "),            K_BIND(K_CHECK,  K_COLOR_SUCCESS,  "git commit\n"),            K_BIND(K_CROSS,  K_COLOR_CRITICAL, "git branch -D ")
-    },
-
-    // LAYER 3: CONTAINERS & K8S
-    {
-        K_BIND(K_WHALE,  K_COLOR_ACTION,   "docker ps\n"),           K_BIND(K_BOX,    K_COLOR_NEUTRAL,  "docker-compose up\n"),     K_BIND(K_SHIP,   K_COLOR_ACTION,   "kubectl get pods\n"),
-        K_BIND(K_ANCHOR, K_COLOR_BKA,      "docker stop "),          K_BIND(K_WAVE,   K_COLOR_ACTION,   "docker network ls\n"),     K_BIND(K_FISH,   K_COLOR_SUCCESS,  "docker logs "),
-        K_BIND(K_NET,    K_COLOR_NEUTRAL,  "ufw status\n"),          K_BIND(K_HOOK,   K_COLOR_WARNING,  "git hook "),               K_BIND(K_COMPASS,K_COLOR_ACTION,   "explore ")
-    },
-
-    // LAYER 4: MEDIA CONTROL
-    {
-        K_BIND(K_VOL_U,  K_COLOR_ACTION,   ""),                      K_BIND(K_VOL_D,  K_COLOR_ACTION,   ""),                        K_BIND(K_MUTE,   K_COLOR_CRITICAL, ""),
-        K_BIND(K_PLAY,   K_COLOR_SUCCESS,  ""),                      K_BIND(K_PAUSE,  K_COLOR_WARNING,  ""),                        K_BIND(K_NEXT,   K_COLOR_ACTION,   ""),
-        K_BIND(K_PREV,   K_COLOR_ACTION,   ""),                      K_BIND(K_SUN,    K_COLOR_WHITE,    ""),                        K_BIND(K_MOON,   K_COLOR_NEUTRAL,  "")
-    },
-
-    // LAYER 5: WEB & NAVIGATION
-    {
-        K_BIND(K_WEB,    K_COLOR_ACTION,   ""),                      K_BIND(K_TAB,    K_COLOR_NEUTRAL,  ""),                        K_BIND(K_NEW,    K_COLOR_SUCCESS,  ""),
-        K_BIND(K_CLOSE,  K_COLOR_CRITICAL, ""),                      K_BIND(K_RELOAD, K_COLOR_WARNING,  ""),                        K_BIND(K_DEV,    K_COLOR_ACTION,   ""),
-        K_BIND(K_SEARCH, K_COLOR_NEUTRAL,  ""),                      K_BIND(K_STAR,   K_COLOR_WARNING,  ""),                        K_BIND(K_HOME,   K_COLOR_ACTION,   "")
-    },
-
-    // LAYER 6: PRODUCTIVITY
-    {
-        K_BIND(K_DOC,    K_COLOR_WHITE,    ""),                      K_BIND(K_SHEET,  K_COLOR_SUCCESS,  ""),                        K_BIND(K_SLIDE,  K_COLOR_WARNING,  ""),
-        K_BIND(K_MAIL,   K_COLOR_ACTION,   ""),                      K_BIND(K_CAL,    K_COLOR_CRITICAL, ""),                        K_BIND(K_USER,   K_COLOR_NEUTRAL,  ""),
-        K_BIND(K_SAVE,   K_COLOR_SUCCESS,  ""),                      K_BIND(K_PRINT,  K_COLOR_NEUTRAL,  ""),                        K_BIND(K_PDF,    K_COLOR_CRITICAL, "")
-    },
-
-    // LAYER 7: WINDOW MANAGEMENT
-    {
-        K_BIND(K_WIN_L,  K_COLOR_ACTION,   ""),                      K_BIND(K_WIN_R,  K_COLOR_ACTION,   ""),                        K_BIND(K_WIN_U,  K_COLOR_ACTION,   ""),
-        K_BIND(K_WIN_D,  K_COLOR_ACTION,   ""),                      K_BIND(K_WIN_C,  K_COLOR_NEUTRAL,  ""),                        K_BIND(K_WIN_M,  K_COLOR_NEUTRAL,  ""),
-        K_BIND(K_DESK_L, K_COLOR_BKA,      ""),                      K_BIND(K_DESK_R, K_COLOR_BKA,      ""),                        K_BIND(K_DESK_O, K_COLOR_BKA,      "")
-    },
-
-    // LAYER 8: HARDWARE & POWER
-    {
-        K_BIND(K_PWR_S,  K_COLOR_NEUTRAL,  ""),                      K_BIND(K_PWR_H,  K_COLOR_ACTION,   ""),                        K_BIND(K_PWR_L,  K_COLOR_CRITICAL, ""),
-        K_BIND(K_PWR_R,  K_COLOR_CRITICAL, ""),                      K_BIND(K_PWR_O,  K_COLOR_CRITICAL, ""),                        K_BIND(K_DISP_O, K_COLOR_BKA,      ""),
-        K_BIND(K_FAN_U,  K_COLOR_ACTION,   ""),                      K_BIND(K_FAN_D,  K_COLOR_ACTION,   ""),                        K_BIND(K_BATT,   K_COLOR_SUCCESS,  "")
-    }
+struct Binding {
+    const char* glyph;   
+    uint16_t color;      
+    uint32_t payload;    
+    HIDPage page;        
+    uint8_t modifier;    
+    uint16_t textColor;  
 };
+
+#ifndef PURPLE
+#define PURPLE 0x780F
+#endif
+
+#define B_EMPTY {"", BLACK, 0, HIDPage::KEYBOARD, MOD_NONE, WHITE}
+
+// ==========================================
+// 1. NORMAAL F1-F24
+// ==========================================
+const Binding GRID_F1_F10[12] = {
+    {"F7", DARKGREY, KC_F7, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"F8", DARKGREY, KC_F8, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"F9", DARKGREY, KC_F9, HIDPage::KEYBOARD, MOD_NONE, WHITE},
+    {"F4", DARKGREY, KC_F4, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"F5", DARKGREY, KC_F5, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"F6", DARKGREY, KC_F6, HIDPage::KEYBOARD, MOD_NONE, WHITE},
+    {"F1", DARKGREY, KC_F1, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"F2", DARKGREY, KC_F2, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"F3", DARKGREY, KC_F3, HIDPage::KEYBOARD, MOD_NONE, WHITE},
+    {"ESC", RED, KC_ESC, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"F10", DARKGREY, KC_F10, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"ENT", GREEN, KC_ENT, HIDPage::KEYBOARD, MOD_NONE, WHITE}
+};
+
+const Binding GRID_F11_F20[12] = {
+    {"F17", DARKGREY, KC_F17, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"F18", DARKGREY, KC_F18, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"F19", DARKGREY, KC_F19, HIDPage::KEYBOARD, MOD_NONE, WHITE},
+    {"F14", DARKGREY, KC_F14, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"F15", DARKGREY, KC_F15, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"F16", DARKGREY, KC_F16, HIDPage::KEYBOARD, MOD_NONE, WHITE},
+    {"F11", DARKGREY, KC_F11, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"F12", DARKGREY, KC_F12, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"F13", DARKGREY, KC_F13, HIDPage::KEYBOARD, MOD_NONE, WHITE},
+    B_EMPTY, B_EMPTY, {"F20", DARKGREY, KC_F20, HIDPage::KEYBOARD, MOD_NONE, WHITE}
+};
+
+const Binding GRID_F21_F24[12] = {
+    B_EMPTY, B_EMPTY, B_EMPTY, B_EMPTY, B_EMPTY, B_EMPTY,
+    {"F21", DARKGREY, KC_F21, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"F22", DARKGREY, KC_F22, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"F23", DARKGREY, KC_F23, HIDPage::KEYBOARD, MOD_NONE, WHITE},
+    B_EMPTY, B_EMPTY, {"F24", DARKGREY, KC_F24, HIDPage::KEYBOARD, MOD_NONE, WHITE}
+};
+
+// ==========================================
+// 2. MEH F-SETS
+// ==========================================
+const Binding GRID_F1_F10_MEH[12] = {
+    {"M-F7", PURPLE, KC_F7, HIDPage::KEYBOARD, M_LCSA, WHITE}, {"M-F8", PURPLE, KC_F8, HIDPage::KEYBOARD, M_LCSA, WHITE}, {"M-F9", PURPLE, KC_F9, HIDPage::KEYBOARD, M_LCSA, WHITE},
+    {"M-F4", PURPLE, KC_F4, HIDPage::KEYBOARD, M_LCSA, WHITE}, {"M-F5", PURPLE, KC_F5, HIDPage::KEYBOARD, M_LCSA, WHITE}, {"M-F6", PURPLE, KC_F6, HIDPage::KEYBOARD, M_LCSA, WHITE},
+    {"M-F1", PURPLE, KC_F1, HIDPage::KEYBOARD, M_LCSA, WHITE}, {"M-F2", PURPLE, KC_F2, HIDPage::KEYBOARD, M_LCSA, WHITE}, {"M-F3", PURPLE, KC_F3, HIDPage::KEYBOARD, M_LCSA, WHITE},
+    {"ESC", RED, KC_ESC, HIDPage::KEYBOARD, M_LCSA, WHITE}, {"M-F10", PURPLE, KC_F10, HIDPage::KEYBOARD, M_LCSA, WHITE}, {"ENT", GREEN, KC_ENT, HIDPage::KEYBOARD, M_LCSA, WHITE}
+};
+
+const Binding GRID_F11_F20_MEH[12] = {
+    {"M-F17", PURPLE, KC_F17, HIDPage::KEYBOARD, M_LCSA, WHITE}, {"M-F18", PURPLE, KC_F18, HIDPage::KEYBOARD, M_LCSA, WHITE}, {"M-F19", PURPLE, KC_F19, HIDPage::KEYBOARD, M_LCSA, WHITE},
+    {"M-F14", PURPLE, KC_F14, HIDPage::KEYBOARD, M_LCSA, WHITE}, {"M-F15", PURPLE, KC_F15, HIDPage::KEYBOARD, M_LCSA, WHITE}, {"M-F16", PURPLE, KC_F16, HIDPage::KEYBOARD, M_LCSA, WHITE},
+    {"M-F11", PURPLE, KC_F11, HIDPage::KEYBOARD, M_LCSA, WHITE}, {"M-F12", PURPLE, KC_F12, HIDPage::KEYBOARD, M_LCSA, WHITE}, {"M-F13", PURPLE, KC_F13, HIDPage::KEYBOARD, M_LCSA, WHITE},
+    B_EMPTY, B_EMPTY, {"M-F20", PURPLE, KC_F20, HIDPage::KEYBOARD, M_LCSA, WHITE}
+};
+
+const Binding GRID_F21_F24_MEH[12] = {
+    B_EMPTY, B_EMPTY, B_EMPTY, B_EMPTY, B_EMPTY, B_EMPTY,
+    {"M-F21", PURPLE, KC_F21, HIDPage::KEYBOARD, M_LCSA, WHITE}, {"M-F22", PURPLE, KC_F22, HIDPage::KEYBOARD, M_LCSA, WHITE}, {"M-F23", PURPLE, KC_F23, HIDPage::KEYBOARD, M_LCSA, WHITE},
+    B_EMPTY, B_EMPTY, {"M-F24", PURPLE, KC_F24, HIDPage::KEYBOARD, M_LCSA, WHITE}
+};
+
+// ==========================================
+// 3. HYPER F-SETS
+// ==========================================
+const Binding GRID_F1_F10_HYP[12] = {
+    {"H-F7", BLUE, KC_F7, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"H-F8", BLUE, KC_F8, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"H-F9", BLUE, KC_F9, HIDPage::KEYBOARD, M_LHYP, WHITE},
+    {"H-F4", BLUE, KC_F4, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"H-F5", BLUE, KC_F5, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"H-F6", BLUE, KC_F6, HIDPage::KEYBOARD, M_LHYP, WHITE},
+    {"H-F1", BLUE, KC_F1, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"H-F2", BLUE, KC_F2, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"H-F3", BLUE, KC_F3, HIDPage::KEYBOARD, M_LHYP, WHITE},
+    {"ESC", RED, KC_ESC, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"H-F10", BLUE, KC_F10, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"ENT", GREEN, KC_ENT, HIDPage::KEYBOARD, M_LHYP, WHITE}
+};
+
+const Binding GRID_F11_F20_HYP[12] = {
+    {"H-F17", BLUE, KC_F17, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"H-F18", BLUE, KC_F18, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"H-F19", BLUE, KC_F19, HIDPage::KEYBOARD, M_LHYP, WHITE},
+    {"H-F14", BLUE, KC_F14, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"H-F15", BLUE, KC_F15, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"H-F16", BLUE, KC_F16, HIDPage::KEYBOARD, M_LHYP, WHITE},
+    {"H-F11", BLUE, KC_F11, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"H-F12", BLUE, KC_F12, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"H-F13", BLUE, KC_F13, HIDPage::KEYBOARD, M_LHYP, WHITE},
+    B_EMPTY, B_EMPTY, {"H-F20", BLUE, KC_F20, HIDPage::KEYBOARD, M_LHYP, WHITE}
+};
+
+const Binding GRID_F21_F24_HYP[12] = {
+    B_EMPTY, B_EMPTY, B_EMPTY, B_EMPTY, B_EMPTY, B_EMPTY,
+    {"H-F21", BLUE, KC_F21, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"H-F22", BLUE, KC_F22, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"H-F23", BLUE, KC_F23, HIDPage::KEYBOARD, M_LHYP, WHITE},
+    B_EMPTY, B_EMPTY, {"H-F24", BLUE, KC_F24, HIDPage::KEYBOARD, M_LHYP, WHITE}
+};
+
+// ==========================================
+// 4. NUMPADS
+// ==========================================
+const Binding GRID_NUMPAD_KEYS[9] = {
+    {"7", DARKGREY, KC_7, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"8", DARKGREY, KC_8, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"9", DARKGREY, KC_9, HIDPage::KEYBOARD, MOD_NONE, WHITE},
+    {"4", DARKGREY, KC_4, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"5", DARKGREY, KC_5, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"6", DARKGREY, KC_6, HIDPage::KEYBOARD, MOD_NONE, WHITE},
+    {"1", DARKGREY, KC_1, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"2", DARKGREY, KC_2, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"3", DARKGREY, KC_3, HIDPage::KEYBOARD, MOD_NONE, WHITE}
+};
+
+// Real Numpad: Gebruikt KC_P1 ipv KC_KP1
+const Binding GRID_NUMPAD_REAL[12] = {
+    {"7", DARKGREY, KC_P7, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"8", DARKGREY, KC_P8, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"9", DARKGREY, KC_P9, HIDPage::KEYBOARD, MOD_NONE, WHITE},
+    {"4", DARKGREY, KC_P4, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"5", DARKGREY, KC_P5, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"6", DARKGREY, KC_P6, HIDPage::KEYBOARD, MOD_NONE, WHITE},
+    {"1", DARKGREY, KC_P1, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"2", DARKGREY, KC_P2, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"3", DARKGREY, KC_P3, HIDPage::KEYBOARD, MOD_NONE, WHITE},
+    {"0", DARKGREY, KC_P0, HIDPage::KEYBOARD, MOD_NONE, WHITE}, B_EMPTY, B_EMPTY
+};
+
+// ==========================================
+// 5. OFFICE & SHORTCUTS
+// ==========================================
+const Binding GRID_OFFICE_HYPER[9] = {
+    {"WORD", BLUE, KC_W, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"EXCEL", GREEN, KC_X, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"PPT", ORANGE, KC_P, HIDPage::KEYBOARD, M_LHYP, WHITE},
+    {"OUTLK", BLUE, KC_O, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"TEAMS", PURPLE, KC_T, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"ONEN", PURPLE, KC_N, HIDPage::KEYBOARD, M_LHYP, WHITE},
+    {"BROW", DARKGREY, KC_B, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"FILE", YELLOW, KC_E, HIDPage::KEYBOARD, M_LHYP, BLACK}, {"TASK", RED, KC_Y, HIDPage::KEYBOARD, M_LHYP, WHITE}
+};
+
+const Binding GRID_SHORTCUTS[9] = {
+    {"COPY", BLUE, KC_C, HIDPage::KEYBOARD, M_LCTL, WHITE}, {"PASTE", GREEN, KC_V, HIDPage::KEYBOARD, M_LCTL, WHITE}, {"CUT", RED, KC_X, HIDPage::KEYBOARD, M_LCTL, WHITE},
+    {"UNDO", ORANGE, KC_Z, HIDPage::KEYBOARD, M_LCTL, WHITE}, {"REDO", CYAN, KC_Y, HIDPage::KEYBOARD, M_LCTL, WHITE}, {"SAVE", BLUE, KC_S, HIDPage::KEYBOARD, M_LCTL, WHITE},
+    {"TASK", PURPLE, KC_ESC, HIDPage::KEYBOARD, M_LCS, WHITE}, {"FIND", YELLOW, KC_F, HIDPage::KEYBOARD, M_LCTL, BLACK}, {"LOCK", RED, KC_L, HIDPage::KEYBOARD, M_LGUI, WHITE}
+};
+
+// ==========================================
+// CONFIGURATIE
+// ==========================================
+const Binding* ALL_GRIDS[] = {
+    GRID_SHORTCUTS,      // 0
+    GRID_F1_F10,         // 1
+    GRID_F11_F20,        // 2
+    GRID_F21_F24,        // 3
+    GRID_F1_F10_MEH,     // 4
+    GRID_F11_F20_MEH,    // 5
+    GRID_F21_F24_MEH,    // 6
+    GRID_F1_F10_HYP,     // 7
+    GRID_F11_F20_HYP,    // 8
+    GRID_F21_F24_HYP,    // 9
+    GRID_NUMPAD_KEYS,    // 10
+    GRID_NUMPAD_REAL,    // 11
+    GRID_OFFICE_HYPER    // 12
+};
+
+const char* GRID_NAMES[] = {
+    "Shortcuts", "F1-10", "F11-20", "F21-24", 
+    "Meh F1-10", "Meh F11-20", "Meh F21-24", 
+    "Hyp F1-10", "Hyp F11-20", "Hyp F21-24", 
+    "Num Keys", "Real Numpad", "Office Hyp"
+};
+
+const int TOTAL_LAYERS = 13;

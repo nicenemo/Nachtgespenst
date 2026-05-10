@@ -1,95 +1,187 @@
 #include <M5Unified.h>
-#include <HijelHID_BLEKeyboard.h> // NEW HEADER
-#include <FastLED.h>
 #include <NimBLEDevice.h>
+#include <NimBLEHIDDevice.h>
+#include <FastLED.h>
+
 #include "Config.h"
+#include "HID_Specs.h"
+#include "HID_Shortcuts.h"
 #include "Keymap.h"
-#include "Colors.h"
+#include "DisplayColors.h"
+#include "LedColors.h"
 
+// --- Globalen ---
+NimBLEHIDDevice* hid = nullptr;
+NimBLECharacteristic* inputConsumer = nullptr;
+NimBLECharacteristic* inputKeyboard = nullptr;
+bool connected = false;
+
+int currentLayerIndex = 0;
 CRGB leds[LED_COUNT];
-HijelHID_BLEKeyboard ble(K_DEVICE_NAME, K_MANUFACTURER, 100);
 
-QueueHandle_t q;
-volatile int activeLayer = 0;
-volatile bool isTyping = false;
-unsigned long typingTimer = 0;
-
-void hidTask(void* pv) {
-    // This library handles NimBLE init internally
-    ble.begin();
-    
-    int keyIndex;
-    for (;;) {
-        if (xQueueReceive(q, &keyIndex, portMAX_DELAY)) {
-            if (ble.isPaired()) { // Use isPaired() for better stability
-                isTyping = true;
-                typingTimer = millis();
-                ble.print(DECK[activeLayer][keyIndex].payload);
-            }
-        }
-    }
-}
-
-void updateLEDs() {
-    if (!ble.isConnected()) {
-        uint8_t breathe = beatsin8(15, 30, 180);
-        fill_solid(leds, LED_COUNT, CRGB(0, 0, breathe));
-    } else if (isTyping) {
-        fill_solid(leds, LED_COUNT, CRGB(255, 80, 0));
-        if (millis() - typingTimer > 200) isTyping = false;
-    } else {
-        uint8_t idle = beatsin8(10, 5, 40);
-        fill_solid(leds, LED_COUNT, CRGB(0, idle, 0));
-    }
+// --- LED Functie ---
+void updateHardwareFeedback() {
+    CRGB color = LAYER_COLORS[currentLayerIndex];
+    fill_solid(leds, LED_COUNT, color);
     FastLED.show();
+    M5.Speaker.tone(1200, 50);
 }
 
-void draw() {
+// --- Rendering ---
+void drawUI() {
     M5.Lcd.startWrite();
-    M5.Lcd.fillScreen(0x0000);
-    for (int i = 0; i < 9; i++) {
-        int col = i % 3; int row = i / 3;
-        M5.Lcd.fillRect(col * 106 + 4, row * 80 + 4, 98, 72, DECK[activeLayer][i].color);
-        M5.Lcd.setTextColor(0xFFFF);
-        M5.Lcd.drawString(DECK[activeLayer][i].glyph, col * 106 + 53, row * 80 + 40);
+    M5.Lcd.fillScreen(BLACK);
+    
+    const Binding* grid = ALL_GRIDS[currentLayerIndex];
+    int rows = (currentLayerIndex >= 1 && currentLayerIndex <= 3) ? 4 : 3;
+    int cols = 3;
+    int w = M5.Lcd.width() / cols;
+    int h = M5.Lcd.height() / rows;
+
+    M5.Lcd.setFont(&fonts::FreeSansBold12pt7b);
+    for (int i = 0; i < (rows * cols); i++) {
+        int x = (i % cols) * w;
+        int y = (i / cols) * h;
+        M5.Lcd.fillRect(x + 2, y + 2, w - 4, h - 4, grid[i].color);
+        M5.Lcd.setTextColor(grid[i].textColor);
+        M5.Lcd.setTextDatum(MC_DATUM);
+        M5.Lcd.drawString(grid[i].glyph, x + (w / 2), y + (h / 2));
     }
-    M5.Lcd.setCursor(10, 225);
-    M5.Lcd.printf(ble.isConnected() ? "L%d | CONNECTED" : "L%d | PAIRING...", activeLayer);
+    
+    M5.Lcd.setTextColor(WHITE, BLACK);
+    M5.Lcd.setTextDatum(TC_DATUM);
+    M5.Lcd.setFont(&fonts::Font2); 
+    M5.Lcd.drawString(GRID_NAMES[currentLayerIndex], M5.Lcd.width() / 2, 0);
+    
     M5.Lcd.endWrite();
+    updateHardwareFeedback();
+}
+
+// --- Bluetooth Callbacks ---
+class MyServerCallbacks : public NimBLEServerCallbacks {
+    void onConnect(NimBLEServer* pServer) { 
+        connected = true; 
+        Serial.println("Bluetooth verbonden!"); 
+    }
+    void onDisconnect(NimBLEServer* pServer) { 
+        connected = false; 
+        Serial.println("Bluetooth verbroken, start advertising...");
+        NimBLEDevice::startAdvertising(); 
+    }
+};
+
+// --- Bluetooth Task (Core 0) ---
+void btTask(void* pvParameters) {
+    NimBLEDevice::init(K_DEVICE_NAME);
+    NimBLEServer* pServer = NimBLEDevice::createServer();
+    pServer->setCallbacks(new MyServerCallbacks());
+
+    // Belangrijk: Stel beveiliging in VOORDAT je HID start. 
+    // Veel moderne OS accepteren geen onbeveiligde toetsenborden.
+    NimBLEDevice::setSecurityAuth(true, true, true); 
+    NimBLEDevice::setSecurityIOCap(BLE_HS_IO_NO_INPUT_OUTPUT);
+
+    hid = new NimBLEHIDDevice(pServer);
+    inputKeyboard = hid->getInputReport(1);
+    inputConsumer = hid->getInputReport(2);
+
+    hid->setManufacturer(K_MANUFACTURER);
+    hid->setHidInfo(0x00, 0x01);
+    hid->setReportMap((uint8_t*)HID::Reports::KeyboardBlock, sizeof(HID::Reports::KeyboardBlock));
+
+    NimBLEAdvertising* pAdv = pServer->getAdvertising();
+    pAdv->setAppearance(0x03C1);
+    pAdv->addServiceUUID(hid->getHidService()->getUUID());
+    
+    NimBLEAdvertisementData advData;
+    advData.setFlags(0x06);
+    advData.setName(K_DEVICE_NAME);
+    pAdv->setAdvertisementData(advData);
+    
+    pAdv->start();
+    Serial.println("Wachten op verbinding...");
+
+    for (;;) { vTaskDelay(pdMS_TO_TICKS(1000)); }
+}
+
+// --- HID Verzend Logica ---
+void sendKey(const Binding& b) {
+    // Betrouwbaardere check: Is er echt een actieve verbinding?
+    if (NimBLEDevice::getServer()->getConnectedCount() == 0) {
+        Serial.println("Fout: Geen actieve BT verbinding.");
+        return;
+    }
+    
+    Serial.printf("Versturen: %s (Payload: 0x%X)\n", b.glyph, b.payload);
+    M5.Speaker.tone(2000, 20); 
+
+    if (b.page == HIDPage::KEYBOARD) {
+        uint8_t report[8] = { b.modifier, 0, (uint8_t)b.payload, 0, 0, 0, 0, 0 };
+        inputKeyboard->setValue(report, 8);
+        inputKeyboard->notify();
+        delay(15);
+        uint8_t release[8] = {0};
+        inputKeyboard->setValue(release, 8);
+        inputKeyboard->notify();
+    } 
+    else if (b.page == HIDPage::CONSUMER) {
+        uint16_t key = (uint16_t)b.payload;
+        uint8_t report[2] = { (uint8_t)(key & 0xFF), (uint8_t)(key >> 8) };
+        inputConsumer->setValue(report, 2);
+        inputConsumer->notify();
+        delay(15);
+        uint8_t release[2] = {0, 0};
+        inputConsumer->setValue(release, 2);
+        inputConsumer->notify();
+    }
 }
 
 void setup() {
     auto cfg = M5.config();
     M5.begin(cfg);
-    FastLED.addLeds<SK6812, 25, GRB>(leds, LED_COUNT);
-    FastLED.setBrightness(60);
+    Serial.begin(115200);
+    
     M5.Lcd.setRotation(1);
-    M5.Lcd.setFont(&fonts::efontCN_24);
-    M5.Lcd.setTextDatum(middle_center);
-    q = xQueueCreate(16, sizeof(int));
-    xTaskCreatePinnedToCore(hidTask, "HID_TASK", 4096, NULL, 3, NULL, 0);
-    draw();
+    
+    FastLED.addLeds<WS2812, 25, GRB>(leds, LED_COUNT);
+    FastLED.setBrightness(40);
+
+    xTaskCreatePinnedToCore(btTask, "btTask", 4096, NULL, 1, NULL, 0);
+    
+    delay(500);
+    drawUI();
 }
 
 void loop() {
     M5.update();
-    updateLEDs();
-    static bool lastConnState = false;
-    if (ble.isConnected() != lastConnState) {
-        lastConnState = ble.isConnected();
-        draw();
+
+    // Layer wisselen met fysieke knoppen
+    if (M5.BtnA.wasPressed()) {
+        currentLayerIndex = (currentLayerIndex > 0) ? currentLayerIndex - 1 : TOTAL_LAYERS - 1;
+        drawUI();
     }
-    if (M5.BtnA.wasPressed()) { activeLayer = (activeLayer + 8) % 9; draw(); }
-    if (M5.BtnC.wasPressed()) { activeLayer = (activeLayer + 1) % 9; draw(); }
-    if (M5.Touch.getCount()) {
+    if (M5.BtnB.wasPressed()) {
+        currentLayerIndex = 0;
+        drawUI();
+    }
+    if (M5.BtnC.wasPressed()) {
+        currentLayerIndex = (currentLayerIndex < TOTAL_LAYERS - 1) ? currentLayerIndex + 1 : 0;
+        drawUI();
+    }
+
+    // Touch input
+    if (M5.Touch.getCount() > 0) {
         auto detail = M5.Touch.getDetail();
         if (detail.wasPressed()) {
-            int index = (detail.y / 80) * 3 + (detail.x / 106);
-            if (index >= 0 && index < 9) {
-                xQueueSend(q, &index, 0);
-                M5.Speaker.tone(4500, 30); 
+            int rows = (currentLayerIndex >= 1 && currentLayerIndex <= 3) ? 4 : 3;
+            int col = detail.x / (M5.Lcd.width() / 3);
+            int row = detail.y / (M5.Lcd.height() / rows);
+            int idx = (row * 3) + col;
+            
+            if (idx >= 0 && idx < (rows * 3)) {
+                sendKey(ALL_GRIDS[currentLayerIndex][idx]);
             }
         }
     }
-    vTaskDelay(5);
+    delay(5);
 }
