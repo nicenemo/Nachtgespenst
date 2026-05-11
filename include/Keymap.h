@@ -1,151 +1,115 @@
 #pragma once
 #include <Arduino.h>
-#include "HID_Shortcuts.h"
-#include "DisplayColors.h"
+#include "Bindings.h"
 
-// --- Structuur ---
-enum class HIDPage { KEYBOARD, CONSUMER, SYSTEM, HAPTIC, LIGHTING };
-
-struct Binding {
-    const char* glyph;   
-    uint16_t color;      
-    uint32_t payload;    
-    HIDPage page;        
-    uint8_t modifier;    
-    uint16_t textColor;  
+struct GridLayer {
+    const char* pageName;    
+    const Binding* tiles;    
+    uint8_t rows;            
+    uint8_t cols;            
 };
 
-#ifndef PURPLE
-#define PURPLE 0x780F
-#endif
-
-#define B_EMPTY {"", BLACK, 0, HIDPage::KEYBOARD, MOD_NONE, WHITE}
-
-// ==========================================
-// 1. NORMAAL F1-F24
-// ==========================================
-const Binding GRID_F1_F10[12] = {
-    {"F7", DARKGREY, KC_F7, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"F8", DARKGREY, KC_F8, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"F9", DARKGREY, KC_F9, HIDPage::KEYBOARD, MOD_NONE, WHITE},
-    {"F4", DARKGREY, KC_F4, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"F5", DARKGREY, KC_F5, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"F6", DARKGREY, KC_F6, HIDPage::KEYBOARD, MOD_NONE, WHITE},
-    {"F1", DARKGREY, KC_F1, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"F2", DARKGREY, KC_F2, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"F3", DARKGREY, KC_F3, HIDPage::KEYBOARD, MOD_NONE, WHITE},
-    {"ESC", RED, KC_ESC, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"F10", DARKGREY, KC_F10, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"ENT", GREEN, KC_ENT, HIDPage::KEYBOARD, MOD_NONE, WHITE}
+// Maven (3x3)
+const Binding TILES_MAVEN[] = {
+    CS(BTN_B), CS(BTN_Y), CS(BTN_U), 
+    BTN_NO,    BTN_NO,    BTN_NO,    
+    CS(BTN_I), CS(BTN_Q), CS(BTN_E)  
 };
 
-const Binding GRID_F11_F20[12] = {
-    {"F17", DARKGREY, KC_F17, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"F18", DARKGREY, KC_F18, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"F19", DARKGREY, KC_F19, HIDPage::KEYBOARD, MOD_NONE, WHITE},
-    {"F14", DARKGREY, KC_F14, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"F15", DARKGREY, KC_F15, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"F16", DARKGREY, KC_F16, HIDPage::KEYBOARD, MOD_NONE, WHITE},
-    {"F11", DARKGREY, KC_F11, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"F12", DARKGREY, KC_F12, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"F13", DARKGREY, KC_F13, HIDPage::KEYBOARD, MOD_NONE, WHITE},
-    B_EMPTY, B_EMPTY, {"F20", DARKGREY, KC_F20, HIDPage::KEYBOARD, MOD_NONE, WHITE}
+// Office (3x3)
+const Binding TILES_OFFICE[] = {
+    HYP(BTN_W), HYP(BTN_X), HYP(BTN_P),
+    HYP(BTN_O), HYP(BTN_T), HYP(BTN_N),
+    HYP(BTN_B), HYP(BTN_E), HYP(BTN_Y)
 };
 
-const Binding GRID_F21_F24[12] = {
-    B_EMPTY, B_EMPTY, B_EMPTY, B_EMPTY, B_EMPTY, B_EMPTY,
-    {"F21", DARKGREY, KC_F21, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"F22", DARKGREY, KC_F22, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"F23", DARKGREY, KC_F23, HIDPage::KEYBOARD, MOD_NONE, WHITE},
-    B_EMPTY, B_EMPTY, {"F24", DARKGREY, KC_F24, HIDPage::KEYBOARD, MOD_NONE, WHITE}
+// Edit/Nav (4x3)
+const Binding TILES_EDIT_NAV[] = {
+    CS(BTN_Z),  CS(BTN_X),  CS(BTN_C), 
+    CS(BTN_V),  BTN_UP,     BTN_PGUP,  
+    BTN_LEFT,   BTN_DOWN,   BTN_RGHT,  
+    BTN_HOME,   BTN_DEL,    BTN_PGDN   
 };
 
-// ==========================================
-// 2. MEH F-SETS
-// ==========================================
-const Binding GRID_F1_F10_MEH[12] = {
-    {"M-F7", PURPLE, KC_F7, HIDPage::KEYBOARD, M_LCSA, WHITE}, {"M-F8", PURPLE, KC_F8, HIDPage::KEYBOARD, M_LCSA, WHITE}, {"M-F9", PURPLE, KC_F9, HIDPage::KEYBOARD, M_LCSA, WHITE},
-    {"M-F4", PURPLE, KC_F4, HIDPage::KEYBOARD, M_LCSA, WHITE}, {"M-F5", PURPLE, KC_F5, HIDPage::KEYBOARD, M_LCSA, WHITE}, {"M-F6", PURPLE, KC_F6, HIDPage::KEYBOARD, M_LCSA, WHITE},
-    {"M-F1", PURPLE, KC_F1, HIDPage::KEYBOARD, M_LCSA, WHITE}, {"M-F2", PURPLE, KC_F2, HIDPage::KEYBOARD, M_LCSA, WHITE}, {"M-F3", PURPLE, KC_F3, HIDPage::KEYBOARD, M_LCSA, WHITE},
-    {"ESC", RED, KC_ESC, HIDPage::KEYBOARD, M_LCSA, WHITE}, {"M-F10", PURPLE, KC_F10, HIDPage::KEYBOARD, M_LCSA, WHITE}, {"ENT", GREEN, KC_ENT, HIDPage::KEYBOARD, M_LCSA, WHITE}
+// F1-F10 Numpad Style
+const Binding TILES_F1_F10[] = {
+    BTN_F7,  BTN_F8,  BTN_F9,
+    BTN_F4,  BTN_F5,  BTN_F6,
+    BTN_F1,  BTN_F2,  BTN_F3,
+    BTN_ESC, BTN_F10, BTN_ENT
 };
 
-const Binding GRID_F11_F20_MEH[12] = {
-    {"M-F17", PURPLE, KC_F17, HIDPage::KEYBOARD, M_LCSA, WHITE}, {"M-F18", PURPLE, KC_F18, HIDPage::KEYBOARD, M_LCSA, WHITE}, {"M-F19", PURPLE, KC_F19, HIDPage::KEYBOARD, M_LCSA, WHITE},
-    {"M-F14", PURPLE, KC_F14, HIDPage::KEYBOARD, M_LCSA, WHITE}, {"M-F15", PURPLE, KC_F15, HIDPage::KEYBOARD, M_LCSA, WHITE}, {"M-F16", PURPLE, KC_F16, HIDPage::KEYBOARD, M_LCSA, WHITE},
-    {"M-F11", PURPLE, KC_F11, HIDPage::KEYBOARD, M_LCSA, WHITE}, {"M-F12", PURPLE, KC_F12, HIDPage::KEYBOARD, M_LCSA, WHITE}, {"M-F13", PURPLE, KC_F13, HIDPage::KEYBOARD, M_LCSA, WHITE},
-    B_EMPTY, B_EMPTY, {"M-F20", PURPLE, KC_F20, HIDPage::KEYBOARD, M_LCSA, WHITE}
+const Binding TILES_F1_F10_MEH[] = {
+    MEH(BTN_F7), MEH(BTN_F8), MEH(BTN_F9),
+    MEH(BTN_F4), MEH(BTN_F5), MEH(BTN_F6),
+    MEH(BTN_F1), MEH(BTN_F2), MEH(BTN_F3),
+    BTN_ESC,     MEH(BTN_F10), BTN_ENT
 };
 
-const Binding GRID_F21_F24_MEH[12] = {
-    B_EMPTY, B_EMPTY, B_EMPTY, B_EMPTY, B_EMPTY, B_EMPTY,
-    {"M-F21", PURPLE, KC_F21, HIDPage::KEYBOARD, M_LCSA, WHITE}, {"M-F22", PURPLE, KC_F22, HIDPage::KEYBOARD, M_LCSA, WHITE}, {"M-F23", PURPLE, KC_F23, HIDPage::KEYBOARD, M_LCSA, WHITE},
-    B_EMPTY, B_EMPTY, {"M-F24", PURPLE, KC_F24, HIDPage::KEYBOARD, M_LCSA, WHITE}
+const Binding TILES_F1_F10_HYP[] = {
+    HYP(BTN_F7), HYP(BTN_F8), HYP(BTN_F9),
+    HYP(BTN_F4), HYP(BTN_F5), HYP(BTN_F6),
+    HYP(BTN_F1), HYP(BTN_F2), HYP(BTN_F3),
+    BTN_ESC,     HYP(BTN_F10), BTN_ENT
 };
 
-// ==========================================
-// 3. HYPER F-SETS
-// ==========================================
-const Binding GRID_F1_F10_HYP[12] = {
-    {"H-F7", BLUE, KC_F7, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"H-F8", BLUE, KC_F8, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"H-F9", BLUE, KC_F9, HIDPage::KEYBOARD, M_LHYP, WHITE},
-    {"H-F4", BLUE, KC_F4, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"H-F5", BLUE, KC_F5, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"H-F6", BLUE, KC_F6, HIDPage::KEYBOARD, M_LHYP, WHITE},
-    {"H-F1", BLUE, KC_F1, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"H-F2", BLUE, KC_F2, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"H-F3", BLUE, KC_F3, HIDPage::KEYBOARD, M_LHYP, WHITE},
-    {"ESC", RED, KC_ESC, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"H-F10", BLUE, KC_F10, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"ENT", GREEN, KC_ENT, HIDPage::KEYBOARD, M_LHYP, WHITE}
+// F11-F20 Numpad Style
+const Binding TILES_F11_F20[] = {
+    BTN_F17, BTN_F18, BTN_F19,
+    BTN_F14, BTN_F15, BTN_F16,
+    BTN_F11, BTN_F12, BTN_F13,
+    BTN_ESC, BTN_F20, BTN_ENT
 };
 
-const Binding GRID_F11_F20_HYP[12] = {
-    {"H-F17", BLUE, KC_F17, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"H-F18", BLUE, KC_F18, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"H-F19", BLUE, KC_F19, HIDPage::KEYBOARD, M_LHYP, WHITE},
-    {"H-F14", BLUE, KC_F14, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"H-F15", BLUE, KC_F15, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"H-F16", BLUE, KC_F16, HIDPage::KEYBOARD, M_LHYP, WHITE},
-    {"H-F11", BLUE, KC_F11, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"H-F12", BLUE, KC_F12, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"H-F13", BLUE, KC_F13, HIDPage::KEYBOARD, M_LHYP, WHITE},
-    B_EMPTY, B_EMPTY, {"H-F20", BLUE, KC_F20, HIDPage::KEYBOARD, M_LHYP, WHITE}
+const Binding TILES_F11_F20_MEH[] = {
+    MEH(BTN_F17), MEH(BTN_F18), MEH(BTN_F19),
+    MEH(BTN_F14), MEH(BTN_F15), MEH(BTN_F16),
+    MEH(BTN_F11), MEH(BTN_F12), MEH(BTN_F13),
+    BTN_ESC,      MEH(BTN_F20), BTN_ENT
 };
 
-const Binding GRID_F21_F24_HYP[12] = {
-    B_EMPTY, B_EMPTY, B_EMPTY, B_EMPTY, B_EMPTY, B_EMPTY,
-    {"H-F21", BLUE, KC_F21, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"H-F22", BLUE, KC_F22, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"H-F23", BLUE, KC_F23, HIDPage::KEYBOARD, M_LHYP, WHITE},
-    B_EMPTY, B_EMPTY, {"H-F24", BLUE, KC_F24, HIDPage::KEYBOARD, M_LHYP, WHITE}
+const Binding TILES_F11_F20_HYP[] = {
+    HYP(BTN_F17), HYP(BTN_F18), HYP(BTN_F19),
+    HYP(BTN_F14), HYP(BTN_F15), HYP(BTN_F16),
+    HYP(BTN_F11), HYP(BTN_F12), HYP(BTN_F13),
+    BTN_ESC,      HYP(BTN_F20), BTN_ENT
 };
 
-// ==========================================
-// 4. NUMPADS
-// ==========================================
-const Binding GRID_NUMPAD_KEYS[9] = {
-    {"7", DARKGREY, KC_7, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"8", DARKGREY, KC_8, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"9", DARKGREY, KC_9, HIDPage::KEYBOARD, MOD_NONE, WHITE},
-    {"4", DARKGREY, KC_4, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"5", DARKGREY, KC_5, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"6", DARKGREY, KC_6, HIDPage::KEYBOARD, MOD_NONE, WHITE},
-    {"1", DARKGREY, KC_1, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"2", DARKGREY, KC_2, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"3", DARKGREY, KC_3, HIDPage::KEYBOARD, MOD_NONE, WHITE}
+// F21-F24 2x2 Grids
+const Binding TILES_F21_F24[] = { BTN_F23, BTN_F24, BTN_F21, BTN_F22 };
+const Binding TILES_F21_F24_MEH[] = { MEH(BTN_F23), MEH(BTN_F24), MEH(BTN_F21), MEH(BTN_F22) };
+const Binding TILES_F21_F24_HYP[] = { HYP(BTN_F23), HYP(BTN_F24), HYP(BTN_F21), HYP(BTN_F22) };
+
+// International 3x3 Numpad Style
+const Binding TILES_INT[] = {
+    BTN_INT7, BTN_INT8, BTN_INT9,
+    BTN_INT4, BTN_INT5, BTN_INT6,
+    BTN_INT1, BTN_INT2, BTN_INT3
 };
 
-// Real Numpad: Gebruikt KC_P1 ipv KC_KP1
-const Binding GRID_NUMPAD_REAL[12] = {
-    {"7", DARKGREY, KC_P7, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"8", DARKGREY, KC_P8, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"9", DARKGREY, KC_P9, HIDPage::KEYBOARD, MOD_NONE, WHITE},
-    {"4", DARKGREY, KC_P4, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"5", DARKGREY, KC_P5, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"6", DARKGREY, KC_P6, HIDPage::KEYBOARD, MOD_NONE, WHITE},
-    {"1", DARKGREY, KC_P1, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"2", DARKGREY, KC_P2, HIDPage::KEYBOARD, MOD_NONE, WHITE}, {"3", DARKGREY, KC_P3, HIDPage::KEYBOARD, MOD_NONE, WHITE},
-    {"0", DARKGREY, KC_P0, HIDPage::KEYBOARD, MOD_NONE, WHITE}, B_EMPTY, B_EMPTY
+// Language Grid (4x3)
+const Binding TILES_LANG[] = {
+    BTN_LNG1,  BTN_LNG2,  BTN_LNG3,
+    BTN_LNG4,  BTN_LNG5,  BTN_CMP,
+    BTN_APP,   BTN_BPIPE, BTN_LCAPS,
+    BTN_LNUM,  BTN_LSCRL, BTN_ENT
 };
 
-// ==========================================
-// 5. OFFICE & SHORTCUTS
-// ==========================================
-const Binding GRID_OFFICE_HYPER[9] = {
-    {"WORD", BLUE, KC_W, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"EXCEL", GREEN, KC_X, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"PPT", ORANGE, KC_P, HIDPage::KEYBOARD, M_LHYP, WHITE},
-    {"OUTLK", BLUE, KC_O, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"TEAMS", PURPLE, KC_T, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"ONEN", PURPLE, KC_N, HIDPage::KEYBOARD, M_LHYP, WHITE},
-    {"BROW", DARKGREY, KC_B, HIDPage::KEYBOARD, M_LHYP, WHITE}, {"FILE", YELLOW, KC_E, HIDPage::KEYBOARD, M_LHYP, BLACK}, {"TASK", RED, KC_Y, HIDPage::KEYBOARD, M_LHYP, WHITE}
+const GridLayer ALL_LAYERS[] = {
+    {"Maven Tools",   TILES_MAVEN,    3, 3},
+    {"Office",        TILES_OFFICE,   3, 3},
+    {"Edit & Nav",    TILES_EDIT_NAV, 4, 3},
+    {"F1-F10",        TILES_F1_F10,   4, 3},
+    {"F1-F10 MEH",    TILES_F1_F10_MEH, 4, 3},
+    {"F1-F10 HYP",    TILES_F1_F10_HYP, 4, 3},
+    {"F11-F20",       TILES_F11_F20,  4, 3},
+    {"F11-F20 MEH",   TILES_F11_F20_MEH, 4, 3},
+    {"F11-F20 HYP",   TILES_F11_F20_HYP, 4, 3},
+    {"F21-F24",       TILES_F21_F24,  2, 2},
+    {"F21-F24 MEH",   TILES_F21_F24_MEH, 2, 2},
+    {"F21-F24 HYP",   TILES_F21_F24_HYP, 2, 2},
+    {"International", TILES_INT,      3, 3},
+    {"Language",      TILES_LANG,     4, 3}
 };
 
-const Binding GRID_SHORTCUTS[9] = {
-    {"COPY", BLUE, KC_C, HIDPage::KEYBOARD, M_LCTL, WHITE}, {"PASTE", GREEN, KC_V, HIDPage::KEYBOARD, M_LCTL, WHITE}, {"CUT", RED, KC_X, HIDPage::KEYBOARD, M_LCTL, WHITE},
-    {"UNDO", ORANGE, KC_Z, HIDPage::KEYBOARD, M_LCTL, WHITE}, {"REDO", CYAN, KC_Y, HIDPage::KEYBOARD, M_LCTL, WHITE}, {"SAVE", BLUE, KC_S, HIDPage::KEYBOARD, M_LCTL, WHITE},
-    {"TASK", PURPLE, KC_ESC, HIDPage::KEYBOARD, M_LCS, WHITE}, {"FIND", YELLOW, KC_F, HIDPage::KEYBOARD, M_LCTL, BLACK}, {"LOCK", RED, KC_L, HIDPage::KEYBOARD, M_LGUI, WHITE}
-};
-
-// ==========================================
-// CONFIGURATIE
-// ==========================================
-const Binding* ALL_GRIDS[] = {
-    GRID_SHORTCUTS,      // 0
-    GRID_F1_F10,         // 1
-    GRID_F11_F20,        // 2
-    GRID_F21_F24,        // 3
-    GRID_F1_F10_MEH,     // 4
-    GRID_F11_F20_MEH,    // 5
-    GRID_F21_F24_MEH,    // 6
-    GRID_F1_F10_HYP,     // 7
-    GRID_F11_F20_HYP,    // 8
-    GRID_F21_F24_HYP,    // 9
-    GRID_NUMPAD_KEYS,    // 10
-    GRID_NUMPAD_REAL,    // 11
-    GRID_OFFICE_HYPER    // 12
-};
-
-const char* GRID_NAMES[] = {
-    "Shortcuts", "F1-10", "F11-20", "F21-24", 
-    "Meh F1-10", "Meh F11-20", "Meh F21-24", 
-    "Hyp F1-10", "Hyp F11-20", "Hyp F21-24", 
-    "Num Keys", "Real Numpad", "Office Hyp"
-};
-
-const int TOTAL_LAYERS = 13;
+const uint8_t TOTAL_LAYERS = sizeof(ALL_LAYERS) / sizeof(GridLayer);
