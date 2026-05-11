@@ -209,8 +209,15 @@ const Binding TILES_STATUS[] = {
     BTN_ESC,    BTN_ENT,      BTN_BSPC
 };
 
+// --- 26. LED Test (3x3) ---
+const Binding TILES_LED_TEST[] = {
+    BTN_LCAPS,  BTN_LNUM,   BTN_LSCRL,
+    BTN_CAPS,   BTN_NLCK,   BTN_SLCK, 
+    BTN_ESC,    BTN_ENT,    BTN_BSPC
+};
+
 // ==========================================
-// 2. LAYER CONFIGURATIE (Totaal: 25 Grids)
+// 2. LAYER CONFIGURATIE (Totaal: 26 Grids)
 // ==========================================
 
 const GridLayer ALL_LAYERS[] = {
@@ -238,7 +245,8 @@ const GridLayer ALL_LAYERS[] = {
     {"Debug IDE",     TILES_DEBUG,         4, 3, LAYER_COLORS[21]},
     {"App Launch",    TILES_APP_LAUNCH,    4, 3, LAYER_COLORS[22]},
     {"Edit Keys",     TILES_EDIT_KEYS,     3, 3, LAYER_COLORS[23]},
-    {"Status Info",   TILES_STATUS,        3, 3, LAYER_COLORS[24]}
+    {"Status Info",   TILES_STATUS,        3, 3, LAYER_COLORS[24]},
+    {"LED Test",      TILES_LED_TEST,      3, 3, LAYER_COLORS[25]}
 };
 
 const uint8_t TOTAL_LAYERS = sizeof(ALL_LAYERS) / sizeof(GridLayer);

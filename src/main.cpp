@@ -15,10 +15,11 @@ const uint8_t FADE_SPEED = 2;
 
 void updateHardwareFeedback(bool isNewKey = false);
 
-// Callback die wordt getriggerd als de PC de Caps Lock status wijzigt
+// Callback die wordt getriggerd als de PC de LED status wijzigt (NumLock, CapsLock, etc.)
 void onHIDEvent(HIDManager::HIDEvent event, uint8_t status) {
     if (event == HIDManager::HIDEvent::LED_UPDATED) {
         Serial.printf("[MAIN] HID Event: LED update ontvangen (0x%02X)\n", status);
+        // Direct de LEDs bijwerken als er een update van de PC komt
         updateHardwareFeedback(false);
     }
 }
@@ -32,7 +33,7 @@ void updateHardwareFeedback(bool isNewKey) {
     CRGB animatedColor = layerColor;
     animatedColor.nscale8_video(currentFlashBrightness); 
 
-    // Haal de laatste bekende status op
+    // Haal de laatste status op die via de HID callback is binnengekomen
     uint8_t ledStatus = HIDManager::getLedStatus();
 
     for (int i = 0; i < LED_COUNT; i++) {
@@ -40,8 +41,9 @@ void updateHardwareFeedback(bool isNewKey) {
             // RECHTS: Toont de kleur van de actieve Layer
             leds[i] = animatedColor;
         } else {
-            // LINKS: Toont Caps Lock status (Bit 1 / 0x02)
-            if (ledStatus & 0x02) { 
+            // LINKS: Toont LED feedback van de PC
+            // We controleren op Bit 0 (Num Lock) EN Bit 1 (Caps Lock)
+            if ((ledStatus & 0x01) || (ledStatus & 0x02)) { 
                 leds[i] = CRGB::White;
                 leds[i].nscale8_video(120); 
             } else {
@@ -65,7 +67,7 @@ void drawUI() {
         int x = (i % current.cols) * w;
         int y = (i / current.cols) * h;
         const Binding& b = current.tiles[i];
-        if (b.payload != KC_NO.code) {
+        if (b.payload != 0) { // KC_NO is 0
             M5.Lcd.fillRect(x + 2, y + 2, w - 4, h - 4, b.color);
             M5.Lcd.setTextColor(b.textColor);
             M5.Lcd.setTextDatum(middle_center);
@@ -87,9 +89,11 @@ void setup() {
     setCpuFrequencyMhz(80); 
     M5.Lcd.setRotation(1);
     
+    // Initialiseer de LED strips (Pin 25 voor Core2)
     FastLED.addLeds<WS2812, 25, GRB>(leds, LED_COUNT);
+    FastLED.setBrightness(128);
     
-    // HID Manager starten
+    // HID Manager starten en de listener koppelen
     HIDManager::begin(K_DEVICE_NAME, K_MANUFACTURER);
     HIDManager::setEventListener(onHIDEvent);
     
@@ -99,7 +103,10 @@ void setup() {
 void loop() {
     M5.update();
     
-    // Animatie faden (voor de visuele feedback bij toetsdruk)
+    // Afhandeling van non-blocking key releases
+    HIDManager::handleAsyncEvents();
+    
+    // Animatie faden voor visuele feedback bij toetsdruk
     if (currentFlashBrightness > BASE_BRIGHTNESS) {
         if (currentFlashBrightness - FADE_SPEED < BASE_BRIGHTNESS) {
             currentFlashBrightness = BASE_BRIGHTNESS;
@@ -141,6 +148,5 @@ void loop() {
         drawUI(); 
     }
 
-    // Stabiele delay (geen sleep meer)
     delay(10);
 }

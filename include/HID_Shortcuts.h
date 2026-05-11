@@ -194,33 +194,33 @@ struct Key {
 // 8. INTERNATIONAL & LANGUAGE (0x87 - 0x94)
 // ==========================================
 #define KC_INT1 K(0x87) // Ro (Japan)
-#define KC_INT2 K(0x88) // Katakana/Hiragana (Japan)
+#define KC_INT2 K(0x88) // Katakana/Hiragana (Japan) - Vaak de 'toggle'
 #define KC_INT3 K(0x89) // Yen (Japan)
 #define KC_INT4 K(0x8A) // Henkan (Japan)
 #define KC_INT5 K(0x8B) // Muhenkan (Japan)
-#define KC_INT6 K(0x8C) // PC98 Comma (Japan)
-#define KC_INT7 K(0x8D)
-#define KC_INT8 K(0x8E)
-#define KC_INT9 K(0x8F)
 
 #define KC_LNG1 K(0x90) // Hangul/English (Korea)
 #define KC_LNG2 K(0x91) // Hanja (Korea)
-#define KC_LNG3 K(0x92) // Katakana (Japan)
-#define KC_LNG4 K(0x93) // Hiragana (Japan)
+#define KC_LNG3 K(0x92) // Katakana (Japan) -> De "echte" Kana-key
+#define KC_LNG4 K(0x93) // Hiragana (Japan) -> De "echte" Hira-key
 #define KC_LNG5 K(0x94) // Zenkaku/Hankaku (Japan)
 
+// Aliassen voor duidelijkheid in Bindings
 #define KC_KANA KC_LNG3 
 #define KC_HIRA KC_LNG4 
 
 // ==========================================
 // 9. LOCKING & SPECIALS
 // ==========================================
-#define KC_LCAPS K(0x82)
-#define KC_LNUM  K(0x83)
-#define KC_LSCRL K(0x84)
-#define KC_CMP   K(0xB3) // Compose Key
-#define KC_COMP  KC_CMP
+// NORMALE TOETSEN (Druktoetsen - Gebruik deze!)
+#define KC_CAPS  K(0x39) // Scancode 0x39: De standaard Caps Lock
+#define KC_NLCK  K(0x53) // Scancode 0x53: De standaard Num Lock
+#define KC_SLCK  K(0x47) // Scancode 0x47: De standaard Scroll Lock
 
+// LOCKING VARIANTEN (Hardwarematige schakelaars - Negeer deze op Framework)
+#define KC_LCAPS K(0x82) // Locking Caps Lock
+#define KC_LNUM  K(0x83) // Locking Num Lock
+#define KC_LSCRL K(0x84) // Locking Scroll Lock
 // ==========================================
 // 10. CONSUMER & SYSTEM
 // ==========================================
