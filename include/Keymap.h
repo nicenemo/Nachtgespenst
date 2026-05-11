@@ -1,12 +1,14 @@
 #pragma once
 #include <Arduino.h>
 #include "Bindings.h"
+#include "LedColors.h" // Nodig voor de CRGB kleuren
 
 struct GridLayer {
     const char* pageName;    
     const Binding* tiles;    
     uint8_t rows;            
     uint8_t cols;            
+    CRGB color;            // Nieuw veld om de unieke LED kleur per grid op te slaan
 };
 
 // ==========================================
@@ -103,7 +105,6 @@ const Binding TILES_F21_F24_HYP[] = {
 };
 
 // --- 13. Symbol Pad (6x4) ---
-// Gebruikt BTN_K1 t/m BTN_K0 (Bovenste cijferrij)
 const Binding TILES_SYMBOL_PAD[] = {
     BTN_K7,   BTN_K8,   BTN_K9,   BTN_EXLM,
     BTN_K4,   BTN_K5,   BTN_K6,   BTN_AT,
@@ -114,7 +115,6 @@ const Binding TILES_SYMBOL_PAD[] = {
 };
 
 // --- 14. Numpad Full (6x4) ---
-// Gebruikt BTN_P1 t/m BTN_P0 (Numpad eiland)
 const Binding TILES_NUM_FULL[] = {
     BTN_NLCK, BTN_PSLS, BTN_PAST, BTN_PMNS,
     BTN_P7,   BTN_P8,   BTN_P9,   BTN_PPLS,
@@ -214,31 +214,31 @@ const Binding TILES_STATUS[] = {
 // ==========================================
 
 const GridLayer ALL_LAYERS[] = {
-    {"Maven Tools",   TILES_MAVEN,         3, 3},
-    {"Office",        TILES_OFFICE,        4, 3},
-    {"Edit & Nav",    TILES_EDIT_NAV,      4, 3},
-    {"F1-F10",        TILES_F1_F10,        4, 3},
-    {"F1-F10 MEH",    TILES_F1_F10_MEH,    4, 3},
-    {"F1-F10 HYP",    TILES_F1_F10_HYP,    4, 3},
-    {"F11-F20",       TILES_F11_F20,       4, 3},
-    {"F11-F20 MEH",   TILES_F11_F20_MEH,   4, 3},
-    {"F11-F20 HYP",   TILES_F11_F20_HYP,   4, 3},
-    {"F21-F24",       TILES_F21_F24,       2, 2},
-    {"F21-F24 MEH",   TILES_F21_F24_MEH,   2, 2},
-    {"F21-F24 HYP",   TILES_F21_F24_HYP,   2, 2},
-    {"Symbol Pad",    TILES_SYMBOL_PAD,    6, 4},
-    {"Numpad Full",   TILES_NUM_FULL,      6, 4},
-    {"International", TILES_INT,           3, 3},
-    {"Language",      TILES_LANG,          4, 3},
-    {"Media",         TILES_MEDIA,         4, 3},
-    {"MS Teams",      TILES_TEAMS,         4, 3},
-    {"MS Outlook",    TILES_OUTLOOK,       4, 3},
-    {"PowerPoint",    TILES_POWERPOINT,    4, 3},
-    {"Browser Ctrl",  TILES_BROWSER,       4, 3},
-    {"Debug IDE",     TILES_DEBUG,         4, 3},
-    {"App Launch",    TILES_APP_LAUNCH,    4, 3},
-    {"Edit Keys",     TILES_EDIT_KEYS,     3, 3},
-    {"Status Info",   TILES_STATUS,        3, 3}
+    {"Maven Tools",   TILES_MAVEN,         3, 3, LAYER_COLORS[0]},
+    {"Office",        TILES_OFFICE,        4, 3, LAYER_COLORS[1]},
+    {"Edit & Nav",    TILES_EDIT_NAV,      4, 3, LAYER_COLORS[2]},
+    {"F1-F10",        TILES_F1_F10,        4, 3, LAYER_COLORS[3]},
+    {"F1-F10 MEH",    TILES_F1_F10_MEH,    4, 3, LAYER_COLORS[4]},
+    {"F1-F10 HYP",    TILES_F1_F10_HYP,    4, 3, LAYER_COLORS[5]},
+    {"F11-F20",       TILES_F11_F20,       4, 3, LAYER_COLORS[6]},
+    {"F11-F20 MEH",   TILES_F11_F20_MEH,   4, 3, LAYER_COLORS[7]},
+    {"F11-F20 HYP",   TILES_F11_F20_HYP,   4, 3, LAYER_COLORS[8]},
+    {"F21-F24",       TILES_F21_F24,       2, 2, LAYER_COLORS[9]},
+    {"F21-F24 MEH",   TILES_F21_F24_MEH,   2, 2, LAYER_COLORS[10]},
+    {"F21-F24 HYP",   TILES_F21_F24_HYP,   2, 2, LAYER_COLORS[11]},
+    {"Symbol Pad",    TILES_SYMBOL_PAD,    6, 4, LAYER_COLORS[12]},
+    {"Numpad Full",   TILES_NUM_FULL,      6, 4, LAYER_COLORS[13]},
+    {"International", TILES_INT,           3, 3, LAYER_COLORS[14]},
+    {"Language",      TILES_LANG,          4, 3, LAYER_COLORS[15]},
+    {"Media",         TILES_MEDIA,         4, 3, LAYER_COLORS[16]},
+    {"MS Teams",      TILES_TEAMS,         4, 3, LAYER_COLORS[17]},
+    {"MS Outlook",    TILES_OUTLOOK,       4, 3, LAYER_COLORS[18]},
+    {"PowerPoint",    TILES_POWERPOINT,    4, 3, LAYER_COLORS[19]},
+    {"Browser Ctrl",  TILES_BROWSER,       4, 3, LAYER_COLORS[20]},
+    {"Debug IDE",     TILES_DEBUG,         4, 3, LAYER_COLORS[21]},
+    {"App Launch",    TILES_APP_LAUNCH,    4, 3, LAYER_COLORS[22]},
+    {"Edit Keys",     TILES_EDIT_KEYS,     3, 3, LAYER_COLORS[23]},
+    {"Status Info",   TILES_STATUS,        3, 3, LAYER_COLORS[24]}
 };
 
 const uint8_t TOTAL_LAYERS = sizeof(ALL_LAYERS) / sizeof(GridLayer);

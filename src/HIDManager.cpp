@@ -6,117 +6,128 @@ namespace HIDManager {
     NimBLEHIDDevice* hid = nullptr;
     NimBLECharacteristic* inputKeyboard = nullptr;
     NimBLECharacteristic* inputConsumer = nullptr;
+    NimBLECharacteristic* outputKeyboard = nullptr;
     bool _connected = false;
+    uint8_t _lastLedStatus = 0;
+    QueueHandle_t ledQueue = nullptr;
+    HIDEventListener _eventListener = nullptr;
 
-    // Callbacks voor Bluetooth verbinding
-    // De signaturen zijn hier aangepast naar de standaard NimBLE verwachting
+    // Callback voor data die de PC naar de M5 stuurt (zoals Caps Lock status)
+    class MyOutputCallbacks : public NimBLECharacteristicCallbacks {
+        void onWrite(NimBLECharacteristic* pCharacteristic) {
+            std::string value = pCharacteristic->getValue();
+            if (value.length() > 0) {
+                uint8_t status = (uint8_t)value[0];
+                Serial.printf("[HID-DEBUG] LED Data ontvangen: 0x%02X\n", status);
+                if (xQueueSend(ledQueue, &status, 0) == pdTRUE) {
+                    if (_eventListener) _eventListener(HIDEvent::LED_UPDATED, status);
+                }
+            }
+        }
+    };
+
     class MyServerCallbacks : public NimBLEServerCallbacks {
         void onConnect(NimBLEServer* pServer) { 
             _connected = true; 
-            Serial.println("HID: Device verbonden");
-        }
+            Serial.println("[HID-STATUS] Verbonden (Basis)");
+        };
+
+        void onConnect(NimBLEServer* pServer, ble_gap_conn_desc* desc) {
+            _connected = true;
+            Serial.printf("[HID-STATUS] Verbonden met client! Conn ID: %d\n", desc->conn_handle);
+            // Optimaliseer de verbinding voor snelheid
+            pServer->updateConnParams(desc->conn_handle, 6, 12, 0, 60);
+        };
 
         void onDisconnect(NimBLEServer* pServer) { 
             _connected = false; 
-            Serial.println("HID: Device verbroken, start advertising...");
+            Serial.println("[HID-STATUS] Verbinding verbroken. Start Advertising...");
             NimBLEDevice::startAdvertising(); 
-        }
-        
-        // Extra variant die sommige versies van NimBLE vereisen voor stabiliteit
-        void onConnect(NimBLEServer* pServer, ble_gap_conn_desc* desc) {
-            _connected = true;
-            Serial.println("HID: Verbonden met client");
         }
     };
 
     void begin(const char* deviceName, const char* manufacturer) {
+        Serial.println("[HID-INIT] Start NimBLE HID Setup...");
+        ledQueue = xQueueCreate(QUEUE_LENGTH, sizeof(uint8_t));
+
         NimBLEDevice::init(deviceName);
+        
+        // --- SECURITY SETUP (Cruciaal voor Windows/macOS HID) ---
+        NimBLEDevice::setSecurityAuth(true, true, true); 
+        NimBLEDevice::setSecurityIOCap(BLE_HS_IO_NO_INPUT_OUTPUT);
+
         NimBLEServer* pServer = NimBLEDevice::createServer();
         pServer->setCallbacks(new MyServerCallbacks());
 
         hid = new NimBLEHIDDevice(pServer);
         inputKeyboard = hid->getInputReport(1);
         inputConsumer = hid->getInputReport(2);
+        
+        outputKeyboard = hid->getOutputReport(1);
+        if (outputKeyboard) {
+            outputKeyboard->setCallbacks(new MyOutputCallbacks());
+        }
 
         hid->setManufacturer(manufacturer);
+        // Gebruik de NimBLE-specifieke setters
+        hid->setPnp(0x02, 0xe502, 0xa111, 0x0210);
         hid->setHidInfo(0x00, 0x01);
         
-        // Report map vertelt de PC wat voor soort HID device we zijn
-        hid->setReportMap((uint8_t*)HID::Reports::KeyboardBlock, sizeof(HID::Reports::KeyboardBlock));
+        std::vector<uint8_t> reportMap = HID::GetReportMap();
+        hid->setReportMap((uint8_t*)reportMap.data(), reportMap.size());
 
-        pServer->getAdvertising()->start();
-        Serial.println("HID Manager: Initialisatie voltooid");
+        // hid->startServices() is deprecated, NimBLE doet dit nu automatisch
+
+        NimBLEAdvertising* pAdvertising = NimBLEDevice::getAdvertising();
+        pAdvertising->setAppearance(0x03C1); // HID Keyboard Appearance
+        pAdvertising->addServiceUUID(hid->getHidService()->getUUID());
+        pAdvertising->start();
+
+        Serial.println("[HID-INIT] Setup voltooid. Wachten op pairing...");
     }
 
-    bool isConnected() { 
-        return _connected; 
-    }
-
-    void sendKeyboardReport(const Binding& b) {
-        // Standaard 8-byte keyboard report
-        uint8_t report[8] = { b.modifier, 0, (uint8_t)b.payload, 0, 0, 0, 0, 0 };
-        inputKeyboard->setValue(report, 8);
-        inputKeyboard->notify();
-        
-        delay(15); // Korte pauze voor verwerking door OS
-        
-        // Release alle toetsen
-        uint8_t release[8] = {0};
-        inputKeyboard->setValue(release, 8);
-        inputKeyboard->notify();
-    }
-
-    void sendConsumerReport(const Binding& b) {
-        // 16-bit consumer report (Media keys etc)
-        uint16_t key = (uint16_t)b.payload;
-        uint8_t report[2] = { (uint8_t)(key & 0xFF), (uint8_t)(key >> 8) };
-        inputConsumer->setValue(report, 2);
-        inputConsumer->notify();
-        
-        delay(15);
-        
-        uint8_t release[2] = {0, 0};
-        inputConsumer->setValue(release, 2);
-        inputConsumer->notify();
-    }
-
-    void handleSystemCommand(const Binding& b) {
-        // Gereserveerd voor toekomstige uitbreiding (Power/Sleep)
-        Serial.printf("HID: System command 0x%X genegeerd (nog geen mapping)\n", b.payload);
-    }
-
-    void handleLocalAction(const Binding& b) {
-        // Acties die alleen op de M5Stack zelf plaatsvinden
-        if (b.page == HIDPage::HAPTIC) {
-            M5.Speaker.tone(400, 50);
+    uint8_t getLedStatus() {
+        uint8_t status;
+        if (xQueueReceive(ledQueue, &status, 0) == pdTRUE) {
+            _lastLedStatus = status;
         }
-        // Lighting acties kunnen hier eventueel via een callback naar main.cpp
+        return _lastLedStatus;
     }
+
+    void handleAsyncEvents() { }
+
+    void setEventListener(HIDEventListener listener) { _eventListener = listener; }
+    bool isConnected() { return _connected; }
 
     void send(const Binding& b) {
-        // Alleen verzenden als we verbonden zijn, tenzij het een lokale actie is
-        if (!_connected && b.page != HIDPage::HAPTIC && b.page != HIDPage::LIGHTING) {
-            Serial.println("HID: Niet verzonden (geen BT verbinding)");
+        if (!_connected) {
+            // Geen Serial print hier om de log niet te vervuilen bij onbedoelde touches
             return;
         }
 
-        switch (b.page) {
-            case HIDPage::KEYBOARD: 
-                sendKeyboardReport(b); 
-                break;
-            case HIDPage::CONSUMER: 
-                sendConsumerReport(b); 
-                break;
-            case HIDPage::SYSTEM:   
-                handleSystemCommand(b); 
-                break;
-            case HIDPage::HAPTIC:
-            case HIDPage::LIGHTING: 
-                handleLocalAction(b);   
-                break;
-            default: 
-                Serial.println("HID: Onbekende pagina");
-                break;
+        if (b.page == HIDPage::KEYBOARD) {
+            Serial.printf("[HID-SEND] Key: 0x%02X, Mod: 0x%02X\n", b.payload, b.modifier);
+            uint8_t report[8] = { b.modifier, 0, (uint8_t)b.payload, 0, 0, 0, 0, 0 };
+            inputKeyboard->setValue(report, 8);
+            inputKeyboard->notify();
+            
+            delay(20); // Handmatige delay voor stabiliteit
+            
+            uint8_t release[8] = {0};
+            inputKeyboard->setValue(release, 8);
+            inputKeyboard->notify();
+        } 
+        else if (b.page == HIDPage::CONSUMER) {
+            Serial.printf("[HID-SEND] Consumer: 0x%04X\n", b.payload);
+            uint16_t key = (uint16_t)b.payload;
+            inputConsumer->setValue((uint8_t*)&key, 2);
+            inputConsumer->notify();
+            
+            delay(20);
+            
+            uint16_t release = 0;
+            inputConsumer->setValue((uint8_t*)&release, 2);
+            inputConsumer->notify();
         }
     }
 }
