@@ -51,7 +51,7 @@ struct Key {
 #define KC_Z K(0x1D)
 
 // ==========================================
-// 3. CIJFERS & TOP ROW SYMBOLEN (0x1E - 0x27)
+// 3. CIJFERS (0x1E - 0x27)
 // ==========================================
 #define KC_1 K(0x1E)
 #define KC_2 K(0x1F)
@@ -64,6 +64,29 @@ struct Key {
 #define KC_9 K(0x26)
 #define KC_0 K(0x27)
 
+// ==========================================
+// 4. INTERPUNCTIE & SYMBOLEN (0x2D - 0x38, 0x64)
+// ==========================================
+#define KC_MINS K(0x2D) // - en _
+#define KC_EQL  K(0x2E) // = en +
+#define KC_LBRC K(0x2F) // [ en {
+#define KC_RBRC K(0x30) // ] en }
+#define KC_BSLS K(0x31) // \ en |
+#define KC_SCLN K(0x33) // ; en :
+#define KC_QUOT K(0x34) // ' en "
+#define KC_GRV  K(0x35) // ` en ~
+#define KC_COMM K(0x36) // , en <
+#define KC_DOT  K(0x37) // . en >
+#define KC_SLSH K(0x38) // / en ?
+#define KC_NUBS  K(0x64) // Non-US \ en | (Alias: Non-US BackSlash)
+#define KC_BPIPE KC_NUBS
+
+// Extra HID Symbolen (Internationaal)
+#define KC_NUHS K(0x32) // Non-US # en ~
+#define KC_NUBS K(0x64) // Non-US \ en |
+#define KC_EURO K(0x31) // Euro/Pound scancode
+
+// Aliassen voor Shifted tekens (Voor Bindings)
 #define KC_EXLM KC_1
 #define KC_AT   KC_2
 #define KC_HASH KC_3
@@ -74,23 +97,6 @@ struct Key {
 #define KC_ASTR KC_8
 #define KC_LPRN KC_9
 #define KC_RPRN KC_0
-
-// ==========================================
-// 4. INTERPUNCTIE & SYMBOLEN (0x2D - 0x38, 0x64)
-// ==========================================
-#define KC_MINS K(0x2D) // - _
-#define KC_EQL  K(0x2E) // = +
-#define KC_LBRC K(0x2F) // [ {
-#define KC_RBRC K(0x30) // ] }
-#define KC_BSLS K(0x31) // \ |
-#define KC_SCLN K(0x33) // ; :
-#define KC_QUOT K(0x34) // ' "
-#define KC_GRV  K(0x35) // ` ~
-#define KC_COMM K(0x36) // , <
-#define KC_DOT  K(0x37) // . >
-#define KC_SLSH K(0x38) // / ?
-#define KC_BPIPE K(0x64) // Non-US \ | (Broken Pipe key)
-
 #define KC_UNDS KC_MINS
 #define KC_PLUS KC_EQL
 #define KC_LCBR KC_LBRC
@@ -104,7 +110,7 @@ struct Key {
 #define KC_QUES KC_SLSH
 
 // ==========================================
-// 5. NAVIGATIE & EDITING
+// 5. NAVIGATIE & EDITING (0x28 - 0x2C, 0x46 - 0x52, 0x65)
 // ==========================================
 #define KC_ENT  K(0x28)
 #define KC_ESC  K(0x29)
@@ -124,8 +130,8 @@ struct Key {
 #define KC_LEFT K(0x50)
 #define KC_DOWN K(0x51)
 #define KC_UP   K(0x52)
-#define KC_APP  K(0x65) // Context Menu key
-#define KC_MENU KC_APP  // Alias voor Menu
+#define KC_APP  K(0x65) // Context Menu
+#define KC_MENU KC_APP
 #define KC_SYRQ K(0x9A)
 
 // ==========================================
@@ -154,7 +160,7 @@ struct Key {
 #define KC_P000 K(0xD1)
 #define KC_PLPR K(0xB6)
 #define KC_PRPR K(0xB7)
-#define KC_PTLD K(0x35) // Numpad Tilde alias
+#define KC_PTLD K(0x35) 
 
 // ==========================================
 // 7. FUNCTIETOETSEN (F1 - F24)
@@ -185,7 +191,7 @@ struct Key {
 #define KC_F24 K(0x73)
 
 // ==========================================
-// 8. INTERNATIONAL, LANGUAGE & KANA (0x87 - 0x94)
+// 8. INTERNATIONAL & LANGUAGE (0x87 - 0x94)
 // ==========================================
 #define KC_INT1 K(0x87) // Ro (Japan)
 #define KC_INT2 K(0x88) // Katakana/Hiragana (Japan)
@@ -203,8 +209,8 @@ struct Key {
 #define KC_LNG4 K(0x93) // Hiragana (Japan)
 #define KC_LNG5 K(0x94) // Zenkaku/Hankaku (Japan)
 
-#define KC_KANA KC_LNG3 // Alias voor Katakana
-#define KC_HIRA KC_LNG4 // Alias voor Hiragana
+#define KC_KANA KC_LNG3 
+#define KC_HIRA KC_LNG4 
 
 // ==========================================
 // 9. LOCKING & SPECIALS
@@ -213,7 +219,7 @@ struct Key {
 #define KC_LNUM  K(0x83)
 #define KC_LSCRL K(0x84)
 #define KC_CMP   K(0xB3) // Compose Key
-#define KC_COMP  KC_CMP  // Alias voor Compose
+#define KC_COMP  KC_CMP
 
 // ==========================================
 // 10. CONSUMER & SYSTEM
@@ -246,7 +252,7 @@ struct Key {
 #define KC_RGUI K(0xE7)
 
 // ==========================================
-// 12. MODIFIER BITMASKS (Voor Reports)
+// 12. MODIFIER BITMASKS
 // ==========================================
 #define MOD_NONE 0x00
 #define M_LCTL   0x01
@@ -308,3 +314,22 @@ struct Key {
 #define M_SCTL (M_LCTL | M_RCTL) 
 #define M_SALT (M_LALT | M_RALT) 
 #define M_SGUI (M_LGUI | M_RGUI)
+
+// ==========================================
+// 15. EDIT Keys
+// ==========================================
+#define KC_UNDO K(0x76)
+#define KC_CUT  K(0x77)
+#define KC_COPY K(0x78)
+#define KC_PSTE K(0x79)
+#define KC_FIND K(0x7A)
+
+// ==========================================
+// 16. Consumer 
+// ==========================================
+#define MC_WWW   C(0x182) // Web Browser
+#define MC_CONF  C(0x184) // Word Processor (Config)
+#define MC_SPRD  C(0x185) // Spreadsheet
+#define MC_PRES  C(0x186) // Presentation
+#define MC_SCHD  C(0x18E) // Calendar
+#define MC_TASK  C(0x18F) // Task Manager / Memo
