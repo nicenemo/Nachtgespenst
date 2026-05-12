@@ -1,7 +1,6 @@
 #pragma once
 #include <Arduino.h>
 
-// --- HID Page Definities ---
 enum class HIDPage : uint8_t { KEYBOARD, CONSUMER, SYSTEM, HAPTIC, LIGHTING };
 
 struct Key {
@@ -12,17 +11,13 @@ struct Key {
 #define K(c) Key{HIDPage::KEYBOARD, c}
 #define C(c) Key{HIDPage::CONSUMER, c}
 
-// ==========================================
-// 1. STATUS & SYSTEM (0x00 - 0x03)
-// ==========================================
+// 1. STATUS & SYSTEM
 #define KC_NO      K(0x00)
 #define KC_ROLL    K(0x01)
 #define KC_POST    K(0x02)
 #define KC_UNDEF   K(0x03)
 
-// ==========================================
-// 2. LETTERS (0x04 - 0x1D)
-// ==========================================
+// 2. LETTERS
 #define KC_A K(0x04)
 #define KC_B K(0x05)
 #define KC_C K(0x06)
@@ -50,9 +45,7 @@ struct Key {
 #define KC_Y K(0x1C)
 #define KC_Z K(0x1D)
 
-// ==========================================
-// 3. CIJFERS (0x1E - 0x27)
-// ==========================================
+// 3. CIJFERS
 #define KC_1 K(0x1E)
 #define KC_2 K(0x1F)
 #define KC_3 K(0x20)
@@ -64,59 +57,29 @@ struct Key {
 #define KC_9 K(0x26)
 #define KC_0 K(0x27)
 
-// ==========================================
-// 4. INTERPUNCTIE & SYMBOLEN (0x2D - 0x38, 0x64)
-// ==========================================
-#define KC_MINS K(0x2D) // - en _
-#define KC_EQL  K(0x2E) // = en +
-#define KC_LBRC K(0x2F) // [ en {
-#define KC_RBRC K(0x30) // ] en }
-#define KC_BSLS K(0x31) // \ en |
-#define KC_SCLN K(0x33) // ; en :
-#define KC_QUOT K(0x34) // ' en "
-#define KC_GRV  K(0x35) // ` en ~
-#define KC_COMM K(0x36) // , en <
-#define KC_DOT  K(0x37) // . en >
-#define KC_SLSH K(0x38) // / en ?
-#define KC_NUBS  K(0x64) // Non-US \ en | (Alias: Non-US BackSlash)
-#define KC_BPIPE KC_NUBS
+// 4. INTERPUNCTIE
+#define KC_MINS K(0x2D)
+#define KC_EQL  K(0x2E)
+#define KC_LBRC K(0x2F)
+#define KC_RBRC K(0x30)
+#define KC_BSLS K(0x31)
+#define KC_SCLN K(0x33)
+#define KC_QUOT K(0x34)
+#define KC_GRV  K(0x35)
+#define KC_COMM K(0x36)
+#define KC_DOT  K(0x37)
+#define KC_SLSH K(0x38)
+#define KC_NUHS K(0x32)
+#define KC_NUBS K(0x64)
+#define KC_EURO K(0x31)
 
-// Extra HID Symbolen (Internationaal)
-#define KC_NUHS K(0x32) // Non-US # en ~
-#define KC_NUBS K(0x64) // Non-US \ en |
-#define KC_EURO K(0x31) // Euro/Pound scancode
-
-// Aliassen voor Shifted tekens (Voor Bindings)
-#define KC_EXLM KC_1
-#define KC_AT   KC_2
-#define KC_HASH KC_3
-#define KC_DLR  KC_4
-#define KC_PERC KC_5
-#define KC_CIRC KC_6
-#define KC_AMPR KC_7
-#define KC_ASTR KC_8
-#define KC_LPRN KC_9
-#define KC_RPRN KC_0
-#define KC_UNDS KC_MINS
-#define KC_PLUS KC_EQL
-#define KC_LCBR KC_LBRC
-#define KC_RCBR KC_RBRC
-#define KC_PIPE KC_BSLS
-#define KC_COLN KC_SCLN
-#define KC_DQUO KC_QUOT
-#define KC_TILD KC_GRV
-#define KC_LABK KC_COMM
-#define KC_RABK KC_DOT
-#define KC_QUES KC_SLSH
-
-// ==========================================
-// 5. NAVIGATIE & EDITING (0x28 - 0x2C, 0x46 - 0x52, 0x65)
-// ==========================================
+// 5. NAVIGATIE & STATUS
 #define KC_ENT  K(0x28)
 #define KC_ESC  K(0x29)
 #define KC_BSPC K(0x2A)
 #define KC_TAB  K(0x2B)
 #define KC_SPC  K(0x2C)
+#define KC_CAPS K(0x39)
 #define KC_PSCR K(0x46)
 #define KC_SLCK K(0x47)
 #define KC_PAUS K(0x48)
@@ -130,13 +93,10 @@ struct Key {
 #define KC_LEFT K(0x50)
 #define KC_DOWN K(0x51)
 #define KC_UP   K(0x52)
-#define KC_APP  K(0x65) // Context Menu
-#define KC_MENU KC_APP
+#define KC_APP  K(0x65)
 #define KC_SYRQ K(0x9A)
 
-// ==========================================
-// 6. NUMMERIEK EILAND (Numpad)
-// ==========================================
+// 6. NUMPAD
 #define KC_NLCK K(0x53)
 #define KC_PSLS K(0x54)
 #define KC_PAST K(0x55)
@@ -160,11 +120,9 @@ struct Key {
 #define KC_P000 K(0xD1)
 #define KC_PLPR K(0xB6)
 #define KC_PRPR K(0xB7)
-#define KC_PTLD K(0x35) 
+#define KC_PTLD K(0x35)
 
-// ==========================================
-// 7. FUNCTIETOETSEN (F1 - F24)
-// ==========================================
+// 7. FUNCTIE TOETSEN
 #define KC_F1  K(0x3A)
 #define KC_F2  K(0x3B)
 #define KC_F3  K(0x3C)
@@ -190,44 +148,43 @@ struct Key {
 #define KC_F23 K(0x72)
 #define KC_F24 K(0x73)
 
-// ==========================================
-// 8. INTERNATIONAL & LANGUAGE (0x87 - 0x94)
-// ==========================================
-#define KC_INT1 K(0x87) // Ro (Japan)
-#define KC_INT2 K(0x88) // Katakana/Hiragana (Japan) - Vaak de 'toggle'
-#define KC_INT3 K(0x89) // Yen (Japan)
-#define KC_INT4 K(0x8A) // Henkan (Japan)
-#define KC_INT5 K(0x8B) // Muhenkan (Japan)
+// 8. INTERNATIONAL & LNG
+#define KC_INT1 K(0x87)
+#define KC_INT2 K(0x88)
+#define KC_INT3 K(0x89)
+#define KC_INT4 K(0x8A)
+#define KC_INT5 K(0x8B)
+#define KC_INT6 K(0x8C)
+#define KC_INT7 K(0x8D)
+#define KC_INT8 K(0x8E)
+#define KC_INT9 K(0x8F)
+#define KC_LNG1 K(0x90)
+#define KC_LNG2 K(0x91)
+#define KC_LNG3 K(0x92)
+#define KC_LNG4 K(0x93)
+#define KC_LNG5 K(0x94)
+#define KC_LNG6 K(0x95)
+#define KC_LNG7 K(0x96)
+#define KC_LNG8 K(0x97)
+#define KC_LNG9 K(0x98)
 
-#define KC_LNG1 K(0x90) // Hangul/English (Korea)
-#define KC_LNG2 K(0x91) // Hanja (Korea)
-#define KC_LNG3 K(0x92) // Katakana (Japan) -> De "echte" Kana-key
-#define KC_LNG4 K(0x93) // Hiragana (Japan) -> De "echte" Hira-key
-#define KC_LNG5 K(0x94) // Zenkaku/Hankaku (Japan)
+// Extra aliassen & Speciale toetsen
+#define KC_KANA K(0x92)
+#define KC_HIRA K(0x93)
+#define KC_ROMA K(0x87)
+#define KC_HENK K(0x8A)
+#define KC_MHEN K(0x8B)
+#define KC_CMP  K(0xB4) // Compose key (volgens HID spec 0xB4)
 
-// Aliassen voor duidelijkheid in Bindings
-#define KC_KANA KC_LNG3 
-#define KC_HIRA KC_LNG4 
+// 9. HARDWARE LOCKING KEYS
+#define KC_LCAPS K(0x82)
+#define KC_LNUM  K(0x83)
+#define KC_LSCRL K(0x84)
 
-// ==========================================
-// 9. LOCKING & SPECIALS
-// ==========================================
-// NORMALE TOETSEN (Druktoetsen - Gebruik deze!)
-#define KC_CAPS  K(0x39) // Scancode 0x39: De standaard Caps Lock
-#define KC_NLCK  K(0x53) // Scancode 0x53: De standaard Num Lock
-#define KC_SLCK  K(0x47) // Scancode 0x47: De standaard Scroll Lock
-
-// LOCKING VARIANTEN (Hardwarematige schakelaars - Negeer deze op Framework)
-#define KC_LCAPS K(0x82) // Locking Caps Lock
-#define KC_LNUM  K(0x83) // Locking Num Lock
-#define KC_LSCRL K(0x84) // Locking Scroll Lock
-// ==========================================
-// 10. CONSUMER & SYSTEM
-// ==========================================
+// 10. MEDIA & SYSTEM
 #define KC_PWR   K(0x66)
 #define KC_SLP   K(0xF8)
 #define KC_WAKE  K(0xF9)
-
 #define MC_MUTE  C(0xE2)
 #define MC_VOLU  C(0xE9)
 #define MC_VOLD  C(0xEA)
@@ -238,10 +195,14 @@ struct Key {
 #define MC_MAIL  C(0x18A)
 #define MC_CALC  C(0x192)
 #define MC_EXPL  C(0x194)
+#define MC_WWW   C(0x182)
+#define MC_CONF  C(0x184)
+#define MC_SPRD  C(0x185)
+#define MC_PRES  C(0x186)
+#define MC_SCHD  C(0x18E)
+#define MC_TASK  C(0x18F)
 
-// ==========================================
-// 11. MODIFIERS RAW (Scancodes)
-// ==========================================
+// 11. MODIFIERS RAW
 #define KC_LCTL K(0xE0)
 #define KC_LSFT K(0xE1)
 #define KC_LALT K(0xE2)
@@ -251,9 +212,7 @@ struct Key {
 #define KC_RALT K(0xE6)
 #define KC_RGUI K(0xE7)
 
-// ==========================================
-// 12. MODIFIER BITMASKS
-// ==========================================
+// 12. BITMASKS
 #define MOD_NONE 0x00
 #define M_LCTL   0x01
 #define M_LSFT   0x02
@@ -264,72 +223,33 @@ struct Key {
 #define M_RALT   0x40
 #define M_RGUI   0x80
 
-// ==========================================
-// 13. SYMMETRISCHE COMBINATIES
-// ==========================================
+// 13. COMBINATIES
 #define M_LCS  (M_LCTL | M_LSFT)
 #define M_LCA  (M_LCTL | M_LALT)
-#define M_LCG  (M_LCTL | M_LGUI)
-#define M_LSA  (M_LSFT | M_LALT)
-#define M_LSG  (M_LSFT | M_LGUI)
-#define M_LAG  (M_LALT | M_LGUI)
-#define M_LCSA (M_LCTL | M_LSFT | M_LALT)
-#define M_LCSG (M_LCTL | M_LSFT | M_LGUI)
-#define M_LCAG (M_LCTL | M_LALT | M_LGUI)
-#define M_LSAG (M_LSFT | M_LALT | M_LGUI)
-#define M_LHYP (M_LCTL | M_LSFT | M_LALT | M_LGUI)
+#define M_LAS  (M_LALT | M_LSFT)
+#define M_LCAS (M_LCTL | M_LSFT | M_LALT)
 #define M_LMEH (M_LCTL | M_LSFT | M_LALT)
-
+#define M_LHYP (M_LCTL | M_LSFT | M_LALT | M_LGUI)
 #define M_RCS  (M_RCTL | M_RSFT)
 #define M_RCA  (M_RCTL | M_RALT)
-#define M_RCG  (M_RCTL | M_RGUI)
-#define M_RSA  (M_RSFT | M_RALT)
-#define M_RSG  (M_RSFT | M_RGUI)
-#define M_RAG  (M_RALT | M_RGUI)
-#define M_RCSA (M_RCTL | M_RSFT | M_RALT)
-#define M_RCSG (M_RCTL | M_RSFT | M_RGUI)
-#define M_RCAG (M_RCTL | M_RALT | M_RGUI)
-#define M_RSAG (M_RSFT | M_RALT | M_RGUI)
-#define M_RHYP (M_RCTL | M_RSFT | M_RALT | M_RGUI)
+#define M_RAS  (M_RALT | M_RSFT)
+#define M_RCAS (M_RCTL | M_RSFT | M_RALT)
 #define M_RMEH (M_RCTL | M_RSFT | M_RALT)
+#define M_RHYP (M_RCTL | M_RSFT | M_RALT | M_RGUI)
 
-// ==========================================
-// 14. ASYMMETRISCHE COMBINATIES
-// ==========================================
-#define M_LRCS (M_LCTL | M_RSFT)
-#define M_LRCA (M_LCTL | M_RALT) 
-#define M_LRCG (M_LCTL | M_RGUI)
-#define M_LRSA (M_LSFT | M_RALT)
-#define M_LRSG (M_LSFT | M_RGUI)
-#define M_LRAG (M_LALT | M_RGUI)
+// 14. DOUBLE TAPS
+#define M_DLCT 0x11 
+#define M_DLSF 0x22
+#define M_DLAL 0x44
+#define M_DLGU 0x88
+#define M_DRCT 0x13
+#define M_DRSF 0x23
+#define M_DRAL 0x43
+#define M_DRGU 0x83
 
-#define M_RLCS (M_RCTL | M_LSFT)
-#define M_RLCA (M_RCTL | M_LALT)
-#define M_RLCG (M_RCTL | M_LGUI)
-#define M_RLSA (M_RSFT | M_LALT)
-#define M_RLSG (M_RSFT | M_LGUI)
-#define M_RLAG (M_RALT | M_LGUI)
-
-#define M_SSFT (M_LSFT | M_RSFT) 
-#define M_SCTL (M_LCTL | M_RCTL) 
-#define M_SALT (M_LALT | M_RALT) 
-#define M_SGUI (M_LGUI | M_RGUI)
-
-// ==========================================
-// 15. EDIT Keys
-// ==========================================
+// 15. EDIT
 #define KC_UNDO K(0x76)
 #define KC_CUT  K(0x77)
 #define KC_COPY K(0x78)
 #define KC_PSTE K(0x79)
 #define KC_FIND K(0x7A)
-
-// ==========================================
-// 16. Consumer 
-// ==========================================
-#define MC_WWW   C(0x182) // Web Browser
-#define MC_CONF  C(0x184) // Word Processor (Config)
-#define MC_SPRD  C(0x185) // Spreadsheet
-#define MC_PRES  C(0x186) // Presentation
-#define MC_SCHD  C(0x18E) // Calendar
-#define MC_TASK  C(0x18F) // Task Manager / Memo

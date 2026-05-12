@@ -12,13 +12,18 @@ struct Binding {
     uint16_t textColor;
 };
 
-// --- Macros voor combinaties ---
 #define MEH(b)  {b.glyph, b.color, b.payload, b.page, M_LMEH, b.textColor}
 #define HYP(b)  {b.glyph, b.color, b.payload, b.page, M_LHYP, b.textColor}
 #define SHFT(b) {b.glyph, b.color, b.payload, b.page, M_LSFT, b.textColor}
 #define CS(b)   {b.glyph, b.color, b.payload, b.page, M_LCS,  b.textColor}
 
-// 1. LETTERS (26)
+// 1. STATUS & SYSTEM
+const Binding BTN_NO    = {" ",    BLACK,    KC_NO.code,    HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_ROLL  = {"ROLL", DARKGREY, KC_ROLL.code,  HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_POST  = {"POST", DARKGREY, KC_POST.code,  HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_UNDEF = {"UNKN", DARKGREY, KC_UNDEF.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+
+// 2. LETTERS
 const Binding BTN_A = {"A", DARKGREY, KC_A.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
 const Binding BTN_B = {"B", DARKGREY, KC_B.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
 const Binding BTN_C = {"C", DARKGREY, KC_C.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
@@ -46,7 +51,7 @@ const Binding BTN_X = {"X", DARKGREY, KC_X.code, HIDPage::KEYBOARD, MOD_NONE, WH
 const Binding BTN_Y = {"Y", DARKGREY, KC_Y.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
 const Binding BTN_Z = {"Z", DARKGREY, KC_Z.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
 
-// 2. CIJFERS (10)
+// 3. CIJFERS
 const Binding BTN_K1 = {"1", DARKGREY, KC_1.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
 const Binding BTN_K2 = {"2", DARKGREY, KC_2.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
 const Binding BTN_K3 = {"3", DARKGREY, KC_3.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
@@ -58,7 +63,72 @@ const Binding BTN_K8 = {"8", DARKGREY, KC_8.code, HIDPage::KEYBOARD, MOD_NONE, W
 const Binding BTN_K9 = {"9", DARKGREY, KC_9.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
 const Binding BTN_K0 = {"0", DARKGREY, KC_0.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
 
-// 3. F-KEYS (24)
+// 4. INTERPUNCTIE
+const Binding BTN_MINS = {"-",    PURPLE,   KC_MINS.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_EQL  = {"=",    PURPLE,   KC_EQL.code,  HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_LBRC = {"[",    PURPLE,   KC_LBRC.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_RBRC = {"]",    PURPLE,   KC_RBRC.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_BSLS = {"\\",   PURPLE,   KC_BSLS.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_SCLN = {";",    PURPLE,   KC_SCLN.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_QUOT = {"'",    PURPLE,   KC_QUOT.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_GRV  = {"`",    PURPLE,   KC_GRV.code,  HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_COMM = {",",    PURPLE,   KC_COMM.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_DOT  = {".",    PURPLE,   KC_DOT.code,  HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_SLSH = {"/",    PURPLE,   KC_SLSH.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_NUHS = {"#",    PURPLE,   KC_NUHS.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_NUBS = {"\\|",  PURPLE,   KC_NUBS.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_EURO = {"EURO", PURPLE,   KC_EURO.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+
+// 5. NAVIGATIE & STATUS
+const Binding BTN_ENT  = {"ENT",  RED,      KC_ENT.code,  HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_ESC  = {"ESC",  RED,      KC_ESC.code,  HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_BSPC = {"BSPC", RED,      KC_BSPC.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_TAB  = {"TAB",  DARKGREY, KC_TAB.code,  HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_SPC  = {"SPC",  DARKGREY, KC_SPC.code,  HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_CAPS = {"CAPS", ORANGE,   KC_CAPS.code, HIDPage::KEYBOARD, MOD_NONE, BLACK};
+const Binding BTN_PSCR = {"PSCR", DARKGREY, KC_PSCR.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_SLCK = {"SLCK", DARKGREY, KC_SLCK.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_PAUS = {"PAUS", DARKGREY, KC_PAUS.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_INS  = {"INS",  DARKGREY, KC_INS.code,  HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_HOME = {"HOME", DARKGREY, KC_HOME.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_PGUP = {"PGUP", DARKGREY, KC_PGUP.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_DEL  = {"DEL",  RED,      KC_DEL.code,  HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_END  = {"END",  DARKGREY, KC_END.code,  HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_PGDN = {"PGDN", DARKGREY, KC_PGDN.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_RGHT = {"RGHT", BLUE,     KC_RGHT.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_LEFT = {"LEFT", BLUE,     KC_LEFT.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_DOWN = {"DOWN", BLUE,     KC_DOWN.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_UP   = {"UP",   BLUE,     KC_UP.code,   HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_APP  = {"APP",  DARKGREY, KC_APP.code,  HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_SYRQ = {"SYRQ", DARKGREY, KC_SYRQ.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+
+// 6. NUMPAD
+const Binding BTN_NLCK = {"NLCK", ORANGE,   KC_NLCK.code, HIDPage::KEYBOARD, MOD_NONE, BLACK};
+const Binding BTN_PSLS = {"P/",   DARKGREY, KC_PSLS.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_PAST = {"P*",   DARKGREY, KC_PAST.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_PMNS = {"P-",   DARKGREY, KC_PMNS.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_PPLS = {"P+",   DARKGREY, KC_PPLS.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_PENT = {"PENT", RED,      KC_PENT.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_P1   = {"P1",   DARKGREY, KC_P1.code,   HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_P2   = {"P2",   DARKGREY, KC_P2.code,   HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_P3   = {"P3",   DARKGREY, KC_P3.code,   HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_P4   = {"P4",   DARKGREY, KC_P4.code,   HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_P5   = {"P5",   DARKGREY, KC_P5.code,   HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_P6   = {"P6",   DARKGREY, KC_P6.code,   HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_P7   = {"P7",   DARKGREY, KC_P7.code,   HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_P8   = {"P8",   DARKGREY, KC_P8.code,   HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_P9   = {"P9",   DARKGREY, KC_P9.code,   HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_P0   = {"P0",   DARKGREY, KC_P0.code,   HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_PDOT = {"P.",   DARKGREY, KC_PDOT.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_PEQL = {"P=",   DARKGREY, KC_PEQL.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_PCOM = {"P,",   DARKGREY, KC_PCOM.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_P00  = {"P00",  DARKGREY, KC_P00.code,  HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_P000 = {"P000", DARKGREY, KC_P000.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_PLPR = {"P(",   DARKGREY, KC_PLPR.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_PRPR = {"P)",   DARKGREY, KC_PRPR.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_PTLD = {"P~",   DARKGREY, KC_PTLD.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+
+// 7. FUNCTIE TOETSEN
 const Binding BTN_F1  = {"F1",  DARKGREY, KC_F1.code,  HIDPage::KEYBOARD, MOD_NONE, WHITE};
 const Binding BTN_F2  = {"F2",  DARKGREY, KC_F2.code,  HIDPage::KEYBOARD, MOD_NONE, WHITE};
 const Binding BTN_F3  = {"F3",  DARKGREY, KC_F3.code,  HIDPage::KEYBOARD, MOD_NONE, WHITE};
@@ -84,115 +154,43 @@ const Binding BTN_F22 = {"F22", BLUE,     KC_F22.code, HIDPage::KEYBOARD, MOD_NO
 const Binding BTN_F23 = {"F23", BLUE,     KC_F23.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
 const Binding BTN_F24 = {"F24", BLUE,     KC_F24.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
 
-// 4. NAVIGATIE & EDITING (20)
-const Binding BTN_ENT  = {"ENT",  RED,      KC_ENT.code,  HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_ESC  = {"ESC",  RED,      KC_ESC.code,  HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_BSPC = {"BSPC", RED,      KC_BSPC.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_TAB  = {"TAB",  DARKGREY, KC_TAB.code,  HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_SPC  = {"SPC",  DARKGREY, KC_SPC.code,  HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_INS  = {"INS",  DARKGREY, KC_INS.code,  HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_DEL  = {"DEL",  RED,      KC_DEL.code,  HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_HOME = {"HOME", DARKGREY, KC_HOME.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_END  = {"END",  DARKGREY, KC_END.code,  HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_PGUP = {"PGUP", DARKGREY, KC_PGUP.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_PGDN = {"PGDN", DARKGREY, KC_PGDN.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_PSCR = {"PSCR", DARKGREY, KC_PSCR.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_SLCK = {"SLCK", DARKGREY, KC_SLCK.code, HIDPage::KEYBOARD, MOD_NONE, WHITE}; 
-const Binding BTN_PAUS = {"PAUS", DARKGREY, KC_PAUS.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_UP   = {"UP",   BLUE,     KC_UP.code,   HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_DOWN = {"DOWN", BLUE,     KC_DOWN.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_LEFT = {"LEFT", BLUE,     KC_LEFT.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_RGHT = {"RGHT", BLUE,     KC_RGHT.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_APP  = {"APP",  DARKGREY, KC_APP.code,  HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_SYRQ = {"SYRQ", DARKGREY, KC_SYRQ.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-
-// 5. LOCKS (Hier zitten de LEDs)
-// Gebruik BTN_CAPS, BTN_NUM, BTN_SCRL voor je Framework 13
-const Binding BTN_CAPS  = {"CAPS", ORANGE,   KC_CAPS.code,  HIDPage::KEYBOARD, MOD_NONE, BLACK}; 
-const Binding BTN_NUM   = {"NUM",  ORANGE,   KC_NLCK.code,  HIDPage::KEYBOARD, MOD_NONE, BLACK};
-const Binding BTN_SCRL  = {"SCRL", ORANGE,   KC_SLCK.code,  HIDPage::KEYBOARD, MOD_NONE, BLACK};
-
-// Echte locking scancodes (voor piep/test doeleinden)
-const Binding BTN_LCAPS = {"L-CAP", RED,     KC_LCAPS.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_LNUM  = {"L-NUM", RED,     KC_LNUM.code,  HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_LSCRL = {"L-SCR", RED,     KC_LSCRL.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-
-// 6. NUMPAD (23 unieke codes)
-const Binding BTN_P1   = {"P1",   DARKGREY, KC_P1.code,   HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_P2   = {"P2",   DARKGREY, KC_P2.code,   HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_P3   = {"P3",   DARKGREY, KC_P3.code,   HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_P4   = {"P4",   DARKGREY, KC_P4.code,   HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_P5   = {"P5",   DARKGREY, KC_P5.code,   HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_P6   = {"P6",   DARKGREY, KC_P6.code,   HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_P7   = {"P7",   DARKGREY, KC_P7.code,   HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_P8   = {"P8",   DARKGREY, KC_P8.code,   HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_P9   = {"P9",   DARKGREY, KC_P9.code,   HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_P0   = {"P0",   DARKGREY, KC_P0.code,   HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_PSLS = {"P/",   DARKGREY, KC_PSLS.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_PAST = {"P*",   DARKGREY, KC_PAST.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_PMNS = {"P-",   DARKGREY, KC_PMNS.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_PPLS = {"P+",   DARKGREY, KC_PPLS.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_PENT = {"PENT", RED,      KC_PENT.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_PDOT = {"P.",   DARKGREY, KC_PDOT.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_PEQL = {"P=",   DARKGREY, KC_PEQL.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_PCOM = {"P,",   DARKGREY, KC_PCOM.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_P00  = {"P00",  DARKGREY, KC_P00.code,  HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_P000 = {"P000", DARKGREY, KC_P000.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_PLPR = {"P(",   DARKGREY, KC_PLPR.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_PRPR = {"P)",   DARKGREY, KC_PRPR.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_PTLD = {"P~",   DARKGREY, KC_PTLD.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-
-// 7. SYMBOLEN & INTERPUNCTIE (14)
-const Binding BTN_MINS = {"-",    PURPLE,   KC_MINS.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_EQL  = {"=",    PURPLE,   KC_EQL.code,  HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_LBRC = {"[",    PURPLE,   KC_LBRC.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_RBRC = {"]",    PURPLE,   KC_RBRC.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_BSLS = {"\\",   PURPLE,   KC_BSLS.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_SCLN = {";",    PURPLE,   KC_SCLN.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_QUOT = {"'",    PURPLE,   KC_QUOT.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_GRV  = {"`",    PURPLE,   KC_GRV.code,  HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_COMM = {",",    PURPLE,   KC_COMM.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_DOT  = {".",    PURPLE,   KC_DOT.code,  HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_SLSH = {"/",    PURPLE,   KC_SLSH.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_NUHS = {"#",    PURPLE,   KC_NUHS.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_NUBS = {"\\|",  PURPLE,   KC_NUBS.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_EURO = {"EURO", PURPLE,   KC_EURO.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-
-// 8. INTERNATIONAAL (10)
+// 8. INTERNATIONAL & LNG
 const Binding BTN_INT1 = {"INT1", DARKGREY, KC_INT1.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
 const Binding BTN_INT2 = {"INT2", DARKGREY, KC_INT2.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
 const Binding BTN_INT3 = {"INT3", DARKGREY, KC_INT3.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
 const Binding BTN_INT4 = {"INT4", DARKGREY, KC_INT4.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
 const Binding BTN_INT5 = {"INT5", DARKGREY, KC_INT5.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_INT6 = {"INT6", DARKGREY, KC_INT6.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_INT7 = {"INT7", DARKGREY, KC_INT7.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_INT8 = {"INT8", DARKGREY, KC_INT8.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_INT9 = {"INT9", DARKGREY, KC_INT9.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
 const Binding BTN_LNG1 = {"LNG1", BLUE,     KC_LNG1.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
 const Binding BTN_LNG2 = {"LNG2", BLUE,     KC_LNG2.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_LNG3 = {"LNG3", BLUE,     KC_LNG3.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_LNG4 = {"LNG4", BLUE,     KC_LNG4.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_LNG5 = {"LNG5", BLUE,     KC_LNG5.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_LNG6 = {"LNG6", BLUE,     KC_LNG6.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_LNG7 = {"LNG7", BLUE,     KC_LNG7.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_LNG8 = {"LNG8", BLUE,     KC_LNG8.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_LNG9 = {"LNG9", BLUE,     KC_LNG9.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+
+// Extra & Speciale toetsen
 const Binding BTN_KANA = {"KANA", BLUE,     KC_KANA.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
 const Binding BTN_HIRA = {"HIRA", BLUE,     KC_HIRA.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_LNG5 = {"LNG5", BLUE,     KC_LNG5.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_ROMA = {"ROMA", BLUE,     KC_ROMA.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_HENK = {"HENK", BLUE,     KC_HENK.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_MHEN = {"MHEN", BLUE,     KC_MHEN.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_CMP  = {"CMP",  BLUE,     KC_CMP.code,  HIDPage::KEYBOARD, MOD_NONE, WHITE};
 
-// 9. MODIFIERS RAW (8)
-const Binding BTN_LCTL = {"LCTL", PURPLE,   KC_LCTL.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_LSFT = {"LSFT", PURPLE,   KC_LSFT.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_LALT = {"LALT", PURPLE,   KC_LALT.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_LGUI = {"LGUI", PURPLE,   KC_LGUI.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_RCTL = {"RCTL", PURPLE,   KC_RCTL.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_RSFT = {"RSFT", PURPLE,   KC_RSFT.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_RALT = {"RALT", PURPLE,   KC_RALT.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_RGUI = {"RGUI", PURPLE,   KC_RGUI.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+// 9. HARDWARE LOCKING KEYS
+const Binding BTN_LCAPS = {"L-CAP", RED,     KC_LCAPS.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_LNUM  = {"L-NUM", RED,     KC_LNUM.code,  HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_LSCRL = {"L-SCR", RED,     KC_LSCRL.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
 
-// 10. EDIT SPECIALS (5)
-const Binding BTN_UNDO = {"UNDO", ORANGE,   KC_UNDO.code, HIDPage::KEYBOARD, MOD_NONE, BLACK};
-const Binding BTN_CUT  = {"CUT",  ORANGE,   KC_CUT.code,  HIDPage::KEYBOARD, MOD_NONE, BLACK};
-const Binding BTN_COPY = {"COPY", ORANGE,   KC_COPY.code, HIDPage::KEYBOARD, MOD_NONE, BLACK};
-const Binding BTN_PSTE = {"PSTE", ORANGE,   KC_PSTE.code, HIDPage::KEYBOARD, MOD_NONE, BLACK};
-const Binding BTN_FIND = {"FIND", ORANGE,   KC_FIND.code, HIDPage::KEYBOARD, MOD_NONE, BLACK};
-
-// 11. SYSTEEM (3)
+// 10. MEDIA & SYSTEM
 const Binding BTN_PWR  = {"PWR",  RED,      KC_PWR.code,  HIDPage::KEYBOARD, MOD_NONE, WHITE};
 const Binding BTN_SLP  = {"SLEEP",BLUE,     KC_SLP.code,  HIDPage::KEYBOARD, MOD_NONE, WHITE};
 const Binding BTN_WAKE = {"WAKE", GREEN,    KC_WAKE.code, HIDPage::KEYBOARD, MOD_NONE, BLACK};
-
-// 12. CONSUMER / MEDIA (16)
 const Binding BTN_MUTE = {"MUTE", RED,      MC_MUTE.code, HIDPage::CONSUMER, MOD_NONE, WHITE};
 const Binding BTN_VOLU = {"VOL+", DARKGREY, MC_VOLU.code, HIDPage::CONSUMER, MOD_NONE, WHITE};
 const Binding BTN_VOLD = {"VOL-", DARKGREY, MC_VOLD.code, HIDPage::CONSUMER, MOD_NONE, WHITE};
@@ -210,8 +208,43 @@ const Binding BTN_PPT  = {"PPT",  ORANGE,   MC_PRES.code, HIDPage::CONSUMER, MOD
 const Binding BTN_CAL  = {"CAL",  RED,      MC_SCHD.code, HIDPage::CONSUMER, MOD_NONE, WHITE};
 const Binding BTN_TASK = {"TASK", BLUE,     MC_TASK.code, HIDPage::CONSUMER, MOD_NONE, WHITE};
 
-// 13. STATUS & LEEG (4)
-const Binding BTN_NO    = {" ",    BLACK,    KC_NO.code,    HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_ROLL  = {"ROLL", DARKGREY, KC_ROLL.code,  HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_POST  = {"POST", DARKGREY, KC_POST.code,  HIDPage::KEYBOARD, MOD_NONE, WHITE};
-const Binding BTN_UNDEF = {"UNKN", DARKGREY, KC_UNDEF.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+// 11. MODIFIERS RAW
+const Binding BTN_LCTL = {"LCTL", PURPLE,   KC_LCTL.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_LSFT = {"LSFT", PURPLE,   KC_LSFT.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_LALT = {"LALT", PURPLE,   KC_LALT.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_LGUI = {"LGUI", PURPLE,   KC_LGUI.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_RCTL = {"RCTL", PURPLE,   KC_RCTL.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_RSFT = {"RSFT", PURPLE,   KC_RSFT.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_RALT = {"RALT", PURPLE,   KC_RALT.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+const Binding BTN_RGUI = {"RGUI", PURPLE,   KC_RGUI.code, HIDPage::KEYBOARD, MOD_NONE, WHITE};
+
+// 13. COMBINATIES
+const Binding BTN_LCS  = {"LCS",  PURPLE,   KC_LCTL.code, HIDPage::KEYBOARD, M_LCS,  WHITE};
+const Binding BTN_LCA  = {"LCA",  PURPLE,   KC_LCTL.code, HIDPage::KEYBOARD, M_LCA,  WHITE};
+const Binding BTN_LAS  = {"LAS",  PURPLE,   KC_LALT.code, HIDPage::KEYBOARD, M_LAS,  WHITE};
+const Binding BTN_LCAS = {"LCAS", PURPLE,   KC_LCTL.code, HIDPage::KEYBOARD, M_LCAS, WHITE};
+const Binding BTN_LMEH = {"LMEH", PURPLE,   KC_LCTL.code, HIDPage::KEYBOARD, M_LMEH, WHITE};
+const Binding BTN_LHYP = {"LHYP", PURPLE,   KC_LCTL.code, HIDPage::KEYBOARD, M_LHYP, WHITE};
+const Binding BTN_RCS  = {"RCS",  PURPLE,   KC_RCTL.code, HIDPage::KEYBOARD, M_RCS,  WHITE};
+const Binding BTN_RCA  = {"RCA",  PURPLE,   KC_RCTL.code, HIDPage::KEYBOARD, M_RCA,  WHITE};
+const Binding BTN_RAS  = {"RAS",  PURPLE,   KC_RALT.code, HIDPage::KEYBOARD, M_RAS,  WHITE};
+const Binding BTN_RCAS = {"RCAS", PURPLE,   KC_RCTL.code, HIDPage::KEYBOARD, M_RCAS, WHITE};
+const Binding BTN_RMEH = {"RMEH", PURPLE,   KC_RCTL.code, HIDPage::KEYBOARD, M_RMEH, WHITE};
+const Binding BTN_RHYP = {"RHYP", PURPLE,   KC_RCTL.code, HIDPage::KEYBOARD, M_RHYP, WHITE};
+
+// 14. DOUBLE TAPS
+const Binding BTN_DLCT = {"DLCT", DARKGREY, KC_LCTL.code, HIDPage::KEYBOARD, M_DLCT, WHITE};
+const Binding BTN_DLSF = {"DLSF", DARKGREY, KC_LSFT.code, HIDPage::KEYBOARD, M_DLSF, WHITE};
+const Binding BTN_DLAL = {"DLAL", DARKGREY, KC_LALT.code, HIDPage::KEYBOARD, M_DLAL, WHITE};
+const Binding BTN_DLGU = {"DLGU", DARKGREY, KC_LGUI.code, HIDPage::KEYBOARD, M_DLGU, WHITE};
+const Binding BTN_DRCT = {"DRCT", DARKGREY, KC_RCTL.code, HIDPage::KEYBOARD, M_DRCT, WHITE};
+const Binding BTN_DRSF = {"DRSF", DARKGREY, KC_RSFT.code, HIDPage::KEYBOARD, M_DRSF, WHITE};
+const Binding BTN_DRAL = {"DRAL", DARKGREY, KC_RALT.code, HIDPage::KEYBOARD, M_DRAL, WHITE};
+const Binding BTN_DRGU = {"DRGU", DARKGREY, KC_RGUI.code, HIDPage::KEYBOARD, M_DRGU, WHITE};
+
+// 15. EDIT
+const Binding BTN_UNDO = {"UNDO", ORANGE,   KC_UNDO.code, HIDPage::KEYBOARD, MOD_NONE, BLACK};
+const Binding BTN_CUT  = {"CUT",  ORANGE,   KC_CUT.code,  HIDPage::KEYBOARD, MOD_NONE, BLACK};
+const Binding BTN_COPY = {"COPY", ORANGE,   KC_COPY.code, HIDPage::KEYBOARD, MOD_NONE, BLACK};
+const Binding BTN_PSTE = {"PSTE", ORANGE,   KC_PSTE.code, HIDPage::KEYBOARD, MOD_NONE, BLACK};
+const Binding BTN_FIND = {"FIND", ORANGE,   KC_FIND.code, HIDPage::KEYBOARD, MOD_NONE, BLACK};
