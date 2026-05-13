@@ -1,0 +1,7 @@
+#pragma once
+/**
+ * Shortcuts for FIDO Alliance
+ */
+#define fi_U2F_AUTHENTICATOR_DEVICE Binding(HID::Page::FIDO_ALLIANCE, HID::FIDOAlliance::CA::U2F_AUTHENTICATOR_DEVICE)
+#define fi_INPUT_REPORT_DATA Binding(HID::Page::FIDO_ALLIANCE, HID::FIDOAlliance::DV::INPUT_REPORT_DATA)
+#define fi_OUTPUT_REPORT_DATA Binding(HID::Page::FIDO_ALLIANCE, HID::FIDOAlliance::DV::OUTPUT_REPORT_DATA)

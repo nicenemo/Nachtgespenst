@@ -1,42 +1,31 @@
 #pragma once
 #include "HID_Types.h"
-#include <string_view>
 
-namespace HID::Metadata {
-
-    struct UsageInfo {
-        uint16_t id;
-        std::string_view name;
-        std::string_view description;
-    };
-
+namespace HID {
     struct PageInfo {
-        HID::Page id;
-        std::string_view name;
-        std::string_view ns;
-        const UsageInfo* usages;
-        size_t usageCount;
+        uint16_t id;
+        const char* name;
+        const char* macro; // Prefix used for Bindings (e.g., "kp")
     };
 
-    <#list pages as page>
-    <#if page.usages?has_content>
-    static constexpr UsageInfo USAGES_${page.constantName}[] = {
-        <#list page.usages as u>
-        { 0x${u.idHex}, "${u.name}", "${(u.description!"")?j_string}" }<#if u?has_next>,</#if>
-        </#list>
-    };
-    </#if>
-    </#list>
+    namespace Page {
+<#list pages as page>
+        constexpr PageInfo ${page.namespace} = { 0x${page.idHex}, "${page.name}", "${page.macroPrefix}" };
+</#list>
+    }
 
-    inline constexpr PageInfo Pages[] = {
-    <#list pages as page>
-        { 
-            HID::Page::${page.constantName}, 
-            "${page.name}", 
-            "${page.namespace}", 
-            <#if page.usages?has_content>USAGES_${page.constantName}<#else>nullptr</#if>, 
-            ${page.usages?size} 
-        }<#if page?has_next>,</#if>
-    </#list>
+    constexpr PageInfo ALL_PAGES[] = {
+<#list pages as page>
+        Page::${page.namespace}<#if page_has_next>,</#if>
+</#list>
     };
+
+    constexpr uint8_t PAGE_COUNT = sizeof(ALL_PAGES) / sizeof(ALL_PAGES[0]);
+
+    inline const PageInfo* getPageInfo(uint16_t id) {
+        for (uint8_t i = 0; i < PAGE_COUNT; i++) {
+            if (ALL_PAGES[i].id == id) return &ALL_PAGES[i];
+        }
+        return nullptr;
+    }
 }

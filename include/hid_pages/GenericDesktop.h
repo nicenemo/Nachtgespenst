@@ -1,0 +1,139 @@
+#pragma once
+#include "../HID_Types.h"
+
+namespace HID::GenericDesktop {
+    constexpr uint8_t PAGE_ID = 0x0001;
+    namespace OTHER {
+        constexpr Usage COOLANT_CRITICAL_LEVEL = { 0xC3, UsageKind::OTHER, "COOLANT_CRITICAL_LEVEL" };
+        constexpr Usage COOLANT_PUMP = { 0xC4, UsageKind::OTHER, "COOLANT_PUMP" };
+        constexpr Usage CONTROL_ENABLE = { 0xCB, UsageKind::OTHER, "CONTROL_ENABLE" };
+        constexpr Usage DOCKABLE_DEVICE_DOCKING_STATE = { 0xD4, UsageKind::OTHER, "DOCKABLE_DEVICE_DOCKING_STATE" };
+    }
+    namespace RTC {
+        constexpr Usage SYS_MENU_RIGHT = { 0x8A, UsageKind::RTC, "SYS_MENU_RIGHT" };
+        constexpr Usage SYS_MENU_LEFT = { 0x8B, UsageKind::RTC, "SYS_MENU_LEFT" };
+        constexpr Usage SYS_MENU_UP = { 0x8C, UsageKind::RTC, "SYS_MENU_UP" };
+        constexpr Usage SYS_MENU_DOWN = { 0x8D, UsageKind::RTC, "SYS_MENU_DOWN" };
+    }
+    namespace OOC {
+        constexpr Usage START = { 0x3D, UsageKind::OOC, "START" };
+        constexpr Usage SELECT = { 0x3E, UsageKind::OOC, "SELECT" };
+        constexpr Usage D_PAD_UP = { 0x90, UsageKind::OOC, "D_PAD_UP" };
+        constexpr Usage D_PAD_DOWN = { 0x91, UsageKind::OOC, "D_PAD_DOWN" };
+        constexpr Usage D_PAD_RIGHT = { 0x92, UsageKind::OOC, "D_PAD_RIGHT" };
+        constexpr Usage D_PAD_LEFT = { 0x93, UsageKind::OOC, "D_PAD_LEFT" };
+        constexpr Usage SYS_FUNCTION_SHIFT_LOCK = { 0x98, UsageKind::OOC, "SYS_FUNCTION_SHIFT_LOCK" };
+        constexpr Usage SYS_DO_NOT_DISTURB = { 0x9B, UsageKind::OOC, "SYS_DO_NOT_DISTURB" };
+        constexpr Usage SYS_MICROPHONE_MUTE = { 0xA9, UsageKind::OOC, "SYS_MICROPHONE_MUTE" };
+        constexpr Usage SYS_ACCESSIBILITY_BINDING = { 0xAA, UsageKind::OOC, "SYS_ACCESSIBILITY_BINDING" };
+        constexpr Usage WIRELESS_RADIO_BUTTON = { 0xC6, UsageKind::OOC, "WIRELESS_RADIO_BUTTON" };
+        constexpr Usage WIRELESS_RADIO_LED = { 0xC7, UsageKind::OOC, "WIRELESS_RADIO_LED" };
+        constexpr Usage WIRELESS_RADIO_SLIDER_SWITCH = { 0xC8, UsageKind::OOC, "WIRELESS_RADIO_SLIDER_SWITCH" };
+        constexpr Usage SYS_DISPLAY_ROTATION_LOCK_BUTTON = { 0xC9, UsageKind::OOC, "SYS_DISPLAY_ROTATION_LOCK_BUTTON" };
+        constexpr Usage SYS_DISPLAY_ROTATION_LOCK_SLIDER_SWITCH = { 0xCA, UsageKind::OOC, "SYS_DISPLAY_ROTATION_LOCK_SLIDER_SWITCH" };
+        constexpr Usage CALL_ACTIVE_LED = { 0xE0, UsageKind::OOC, "CALL_ACTIVE_LED" };
+        constexpr Usage CALL_MUTE_LED = { 0xE2, UsageKind::OOC, "CALL_MUTE_LED" };
+    }
+    namespace DV {
+        constexpr Usage X = { 0x30, UsageKind::DV, "X" };
+        constexpr Usage Y = { 0x31, UsageKind::DV, "Y" };
+        constexpr Usage Z = { 0x32, UsageKind::DV, "Z" };
+        constexpr Usage RX = { 0x33, UsageKind::DV, "RX" };
+        constexpr Usage RY = { 0x34, UsageKind::DV, "RY" };
+        constexpr Usage RZ = { 0x35, UsageKind::DV, "RZ" };
+        constexpr Usage SLIDER = { 0x36, UsageKind::DV, "SLIDER" };
+        constexpr Usage DIAL = { 0x37, UsageKind::DV, "DIAL" };
+        constexpr Usage WHEEL = { 0x38, UsageKind::DV, "WHEEL" };
+        constexpr Usage HAT_SWITCH = { 0x39, UsageKind::DV, "HAT_SWITCH" };
+        constexpr Usage BYTE_COUNT = { 0x3B, UsageKind::DV, "BYTE_COUNT" };
+        constexpr Usage VX = { 0x40, UsageKind::DV, "VX" };
+        constexpr Usage VY = { 0x41, UsageKind::DV, "VY" };
+        constexpr Usage VZ = { 0x42, UsageKind::DV, "VZ" };
+        constexpr Usage VBRX = { 0x43, UsageKind::DV, "VBRX" };
+        constexpr Usage VBRY = { 0x44, UsageKind::DV, "VBRY" };
+        constexpr Usage VBRZ = { 0x45, UsageKind::DV, "VBRZ" };
+        constexpr Usage VNO = { 0x46, UsageKind::DV, "VNO" };
+        constexpr Usage FEATURE_NOTIFICATION = { 0x47, UsageKind::DV, "FEATURE_NOTIFICATION" };
+        constexpr Usage RESOLUTION_MULTIPLIER = { 0x48, UsageKind::DV, "RESOLUTION_MULTIPLIER" };
+        constexpr Usage QX = { 0x49, UsageKind::DV, "QX" };
+        constexpr Usage QY = { 0x4A, UsageKind::DV, "QY" };
+        constexpr Usage QZ = { 0x4B, UsageKind::DV, "QZ" };
+        constexpr Usage QW = { 0x4C, UsageKind::DV, "QW" };
+        constexpr Usage SYS_FUNCTION_SHIFT_LOCK_INDICATOR = { 0x99, UsageKind::DV, "SYS_FUNCTION_SHIFT_LOCK_INDICATOR" };
+        constexpr Usage RPM = { 0xC1, UsageKind::DV, "RPM" };
+        constexpr Usage COOLANT_LEVEL = { 0xC2, UsageKind::DV, "COOLANT_LEVEL" };
+        constexpr Usage DOCKABLE_DEVICE_UNIQUE_ID = { 0xD0, UsageKind::DV, "DOCKABLE_DEVICE_UNIQUE_ID" };
+        constexpr Usage DOCKABLE_DEVICE_VENDOR_ID = { 0xD1, UsageKind::DV, "DOCKABLE_DEVICE_VENDOR_ID" };
+        constexpr Usage DOCKABLE_DEVICE_PRIMARY_USAGE_PAGE = { 0xD2, UsageKind::DV, "DOCKABLE_DEVICE_PRIMARY_USAGE_PAGE" };
+        constexpr Usage DOCKABLE_DEVICE_PRIMARY_USAGE_ID = { 0xD3, UsageKind::DV, "DOCKABLE_DEVICE_PRIMARY_USAGE_ID" };
+        constexpr Usage DOCKABLE_DEVICE_OBJECT_TYPE = { 0xD6, UsageKind::DV, "DOCKABLE_DEVICE_OBJECT_TYPE" };
+    }
+    namespace MC {
+        constexpr Usage INDEX_TRIGGER = { 0x94, UsageKind::MC, "INDEX_TRIGGER" };
+        constexpr Usage PALM_TRIGGER = { 0x95, UsageKind::MC, "PALM_TRIGGER" };
+        constexpr Usage SYS_FUNCTION_SHIFT = { 0x97, UsageKind::MC, "SYS_FUNCTION_SHIFT" };
+    }
+    namespace CL {
+        constexpr Usage COUNTED_BUFFER = { 0x3A, UsageKind::CL, "COUNTED_BUFFER" };
+        constexpr Usage SENSOR_ZONE = { 0xC0, UsageKind::CL, "SENSOR_ZONE" };
+        constexpr Usage CHASSIS_ENCLOSURE = { 0xC5, UsageKind::CL, "CHASSIS_ENCLOSURE" };
+        constexpr Usage DOCKABLE_DEVICE_DISPLAY_OCCLUSION = { 0xD5, UsageKind::CL, "DOCKABLE_DEVICE_DISPLAY_OCCLUSION" };
+    }
+    namespace CP {
+        constexpr Usage POINTER = { 0x01, UsageKind::CP, "POINTER" };
+        constexpr Usage THUMBSTICK = { 0x96, UsageKind::CP, "THUMBSTICK" };
+    }
+    namespace OSC {
+        constexpr Usage MOTION_WAKEUP = { 0x3C, UsageKind::OSC, "MOTION_WAKEUP" };
+        constexpr Usage SYS_POWER_DOWN = { 0x81, UsageKind::OSC, "SYS_POWER_DOWN" };
+        constexpr Usage SYS_SLEEP = { 0x82, UsageKind::OSC, "SYS_SLEEP" };
+        constexpr Usage SYS_WAKE_UP = { 0x83, UsageKind::OSC, "SYS_WAKE_UP" };
+        constexpr Usage SYS_CONTEXT_MENU = { 0x84, UsageKind::OSC, "SYS_CONTEXT_MENU" };
+        constexpr Usage SYS_MAIN_MENU = { 0x85, UsageKind::OSC, "SYS_MAIN_MENU" };
+        constexpr Usage SYS_APP_MENU = { 0x86, UsageKind::OSC, "SYS_APP_MENU" };
+        constexpr Usage SYS_MENU_HELP = { 0x87, UsageKind::OSC, "SYS_MENU_HELP" };
+        constexpr Usage SYS_MENU_EXIT = { 0x88, UsageKind::OSC, "SYS_MENU_EXIT" };
+        constexpr Usage SYS_MENU_SELECT = { 0x89, UsageKind::OSC, "SYS_MENU_SELECT" };
+        constexpr Usage SYS_COLD_RESTART = { 0x8E, UsageKind::OSC, "SYS_COLD_RESTART" };
+        constexpr Usage SYS_WARM_RESTART = { 0x8F, UsageKind::OSC, "SYS_WARM_RESTART" };
+        constexpr Usage SYS_DISMISS_NOTIFICATION = { 0x9A, UsageKind::OSC, "SYS_DISMISS_NOTIFICATION" };
+        constexpr Usage SYS_DOCK = { 0xA0, UsageKind::OSC, "SYS_DOCK" };
+        constexpr Usage SYS_UNDOCK = { 0xA1, UsageKind::OSC, "SYS_UNDOCK" };
+        constexpr Usage SYS_SETUP = { 0xA2, UsageKind::OSC, "SYS_SETUP" };
+        constexpr Usage SYS_BREAK = { 0xA3, UsageKind::OSC, "SYS_BREAK" };
+        constexpr Usage SYS_DEBUGGER_BREAK = { 0xA4, UsageKind::OSC, "SYS_DEBUGGER_BREAK" };
+        constexpr Usage APPLICATION_BREAK = { 0xA5, UsageKind::OSC, "APPLICATION_BREAK" };
+        constexpr Usage APPLICATION_DEBUGGER_BREAK = { 0xA6, UsageKind::OSC, "APPLICATION_DEBUGGER_BREAK" };
+        constexpr Usage SYS_SPEAKER_MUTE = { 0xA7, UsageKind::OSC, "SYS_SPEAKER_MUTE" };
+        constexpr Usage SYS_HIBERNATE = { 0xA8, UsageKind::OSC, "SYS_HIBERNATE" };
+        constexpr Usage SYS_DISPLAY_INVERT = { 0xB0, UsageKind::OSC, "SYS_DISPLAY_INVERT" };
+        constexpr Usage SYS_DISPLAY_INTERNAL = { 0xB1, UsageKind::OSC, "SYS_DISPLAY_INTERNAL" };
+        constexpr Usage SYS_DISPLAY_EXTERNAL = { 0xB2, UsageKind::OSC, "SYS_DISPLAY_EXTERNAL" };
+        constexpr Usage SYS_DISPLAY_BOTH = { 0xB3, UsageKind::OSC, "SYS_DISPLAY_BOTH" };
+        constexpr Usage SYS_DISPLAY_DUAL = { 0xB4, UsageKind::OSC, "SYS_DISPLAY_DUAL" };
+        constexpr Usage SYS_DISPLAY_TOGGLE_INT_EXT_MODE = { 0xB5, UsageKind::OSC, "SYS_DISPLAY_TOGGLE_INT_EXT_MODE" };
+        constexpr Usage SYS_DISPLAY_SWAP_PRIMARY_SECONDARY = { 0xB6, UsageKind::OSC, "SYS_DISPLAY_SWAP_PRIMARY_SECONDARY" };
+        constexpr Usage SYS_DISPLAY_TOGGLE_LCD_AUTOSCALE = { 0xB7, UsageKind::OSC, "SYS_DISPLAY_TOGGLE_LCD_AUTOSCALE" };
+        constexpr Usage CALL_MUTE_TOGGLE = { 0xE1, UsageKind::OSC, "CALL_MUTE_TOGGLE" };
+    }
+    namespace CA {
+        constexpr Usage MOUSE = { 0x02, UsageKind::CA, "MOUSE" };
+        constexpr Usage JOYSTICK = { 0x04, UsageKind::CA, "JOYSTICK" };
+        constexpr Usage GAMEPAD = { 0x05, UsageKind::CA, "GAMEPAD" };
+        constexpr Usage KEYBOARD = { 0x06, UsageKind::CA, "KEYBOARD" };
+        constexpr Usage KEYPAD = { 0x07, UsageKind::CA, "KEYPAD" };
+        constexpr Usage MULTI_AXIS_CONTROLLER = { 0x08, UsageKind::CA, "MULTI_AXIS_CONTROLLER" };
+        constexpr Usage TABLET_PC_SYS_CONTROLS = { 0x09, UsageKind::CA, "TABLET_PC_SYS_CONTROLS" };
+        constexpr Usage WATER_COOLING_DEVICE = { 0x0A, UsageKind::CA, "WATER_COOLING_DEVICE" };
+        constexpr Usage COMPUTER_CHASSIS_DEVICE = { 0x0B, UsageKind::CA, "COMPUTER_CHASSIS_DEVICE" };
+        constexpr Usage WIRELESS_RADIO_CONTROLS = { 0x0C, UsageKind::CA, "WIRELESS_RADIO_CONTROLS" };
+        constexpr Usage PORTABLE_DEVICE_CONTROL = { 0x0D, UsageKind::CA, "PORTABLE_DEVICE_CONTROL" };
+        constexpr Usage SYS_MULTI_AXIS_CONTROLLER = { 0x0E, UsageKind::CA, "SYS_MULTI_AXIS_CONTROLLER" };
+        constexpr Usage SPATIAL_CONTROLLER = { 0x0F, UsageKind::CA, "SPATIAL_CONTROLLER" };
+        constexpr Usage ASSISTIVE_CONTROL = { 0x10, UsageKind::CA, "ASSISTIVE_CONTROL" };
+        constexpr Usage DEVICE_DOCK = { 0x11, UsageKind::CA, "DEVICE_DOCK" };
+        constexpr Usage DOCKABLE_DEVICE = { 0x12, UsageKind::CA, "DOCKABLE_DEVICE" };
+        constexpr Usage CALL_STATE_MANAGEMENT_CONTROL = { 0x13, UsageKind::CA, "CALL_STATE_MANAGEMENT_CONTROL" };
+        constexpr Usage SYS_CONTROL = { 0x80, UsageKind::CA, "SYS_CONTROL" };
+    }
+}

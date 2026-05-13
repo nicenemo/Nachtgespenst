@@ -1,19 +1,18 @@
 #pragma once
 #include "HID_Types.h"
+#include "Bindings.h"
 
-// --- Page Definitions ---
+// 1. Include the raw namespaced definitions
 <#list pages as page>
-#include "hid_pages/${page.filename}"
+#include "hid_pages/${page.filename}" 
 </#list>
 
-// --- Shortcut Definitions ---
+// 2. Include the shortcut macros (kp_A, cp_MUTE, etc.)
 <#list pages as page>
-#include "hid_shortcuts/${page.filename}"
+#include "hid_shortcuts/${page.filename}" 
 </#list>
 
-/**
- * Dynamic Helper Macros
- */
+// 3. Short-hand namespaces for manual access
 <#list pages as page>
-#define ${page.macroChar}(c) HID::Key{HID::Page::${page.constantName}, (uint16_t)c}
+namespace ${page.macroPrefix?upper_case} = HID::${page.namespace};
 </#list>

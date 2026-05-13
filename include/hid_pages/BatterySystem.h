@@ -1,0 +1,105 @@
+#pragma once
+#include "../HID_Types.h"
+
+namespace HID::BatterySystem {
+    constexpr uint8_t PAGE_ID = 0x0085;
+    namespace OTHER {
+        constexpr Usage SMART_BATTERY_BATTERY_STATUS = { 0x02, UsageKind::OTHER, "SMART_BATTERY_BATTERY_STATUS" };
+        constexpr Usage SMART_BATTERY_ALARM_WARNING = { 0x03, UsageKind::OTHER, "SMART_BATTERY_ALARM_WARNING" };
+        constexpr Usage CONNECTION_TO_SM_BUS = { 0x15, UsageKind::OTHER, "CONNECTION_TO_SM_BUS" };
+        constexpr Usage OUTPUT_CONNECTION = { 0x16, UsageKind::OTHER, "OUTPUT_CONNECTION" };
+        constexpr Usage CHARGER_CONNECTION = { 0x17, UsageKind::OTHER, "CHARGER_CONNECTION" };
+        constexpr Usage BATTERY_INSERTION = { 0x18, UsageKind::OTHER, "BATTERY_INSERTION" };
+        constexpr Usage USE_NEXT = { 0x19, UsageKind::OTHER, "USE_NEXT" };
+        constexpr Usage OK_TO_USE = { 0x1A, UsageKind::OTHER, "OK_TO_USE" };
+        constexpr Usage BATTERY_SUPPORTED = { 0x1B, UsageKind::OTHER, "BATTERY_SUPPORTED" };
+        constexpr Usage SELECTOR_REVISION = { 0x1C, UsageKind::OTHER, "SELECTOR_REVISION" };
+        constexpr Usage CHARGING_INDICATOR = { 0x1D, UsageKind::OTHER, "CHARGING_INDICATOR" };
+        constexpr Usage CONDITIONING_FLAG = { 0x48, UsageKind::OTHER, "CONDITIONING_FLAG" };
+        constexpr Usage AT_RATE_OK = { 0x49, UsageKind::OTHER, "AT_RATE_OK" };
+        constexpr Usage NEED_REPLACEMENT = { 0x4B, UsageKind::OTHER, "NEED_REPLACEMENT" };
+        constexpr Usage BATTERY_PACK_MODEL_LEVEL = { 0x80, UsageKind::OTHER, "BATTERY_PACK_MODEL_LEVEL" };
+        constexpr Usage INTERNAL_CHARGE_CONTROLLER = { 0x81, UsageKind::OTHER, "INTERNAL_CHARGE_CONTROLLER" };
+        constexpr Usage PRIMARY_BATTERY_SUPPORT = { 0x82, UsageKind::OTHER, "PRIMARY_BATTERY_SUPPORT" };
+        constexpr Usage DESIGN_CAPACITY = { 0x83, UsageKind::OTHER, "DESIGN_CAPACITY" };
+        constexpr Usage SPECIFICATION_INFO = { 0x84, UsageKind::OTHER, "SPECIFICATION_INFO" };
+        constexpr Usage MANUFACTURE_DATE = { 0x85, UsageKind::OTHER, "MANUFACTURE_DATE" };
+        constexpr Usage SERIAL_NUMBER = { 0x86, UsageKind::OTHER, "SERIAL_NUMBER" };
+        constexpr Usage IMANUFACTURER_NAME = { 0x87, UsageKind::OTHER, "IMANUFACTURER_NAME" };
+        constexpr Usage IDEVICE_NAME = { 0x88, UsageKind::OTHER, "IDEVICE_NAME" };
+        constexpr Usage IDEVICE_CHEMISTRY = { 0x89, UsageKind::OTHER, "IDEVICE_CHEMISTRY" };
+        constexpr Usage MANUFACTURER_DATA = { 0x8A, UsageKind::OTHER, "MANUFACTURER_DATA" };
+        constexpr Usage RECHARGABLE = { 0x8B, UsageKind::OTHER, "RECHARGABLE" };
+        constexpr Usage WARNING_CAPACITY_LIMIT = { 0x8C, UsageKind::OTHER, "WARNING_CAPACITY_LIMIT" };
+        constexpr Usage CAPACITY_GRANULARITY_1 = { 0x8D, UsageKind::OTHER, "CAPACITY_GRANULARITY_1" };
+        constexpr Usage CAPACITY_GRANULARITY_2 = { 0x8E, UsageKind::OTHER, "CAPACITY_GRANULARITY_2" };
+        constexpr Usage IOEM_INFORMATION = { 0x8F, UsageKind::OTHER, "IOEM_INFORMATION" };
+        constexpr Usage INHIBIT_CHARGE = { 0xC0, UsageKind::OTHER, "INHIBIT_CHARGE" };
+        constexpr Usage ENABLE_POLLING = { 0xC1, UsageKind::OTHER, "ENABLE_POLLING" };
+        constexpr Usage RESET_TO_ZERO = { 0xC2, UsageKind::OTHER, "RESET_TO_ZERO" };
+        constexpr Usage CHARGER_SELECTOR_SUPPORT = { 0xF0, UsageKind::OTHER, "CHARGER_SELECTOR_SUPPORT" };
+        constexpr Usage CHARGER_SPEC = { 0xF1, UsageKind::OTHER, "CHARGER_SPEC" };
+        constexpr Usage LEVEL_2 = { 0xF2, UsageKind::OTHER, "LEVEL_2" };
+        constexpr Usage LEVEL_3 = { 0xF3, UsageKind::OTHER, "LEVEL_3" };
+    }
+    namespace DV {
+        constexpr Usage OPTIONAL_MFG_FUNCTION_1 = { 0x10, UsageKind::DV, "OPTIONAL_MFG_FUNCTION_1" };
+        constexpr Usage OPTIONAL_MFG_FUNCTION_2 = { 0x11, UsageKind::DV, "OPTIONAL_MFG_FUNCTION_2" };
+        constexpr Usage OPTIONAL_MFG_FUNCTION_3 = { 0x12, UsageKind::DV, "OPTIONAL_MFG_FUNCTION_3" };
+        constexpr Usage OPTIONAL_MFG_FUNCTION_4 = { 0x13, UsageKind::DV, "OPTIONAL_MFG_FUNCTION_4" };
+        constexpr Usage OPTIONAL_MFG_FUNCTION_5 = { 0x14, UsageKind::DV, "OPTIONAL_MFG_FUNCTION_5" };
+        constexpr Usage MANUFACTURER_ACCESS = { 0x28, UsageKind::DV, "MANUFACTURER_ACCESS" };
+        constexpr Usage REMAINING_CAPACITY_LIMIT = { 0x29, UsageKind::DV, "REMAINING_CAPACITY_LIMIT" };
+        constexpr Usage REMAINING_TIME_LIMIT = { 0x2A, UsageKind::DV, "REMAINING_TIME_LIMIT" };
+        constexpr Usage AT_RATE = { 0x2B, UsageKind::DV, "AT_RATE" };
+        constexpr Usage CAPACITY_MODE = { 0x2C, UsageKind::DV, "CAPACITY_MODE" };
+        constexpr Usage BROADCAST_TO_CHARGER = { 0x2D, UsageKind::DV, "BROADCAST_TO_CHARGER" };
+        constexpr Usage PRIMARY_BATTERY = { 0x2E, UsageKind::DV, "PRIMARY_BATTERY" };
+        constexpr Usage CHARGE_CONTROLLER = { 0x2F, UsageKind::DV, "CHARGE_CONTROLLER" };
+        constexpr Usage SMART_BATTERY_ERROR_CODE = { 0x4A, UsageKind::DV, "SMART_BATTERY_ERROR_CODE" };
+        constexpr Usage AT_RATE_TIME_TO_FULL = { 0x60, UsageKind::DV, "AT_RATE_TIME_TO_FULL" };
+        constexpr Usage AT_RATE_TIME_TO_EMPTY = { 0x61, UsageKind::DV, "AT_RATE_TIME_TO_EMPTY" };
+        constexpr Usage AVERAGE_CURRENT = { 0x62, UsageKind::DV, "AVERAGE_CURRENT" };
+        constexpr Usage MAX_ERROR = { 0x63, UsageKind::DV, "MAX_ERROR" };
+        constexpr Usage RELATIVE_STATE_OF_CHARGE = { 0x64, UsageKind::DV, "RELATIVE_STATE_OF_CHARGE" };
+        constexpr Usage ABSOLUTE_STATE_OF_CHARGE = { 0x65, UsageKind::DV, "ABSOLUTE_STATE_OF_CHARGE" };
+        constexpr Usage REMAINING_CAPACITY = { 0x66, UsageKind::DV, "REMAINING_CAPACITY" };
+        constexpr Usage FULL_CHARGE_CAPACITY = { 0x67, UsageKind::DV, "FULL_CHARGE_CAPACITY" };
+        constexpr Usage RUN_TIME_TO_EMPTY = { 0x68, UsageKind::DV, "RUN_TIME_TO_EMPTY" };
+        constexpr Usage AVERAGE_TIME_TO_EMPTY = { 0x69, UsageKind::DV, "AVERAGE_TIME_TO_EMPTY" };
+        constexpr Usage AVERAGE_TIME_TO_FULL = { 0x6A, UsageKind::DV, "AVERAGE_TIME_TO_FULL" };
+        constexpr Usage CYCLE_COUNT = { 0x6B, UsageKind::DV, "CYCLE_COUNT" };
+        constexpr Usage AC_PRESENT = { 0xD0, UsageKind::DV, "AC_PRESENT" };
+        constexpr Usage BATTERY_PRESENT = { 0xD1, UsageKind::DV, "BATTERY_PRESENT" };
+        constexpr Usage POWER_FAIL = { 0xD2, UsageKind::DV, "POWER_FAIL" };
+        constexpr Usage ALARM_INHIBITED = { 0xD3, UsageKind::DV, "ALARM_INHIBITED" };
+        constexpr Usage THERMISTOR_UNDER_RANGE = { 0xD4, UsageKind::DV, "THERMISTOR_UNDER_RANGE" };
+        constexpr Usage THERMISTOR_HOT = { 0xD5, UsageKind::DV, "THERMISTOR_HOT" };
+        constexpr Usage THERMISTOR_COLD = { 0xD6, UsageKind::DV, "THERMISTOR_COLD" };
+        constexpr Usage THERMISTOR_OVER_RANGE = { 0xD7, UsageKind::DV, "THERMISTOR_OVER_RANGE" };
+        constexpr Usage VOLTAGE_OUT_OF_RANGE = { 0xD8, UsageKind::DV, "VOLTAGE_OUT_OF_RANGE" };
+        constexpr Usage CURRENT_OUT_OF_RANGE = { 0xD9, UsageKind::DV, "CURRENT_OUT_OF_RANGE" };
+        constexpr Usage CURRENT_NOT_REGULATED = { 0xDA, UsageKind::DV, "CURRENT_NOT_REGULATED" };
+        constexpr Usage VOLTAGE_NOT_REGULATED = { 0xDB, UsageKind::DV, "VOLTAGE_NOT_REGULATED" };
+        constexpr Usage MASTER_MODE = { 0xDC, UsageKind::DV, "MASTER_MODE" };
+    }
+    namespace CL {
+        constexpr Usage SMART_BATTERY_BATTERY_MODE = { 0x01, UsageKind::CL, "SMART_BATTERY_BATTERY_MODE" };
+        constexpr Usage SMART_BATTERY_CHARGER_MODE = { 0x04, UsageKind::CL, "SMART_BATTERY_CHARGER_MODE" };
+        constexpr Usage SMART_BATTERY_CHARGER_STATUS = { 0x05, UsageKind::CL, "SMART_BATTERY_CHARGER_STATUS" };
+        constexpr Usage SMART_BATTERY_CHARGER_SPEC_INFO = { 0x06, UsageKind::CL, "SMART_BATTERY_CHARGER_SPEC_INFO" };
+        constexpr Usage SMART_BATTERY_SELECTOR_STATE = { 0x07, UsageKind::CL, "SMART_BATTERY_SELECTOR_STATE" };
+        constexpr Usage SMART_BATTERY_SELECTOR_PRESETS = { 0x08, UsageKind::CL, "SMART_BATTERY_SELECTOR_PRESETS" };
+        constexpr Usage SMART_BATTERY_SELECTOR_INFO = { 0x09, UsageKind::CL, "SMART_BATTERY_SELECTOR_INFO" };
+    }
+    namespace Sel {
+        constexpr Usage TERMINATE_CHARGE = { 0x40, UsageKind::Sel, "TERMINATE_CHARGE" };
+        constexpr Usage TERMINATE_DISCHARGE = { 0x41, UsageKind::Sel, "TERMINATE_DISCHARGE" };
+        constexpr Usage BELOW_REMAINING_CAPACITY_LIMIT = { 0x42, UsageKind::Sel, "BELOW_REMAINING_CAPACITY_LIMIT" };
+        constexpr Usage REMAINING_TIME_LIMIT_EXPIRED = { 0x43, UsageKind::Sel, "REMAINING_TIME_LIMIT_EXPIRED" };
+        constexpr Usage CHARGING = { 0x44, UsageKind::Sel, "CHARGING" };
+        constexpr Usage DISCHARGING = { 0x45, UsageKind::Sel, "DISCHARGING" };
+        constexpr Usage FULLY_CHARGED = { 0x46, UsageKind::Sel, "FULLY_CHARGED" };
+        constexpr Usage FULLY_DISCHARGED = { 0x47, UsageKind::Sel, "FULLY_DISCHARGED" };
+    }
+}

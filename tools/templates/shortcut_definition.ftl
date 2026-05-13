@@ -1,9 +1,7 @@
 #pragma once
-#include "../HID_Shortcuts.h"
-
 /**
- * HID Shortcuts for ${page.name}
+ * Shortcuts for ${page.name}
  */
-<#list page.usages as usage>
-#define ${page.macroChar}_${usage.cleanName} ${page.macroChar}(0x${usage.idHex})
+<#list page.usages as u>
+#define ${page.macroPrefix}_${u.cleanName} Binding(HID::Page::${page.constantName}, HID::${page.namespace}::${u.getPrimaryKind()}::${u.cleanName})
 </#list>

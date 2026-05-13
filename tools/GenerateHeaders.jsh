@@ -1,7 +1,8 @@
 //DEPS com.fasterxml.jackson.core:jackson-databind:2.18.2
 //DEPS org.freemarker:freemarker:2.3.33
 //DEPS org.apache.pdfbox:pdfbox:2.0.32
-//JAVA 21+
+//JAVA 26
+//JBANG_JSHELL_OPTIONS --enable-preview
 
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.annotation.*;
@@ -14,26 +15,36 @@ import java.net.URL;
 import java.util.*;
 import java.util.stream.Collectors;
 
-// --- 1. DATA CLASSES (Top-level for JShell compatibility) ---
+// --- DATA CLASSES (Restored with full getters and sanitized logic) ---
 
 class Usage {
     @JsonProperty("Id") public int id;
     @JsonProperty("Name") public String name;
-    @JsonProperty("Description") public String description;
     @JsonProperty("Kinds") public List<String> kinds;
 
-    public String getName() { return name != null ? name : "UNKNOWN"; }
+    public int getId() { return id; }
+    public String getName() { return name; }
+    public List<String> getKinds() { return kinds; }
+
     public String getIdHex() { return String.format("%02X", id); }
-    public String getDescription() { return description; }
     
     public String getCleanName() {
         if (name == null) return "ID_" + id;
-        String c = name.replace("Keyboard ", "").replace("Keypad ", "").replace("System ", "SYS_")
-                    .replaceAll("[ /\\-\\(\\)\\.]+", "_").toUpperCase().replaceAll("^_+|_+$", "");
-        return (c.isEmpty() || Character.isDigit(c.charAt(0))) ? "ID_" + c : c;
+        return name.replace("Keyboard ", "")
+                   .replace("Keypad ", "")
+                   .replace("System ", "SYS_")
+                   .replaceAll("[ /\\-\\(\\)\\.]+", "_")
+                   .toUpperCase()
+                   .replaceAll("^_+|_+$", "");
     }
-    
-    public String getPrimaryKind() { return (kinds == null || kinds.isEmpty()) ? "OTHER" : kinds.get(0); }
+
+    public String getPrimaryKind() {
+        if (kinds == null || kinds.isEmpty()) return "OTHER";
+        return switch(kinds.get(0)) {
+            case "CA", "CP", "CL", "LC", "DV", "Sel", "OOC", "MC", "OSC", "RTC" -> kinds.get(0);
+            default -> "OTHER";
+        };
+    }
 }
 
 class Page {
@@ -41,90 +52,117 @@ class Page {
     @JsonProperty("Name") public String name;
     @JsonProperty("UsageIds") public List<Usage> usages;
 
+    public int getId() { return id; }
     public String getName() { return name; }
-    public String getIdHex() { return String.format("%02X", id); }
-    public List<Usage> getUsages() { return usages != null ? usages : List.of(); }
+    public List<Usage> getUsages() { return usages; }
 
-    public String getNamespace() {
-        if (name == null) return "Page" + getIdHex();
-        return Map.of("Generic Desktop", "Desktop", "Keyboard/Keypad", "Keyboard", "LED", "LEDs", "Physical Interface Device", "Haptics")
-                  .getOrDefault(name, name.replaceAll("[ /\\-\\(\\)\\.]+", ""));
+    public String getIdHex() { return String.format("%04X", id); }
+
+    // FIXED: Strips slashes and spaces to prevent "NoSuchFileException"
+    public String getNamespace() { 
+        return name.replaceAll("[ /\\-\\(\\)\\.]+", ""); 
     }
 
-    public String getConstantName() {
-        return (name == null) ? "PAGE_" + id : name.toUpperCase().replaceAll("[ /\\-\\(\\)\\.]+", "_").replaceAll("^_+|_+$", "");
+    public String getConstantName() { 
+        return name.replaceAll("[ /\\-\\(\\)\\.]+", "_").toUpperCase(); 
     }
 
-    public String getFilename() { return "Page" + getIdHex() + "_" + getNamespace() + ".h"; }
+    public String getFilename() { return getNamespace() + ".h"; }
     
-    public String getMacroChar() { 
-        return switch(id) { case 1->"D"; case 7->"K"; case 12->"C"; default->"H"+getIdHex(); }; 
+    public String getMacroPrefix() {
+        return switch(id) {
+            case 0x01 -> "gp"; 
+            case 0x07 -> "kp"; 
+            case 0x0C -> "cp"; 
+            default -> {
+                String clean = name.toLowerCase().replaceAll("[^a-z]", "");
+                yield (clean.length() >= 2) ? clean.substring(0, 2) : clean;
+            }
+        };
     }
 
     public Map<String, List<Usage>> getGroupedUsages() {
-        return getUsages().stream().collect(Collectors.groupingBy(Usage::getPrimaryKind, TreeMap::new, Collectors.toList()));
+        if (usages == null) return Collections.emptyMap();
+        return usages.stream().collect(Collectors.groupingBy(Usage::getPrimaryKind));
     }
 }
 
-class HutData { @JsonProperty("UsagePages") public List<Page> pages; }
+class HutData {
+    @JsonProperty("UsagePages") public List<Page> pages;
+    public List<Page> getPages() { return pages; }
+}
 
-// --- 2. EXECUTION LOGIC ---
+// --- MAIN EXECUTION ---
 
-void run() throws Exception {
-    System.out.println(">>> [START] HID Header Generation (HUT 1.7)");
-
+public void main() throws Exception {
     Path dataDir = Paths.get("data");
-    Path pdfPath = dataDir.resolve("hut1_7.pdf");
+    Path includeDir = Paths.get("include");
     Path jsonPath = dataDir.resolve("hut.json");
-    Files.createDirectories(dataDir);
 
+    // 1. Download and Extract logic
     if (!Files.exists(jsonPath)) {
-        System.out.println(">>> [INFO] Extracting JSON from PDF...");
-        try (PDDocument doc = PDDocument.load(pdfPath.toFile())) {
-            var names = doc.getDocumentCatalog().getNames();
-            Map<String, PDComplexFileSpecification> efMap = names.getEmbeddedFiles().getNames();
-            for (var entry : efMap.entrySet()) {
-                if (entry.getKey().toLowerCase().contains("usage")) {
+        Files.createDirectories(dataDir);
+        String pdfUrl = "https://www.usb.org/sites/default/files/hut1_7.pdf";
+        System.out.println("Downloading HUT 1.7 PDF...");
+        
+        Path tempPdf = Files.createTempFile("hut_spec", ".pdf");
+        try (InputStream in = new URL(pdfUrl).openStream()) {
+            Files.copy(in, tempPdf, StandardCopyOption.REPLACE_EXISTING);
+        }
+
+        try (PDDocument doc = PDDocument.load(tempPdf.toFile())) {
+            PDDocumentNameDictionary names = doc.getDocumentCatalog().getNames();
+            Map<String, PDComplexFileSpecification> embeddedFiles = names.getEmbeddedFiles().getNames();
+            for (var entry : embeddedFiles.entrySet()) {
+                if (entry.getKey().toLowerCase().endsWith(".json")) {
                     try (InputStream is = entry.getValue().getEmbeddedFile().createInputStream()) {
                         Files.copy(is, jsonPath, StandardCopyOption.REPLACE_EXISTING);
+                        System.out.println("Extracted: " + entry.getKey());
+                        break;
                     }
-                    break;
                 }
             }
-        }
+        } finally { Files.deleteIfExists(tempPdf); }
     }
 
+    // 2. Load Data
     ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     HutData data = mapper.readValue(jsonPath.toFile(), HutData.class);
     
-    List<Page> activePages = data.pages.stream()
-        .filter(p -> p.getName() != null && !p.getName().contains("Reserved"))
+    List<Page> activePages = data.getPages().stream()
+        .filter(p -> p.getId() != 0 && p.getName() != null && !p.getName().contains("Reserved"))
         .toList();
 
+    // 3. Setup Templates
     Configuration cfg = new Configuration(Configuration.VERSION_2_3_33);
     cfg.setDirectoryForTemplateLoading(new File("templates"));
     cfg.setDefaultEncoding("UTF-8");
 
-    Files.createDirectories(Paths.get("include/hid_pages/"));
-    Files.createDirectories(Paths.get("include/hid_shortcuts/"));
+    // 4. Ensure Directories
+    Files.createDirectories(includeDir.resolve("hid_pages"));
+    Files.createDirectories(includeDir.resolve("hid_shortcuts"));
 
+    // 5. Generate
     for (var page : activePages) {
         Map<String, Object> model = Map.of("page", page);
-        try (var w = Files.newBufferedWriter(Paths.get("include/hid_pages/").resolve(page.getFilename()))) {
-            cfg.getTemplate("page_definition.ftl").process(model, w);
+        
+        // Using BufferedWriters ensures we handle the sanitized filenames correctly
+        try (Writer writer = Files.newBufferedWriter(includeDir.resolve("hid_pages").resolve(page.getFilename()))) {
+            cfg.getTemplate("page_definition.ftl").process(model, writer);
         }
-        try (var w = Files.newBufferedWriter(Paths.get("include/hid_shortcuts/").resolve(page.getFilename()))) {
-            cfg.getTemplate("shortcut_definition.ftl").process(model, w);
+        try (Writer writer = Files.newBufferedWriter(includeDir.resolve("hid_shortcuts").resolve(page.getFilename()))) {
+            cfg.getTemplate("shortcut_definition.ftl").process(model, writer);
         }
     }
 
     Map<String, Object> root = Map.of("pages", activePages);
-    for (String m : List.of("HID_Types", "HID_Metadata", "HID_Shortcuts")) {
-        try (var w = Files.newBufferedWriter(Paths.get("include/" + m + ".h"))) {
-            cfg.getTemplate(m + ".ftl").process(root, w);
+    for (String t : List.of("HID_Types", "HID_Shortcuts", "HID_Metadata", "Bindings")) {
+        try (Writer writer = Files.newBufferedWriter(includeDir.resolve(t + ".h"))) {
+            cfg.getTemplate(t + ".ftl").process(root, writer);
         }
     }
-    System.out.println(">>> [SUCCESS] Headers generated.");
+    
+    System.out.println("Generation complete for HUT 1.7.");
 }
 
-run();
+main();

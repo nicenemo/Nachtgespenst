@@ -1,265 +1,329 @@
 #pragma once
 #include <Arduino.h>
 #include "Bindings.h"
+#include "LedColors.h"
 
+/**
+ * GridLayer holds the Title, the inline Binding array, 
+ * dimensions, and the color reference from LedColors.h.
+ */
 struct GridLayer {
-    const char* pageName;    
-    const Binding* tiles;    
-    uint8_t rows;            
-    uint8_t cols;            
+    const char* title;
+    const Binding* tiles;
+    uint8_t rows;
+    uint8_t cols;
+    CRGB color;
 };
 
 // ==========================================
-// 1. BINDING ARRAYS (Visuele Layouts)
-// ==========================================
-
-// --- 1. Maven Tools (3x3) ---
-const Binding TILES_MAVEN[] = {
-    CS(BTN_B),  CS(BTN_Y),  CS(BTN_U), 
-    BTN_NO,     BTN_NO,     BTN_NO,    
-    CS(BTN_I),  CS(BTN_Q),  CS(BTN_E)  
-};
-
-// --- 2. Office & Productivity (4x3) ---
-const Binding TILES_OFFICE[] = {
-    HYP(BTN_W), HYP(BTN_X), HYP(BTN_P),
-    HYP(BTN_O), HYP(BTN_T), HYP(BTN_N),
-    HYP(BTN_B), HYP(BTN_E), HYP(BTN_Y),
-    HYP(BTN_L), BTN_NO,     BTN_NO
-};
-
-// --- 3. Edit & Navigatie (5x3) ---
-const Binding TILES_EDIT_NAV[] = {
-    BTN_INS,    BTN_HOME,   BTN_PGUP,
-    BTN_DEL,    BTN_END,    BTN_PGDN,
-    CS(BTN_C),  BTN_UP,     CS(BTN_C),
-    CS(BTN_Z),  BTN_NO,     CS(BTN_Z),
-    BTN_LEFT,   BTN_DOWN,   BTN_RGHT,
-    
-};
-
-// --- 4. Systeem & Edit (4x3) ---
-const Binding TILES_SYS_EDIT[] = {
-    BTN_ESC,    BTN_APP,    BTN_PSCR, 
-    BTN_UNDO,   BTN_CUT,    BTN_COPY,
-    BTN_PSTE,   BTN_FIND,   BTN_SYRQ,
-    BTN_SLCK,   BTN_PAUS,   BTN_PWR
-};
-
-// --- 5. F1-F10 (4x3) ---
-const Binding TILES_F1_F10[] = {
-    BTN_F7,     BTN_F8,     BTN_F9,
-    BTN_F4,     BTN_F5,     BTN_F6,
-    BTN_F1,     BTN_F2,     BTN_F3,
-    BTN_ESC,    BTN_F10,    BTN_ENT
-};
-
-// --- 6. F1-F10 MEH (4x3) ---
-const Binding TILES_F1_F10_MEH[] = {
-    MEH(BTN_F7), MEH(BTN_F8), MEH(BTN_F9),
-    MEH(BTN_F4), MEH(BTN_F5), MEH(BTN_F6),
-    MEH(BTN_F1), MEH(BTN_F2), MEH(BTN_F3),
-    BTN_ESC,     MEH(BTN_F10),BTN_ENT
-};
-
-// --- 7. F1-F10 HYPER (4x3) ---
-const Binding TILES_F1_F10_HYP[] = {
-    HYP(BTN_F7), HYP(BTN_F8), HYP(BTN_F9),
-    HYP(BTN_F4), HYP(BTN_F5), HYP(BTN_F6),
-    HYP(BTN_F1), HYP(BTN_F2), HYP(BTN_F3),
-    BTN_ESC,     HYP(BTN_F10),BTN_ENT
-};
-
-// --- 8. F11-F20 (4x3) ---
-const Binding TILES_F11_F20[] = {
-    BTN_F17,    BTN_F18,    BTN_F19,
-    BTN_F14,    BTN_F15,    BTN_F16,
-    BTN_F11,    BTN_F12,    BTN_F13,
-    BTN_ESC,    BTN_F20,    BTN_ENT
-};
-
-// --- 9. F11-F20 MEH (4x3) ---
-const Binding TILES_F11_F20_MEH[] = {
-    MEH(BTN_F17), MEH(BTN_F18), MEH(BTN_F19),
-    MEH(BTN_F14), MEH(BTN_F15), MEH(BTN_F16),
-    MEH(BTN_F11), MEH(BTN_F12), MEH(BTN_F13),
-    BTN_ESC,      MEH(BTN_F20), BTN_ENT
-};
-
-// --- 10. F11-F20 HYPER (4x3) ---
-const Binding TILES_F11_F20_HYP[] = {
-    HYP(BTN_F17), HYP(BTN_F18), HYP(BTN_F19),
-    HYP(BTN_F14), HYP(BTN_F15), HYP(BTN_F16),
-    HYP(BTN_F11), HYP(BTN_F12), HYP(BTN_F13),
-    BTN_ESC,      HYP(BTN_F20), BTN_ENT
-};
-
-// --- 11. F21-F24 (2x2) ---
-const Binding TILES_F21_F24[] = { 
-    BTN_F23, BTN_F24, 
-    BTN_F21, BTN_F22 
-};
-
-// --- 12. F21-F24 MEH (2x2) ---
-const Binding TILES_F21_F24_MEH[] = { 
-    MEH(BTN_F23), MEH(BTN_F24), 
-    MEH(BTN_F21), MEH(BTN_F22) 
-};
-
-// --- 13. F21-F24 HYP (2x2) ---
-const Binding TILES_F21_F24_HYP[] = { 
-    HYP(BTN_F23), HYP(BTN_F24), 
-    HYP(BTN_F21), HYP(BTN_F22) 
-};
-
-// --- 14. Symbol Pad (6x4) ---
-// Gebruikt BTN_K1 t/m BTN_K0 (Bovenste cijferrij)
-const Binding TILES_SYMBOL_PAD[] = {
-    BTN_K7,   BTN_K8,   BTN_K9,   BTN_EXLM,
-    BTN_K4,   BTN_K5,   BTN_K6,   BTN_AT,
-    BTN_K1,   BTN_K2,   BTN_K3,   BTN_HASH,
-    BTN_K0,   BTN_DOT,  BTN_COMM, BTN_DLR,
-    BTN_LPRN, BTN_RPRN, BTN_MINS, BTN_PLUS,
-    BTN_ESC,  BTN_TAB,  BTN_BSPC, BTN_ENT
-};
-
-// --- 15. Numpad Full (6x4) ---
-// Gebruikt BTN_P1 t/m BTN_P0 (Numpad eiland)
-const Binding TILES_NUM_FULL[] = {
-    BTN_NLCK, BTN_PSLS, BTN_PAST, BTN_PMNS,
-    BTN_P7,   BTN_P8,   BTN_P9,   BTN_PPLS,
-    BTN_P4,   BTN_P5,   BTN_P6,   BTN_PDOT,
-    BTN_P1,   BTN_P2,   BTN_P3,   BTN_PENT,
-    BTN_P0,   BTN_P00,  BTN_P000, BTN_PCOM,
-    BTN_ESC,  BTN_TAB,  BTN_BSPC, BTN_ENT
-};
-
-// --- 16. International (3x3) ---
-const Binding TILES_INT[] = {
-    BTN_INT7, BTN_INT8, BTN_INT9,
-    BTN_INT4, BTN_INT5, BTN_INT6,
-    BTN_INT1, BTN_INT2, BTN_INT3
-};
-
-// --- 17. Language & Specials (4x3) ---
-const Binding TILES_LANG[] = {
-    BTN_LNG1,   BTN_LNG2,   BTN_LNG3,
-    BTN_LNG4,   BTN_LNG5,   BTN_CMP,
-    BTN_APP,    BTN_BPIPE,  BTN_LCAPS,
-    BTN_LNUM,   BTN_LSCRL,  BTN_ENT
-};
-
-// --- 18. Media & System (4x3) ---
-const Binding TILES_MEDIA[] = {
-    BTN_PREV,   BTN_PLAY,   BTN_NEXT,
-    BTN_VOLD,   BTN_MUTE,   BTN_VOLU,
-    BTN_STOP,   BTN_MAIL,   BTN_EXPL,
-    BTN_PWR,    BTN_SLP,    BTN_WAKE
-};
-
-// --- 19. MS Teams (4x3) ---
-const Binding TILES_TEAMS[] = {
-    CS(BTN_M),  CS(BTN_O),  CS(BTN_D),
-    BTN_NO,     BTN_UP,     BTN_NO,
-    BTN_LEFT,   BTN_DOWN,   BTN_RGHT,
-    BTN_ESC,    BTN_ENT,    BTN_BSPC
-};
-
-// --- 20. MS Outlook (4x3) ---
-const Binding TILES_OUTLOOK[] = {
-    CS(BTN_N),  CS(BTN_R),  CS(BTN_F),
-    BTN_NO,     BTN_UP,     BTN_NO,
-    BTN_LEFT,   BTN_DOWN,   BTN_RGHT,
-    BTN_DEL,    BTN_ENT,    BTN_BSPC
-};
-
-// --- 21. PowerPoint (4x3) ---
-const Binding TILES_POWERPOINT[] = {
-    BTN_F5,     SHFT(BTN_F5), BTN_ESC,
-    BTN_NO,     BTN_UP,       BTN_PGUP,
-    BTN_LEFT,   BTN_DOWN,     BTN_RGHT,
-    BTN_HOME,   BTN_PGDN,     BTN_END
-};
-
-// --- 22. Browser Control (4x3) ---
-const Binding TILES_BROWSER[] = {
-    BTN_F5,     CS(BTN_R),    CS(BTN_T),
-    BTN_F7,     BTN_UP,       CS(BTN_W), 
-    BTN_LEFT,   BTN_DOWN,     BTN_RGHT,
-    BTN_HOME,   BTN_F11,      BTN_END
-};
-
-// --- 23. Debug IDE (4x3) ---
-const Binding TILES_DEBUG[] = {
-    BTN_F5,     BTN_F9,       CS(BTN_F5),
-    BTN_F10,    BTN_F11,      SHFT(BTN_F11),
-    BTN_NO,     BTN_UP,       BTN_NO,
-    BTN_LEFT,   BTN_DOWN,     BTN_RGHT
-};
-
-// --- 24. App Launch (4x3) ---
-const Binding TILES_APP_LAUNCH[] = {
-    BTN_WWW,    BTN_EXPL,     BTN_MAIL,
-    BTN_CAL,    BTN_TASKS,    BTN_CALC,
-    BTN_DOC,    BTN_XLS,      BTN_PPT,
-    BTN_ESC,    BTN_ENT,      BTN_BSPC
-};
-
-// --- 25. Edit Keys (3x3) ---
-const Binding TILES_EDIT_KEYS[] = {
-    BTN_FIND,   BTN_UNDO,     BTN_NO,
-    BTN_CUT,    BTN_COPY,     BTN_PSTE,
-    BTN_ESC,    BTN_ENT,      BTN_BSPC
-};
-
-// --- 25. Status (3x3) ---
-const Binding TILES_STATUS[] = {
-    BTN_NO,     BTN_UP,       BTN_NO,
-    BTN_LEFT,   BTN_DOWN,     BTN_RGHT,
-    BTN_ESC,    BTN_ENT,      BTN_BSPC
-};
-
-// ==========================================
-// 2. LAYER CONFIGURATIE (Totaal: 26 Grids)
+// FULL INLINE LAYER DEFINITIONS (26 GRIDS)
 // ==========================================
 
 const GridLayer LAYERS[] = {
-    {"Maven Tools",   TILES_MAVEN,       3, 3, LAYER_COLORS[0]},
-    {"Office",        TILES_OFFICE,      4, 3, LAYER_COLORS[1]},
-    {"Edit & Nav",    TILES_EDIT_NAV,    4, 3, LAYER_COLORS[2]},
-    {"System",        TILES_SYS_EDIT,    4, 3, LAYER_COLORS[3]},
-    
-    // F-Toetsen (4x3)
-    {"F1-F10",        TILES_F1_F10,        4, 3, LAYER_COLORR[4]},
-    {"F1-F10 MEH",    TILES_F1_F10_MEH,    4, 3, LAYER_COLORS[5]},
-    {"F1-F10 HYP",    TILES_F1_F10_HYP,    4, 3, LAYER_COLORS[6]},
-    {"F11-F20",       TILES_F11_F20,       4, 3, LAYER_COLORS[7]},
-    {"F11-F20 MEH",   TILES_F11_F20_MEH,   4, 3, LAYER_COLORS[8]},
-    {"F11-F20 HYP",   TILES_F11_F20_HYP,   4, 3, LAYER_COLORS[9]},
-    
-    // F-Toetsen (2x2)
-    {"F21-F24",       TILES_F21_F24,     2, 2, LAYER_COLORS[10]},
-    {"F21-F24 MEH",   TILES_F21_F24_MEH, 2, 2, LAYER_COLORS[11]},
-    {"F21-F24 HYP",   TILES_F21_F24_HYP, 2, 2, LAYER_COLORS[12]},
-    
-    // Overige    
-    {"Symbol Pad",    TILES_SYMBOL_PAD,  6, 4, LAYER_COLORS[13]},
-    {"Numpad Full",   TILES_NUM_FULL,    6, 4, LAYER_COLORS[14]},
-    {"International", TILES_INT,         3, 3, LAYER_COLORS[15]},
-    {"Language",      TILES_LANG,        4, 3, LAYER_COLORS[16]},
-    
-   {"Hard Locks",    TILES_LOCKING,     1, 3, LAYER_COLORS[17]},
-    {"Media",         TILES_MEDIA,       4, 3, LAYER_COLORS[18]},
-    
-   {"MS Teams",      TILES_TEAMS,       4, 3, LAYER_COLORS[19]},
-    {"MS Outlook",    TILES_OUTLOOK,     4, 3, LAYER_COLORS[20]},
-    {"PowerPoint",    TILES_POWERPOINT,  4, 3, LAYER_COLORS[21]},
-    
-    {"Browser Ctrl",  TILES_BROWSER,     4, 3, LAYER_COLORS[22]},
-    {"Debug IDE",     TILES_DEBUG,       4, 3, LAYER_COLORS[23]},
+    // 1. Maven Tools (3x3)
     {
-    "App Launch",    TILES_APP_LAUNCH,   4, 3, LAYER_COLORS[24]},
-    {"Media & Sys",   TILES_MEDIA,       4, 3, LAYER_COLORS[25]}
+        "Maven Tools",
+        (const Binding[]){
+            lcs(kp_B),  lcs(kp_Y),  lcs(kp_U), 
+            none,       none,       none,    
+            lcs(kp_I),  lcs(kp_Q),  lcs(kp_E)
+        },
+        3, 3, LAYER_COLORS[0]
+    },
+
+    // 2. Office & Productivity (4x3)
+    {
+        "Office/Prod",
+        (const Binding[]){
+            lhyp(kp_W), lhyp(kp_X), lhyp(kp_P),
+            lhyp(kp_O), lhyp(kp_T), lhyp(kp_N),
+            lhyp(kp_B), lhyp(kp_E), lhyp(kp_Y),
+            lhyp(kp_L), none,       none
+        },
+        4, 3, LAYER_COLORS[1]
+    },
+
+    // 3. Edit & Navigatie (5x3)
+    {
+        "Edit/Nav",
+        (const Binding[]){
+            kp_INSERT,     kp_HOME,       kp_PAGE_UP,
+            kp_DELETE,     kp_END,        kp_PAGE_DOWN,
+            lcs(kp_C),     kp_UP_ARROW,   lcs(kp_V),
+            kp_LEFT_ARROW, kp_DOWN_ARROW, kp_RIGHT_ARROW,
+            lcs(kp_Z),     lcs(kp_X),     lcs(kp_A)
+        },
+        5, 3, LAYER_COLORS[2]
+    },
+
+    // 4. System & Edit (4x3)
+    {
+        "System",
+        (const Binding[]){
+            kp_ESCAPE,       kp_APPLICATION,  kp_PRINT_SCREEN, 
+            lct(kp_Z),       lct(kp_X),       lct(kp_C),
+            lct(kp_V),       lct(kp_F),       kp_SCROLL_LOCK,
+            kp_PAUSE,        gp_SYS_POWER_DOWN, kp_NUM_LOCK
+        },
+        4, 3, LAYER_COLORS[3]
+    },
+
+    // 5. F1-F10 Standard (4x3)
+    {
+        "F1-F10",
+        (const Binding[]){
+            kp_F7,     kp_F8,     kp_F9,
+            kp_F4,     kp_F5,     kp_F6,
+            kp_F1,     kp_F2,     kp_F3,
+            kp_ESCAPE, kp_F10,    kp_ENTER
+        },
+        4, 3, LAYER_COLORS[4]
+    },
+
+    // 6. F1-F10 MEH (4x3)
+    {
+        "F1-F10 MEH",
+        (const Binding[]){
+            lmeh(kp_F7), lmeh(kp_F8), lmeh(kp_F9),
+            lmeh(kp_F4), lmeh(kp_F5), lmeh(kp_F6),
+            lmeh(kp_F1), lmeh(kp_F2), lmeh(kp_F3),
+            kp_ESCAPE,   lmeh(kp_F10),kp_ENTER
+        },
+        4, 3, LAYER_COLORS[5]
+    },
+
+    // 7. F1-F10 HYPER (4x3)
+    {
+        "F1-F10 HYP",
+        (const Binding[]){
+            lhyp(kp_F7), lhyp(kp_F8), lhyp(kp_F9),
+            lhyp(kp_F4), lhyp(kp_F5), lhyp(kp_F6),
+            lhyp(kp_F1), lhyp(kp_F2), lhyp(kp_F3),
+            kp_ESCAPE,   lhyp(kp_F10),kp_ENTER
+        },
+        4, 3, LAYER_COLORS[6]
+    },
+
+    // 8. F11-F20 Standard (4x3)
+    {
+        "F11-F20",
+        (const Binding[]){
+            kp_F17,    kp_F18,    kp_F19,
+            kp_F14,    kp_F15,    kp_F16,
+            kp_F11,    kp_F12,    kp_F13,
+            kp_ESCAPE, kp_F20,    kp_ENTER
+        },
+        4, 3, LAYER_COLORS[7]
+    },
+
+    // 9. F11-F20 MEH (4x3)
+    {
+        "F11-F20 MEH",
+        (const Binding[]){
+            lmeh(kp_F17), lmeh(kp_F18), lmeh(kp_F19),
+            lmeh(kp_F14), lmeh(kp_F15), lmeh(kp_F16),
+            lmeh(kp_F11), lmeh(kp_F12), lmeh(kp_F13),
+            kp_ESCAPE,    lmeh(kp_F20),kp_ENTER
+        },
+        4, 3, LAYER_COLORS[8]
+    },
+
+    // 10. F11-F20 HYP (4x3)
+    {
+        "F11-F20 HYP",
+        (const Binding[]){
+            lhyp(kp_F17), lhyp(kp_F18), lhyp(kp_F19),
+            lhyp(kp_F14), lhyp(kp_F15), lhyp(kp_F16),
+            lhyp(kp_F11), lhyp(kp_F12), lhyp(kp_F13),
+            kp_ESCAPE,    lhyp(kp_F20),kp_ENTER
+        },
+        4, 3, LAYER_COLORS[9]
+    },
+
+    // 11. F21-F24 Standard (2x2)
+    {
+        "F21-F24",
+        (const Binding[]){
+            kp_F23, kp_F24, 
+            kp_F21, kp_F22 
+        },
+        2, 2, LAYER_COLORS[10]
+    },
+
+    // 12. F21-F24 MEH (2x2)
+    {
+        "F21-F24 MEH",
+        (const Binding[]){
+            lmeh(kp_F23), lmeh(kp_F24), 
+            lmeh(kp_F21), lmeh(kp_F22) 
+        },
+        2, 2, LAYER_COLORS[11]
+    },
+
+    // 13. F21-F24 HYP (2x2)
+    {
+        "F21-F24 HYP",
+        (const Binding[]){
+            lhyp(kp_F23), lhyp(kp_F24), 
+            lhyp(kp_F21), lhyp(kp_F22) 
+        },
+        2, 2, LAYER_COLORS[12]
+    },
+
+    // 14. Symbol Pad (6x4)
+    {
+        "Symbol Pad",
+        (const Binding[]){
+            kp_7,        kp_8,        kp_9,        lsf(kp_1),
+            kp_4,        kp_5,        kp_6,        lsf(kp_2),
+            kp_1,        kp_2,        kp_3,        lsf(kp_3),
+            kp_0,        kp_DOT,      kp_COMMA,    lsf(kp_4),
+            lsf(kp_9),   lsf(kp_0),   kp_MINUS,    lsf(kp_EQUAL),
+            kp_ESCAPE,   kp_TAB,      kp_BACKSPACE, kp_ENTER
+        },
+        6, 4, LAYER_COLORS[13]
+    },
+
+    // 15. Numpad Full (6x4)
+    {
+        "Numpad Full",
+        (const Binding[]){
+            kp_NUM_LOCK, kp_KP_SLASH, kp_KP_ASTERISK, kp_KP_MINUS,
+            kp_KP_7,     kp_KP_8,     kp_KP_9,        kp_KP_PLUS,
+            kp_KP_4,     kp_KP_5,     kp_KP_6,        kp_KP_DOT,
+            kp_KP_1,     kp_KP_2,     kp_KP_3,        kp_KP_ENTER,
+            kp_KP_0,     none,        none,           kp_KP_COMMA,
+            kp_ESCAPE,   kp_TAB,      kp_BACKSPACE,   kp_ENTER
+        },
+        6, 4, LAYER_COLORS[14]
+    },
+
+    // 16. International (3x3)
+    {
+        "International",
+        (const Binding[]){
+            kp_INTERNATIONAL_7, kp_INTERNATIONAL_8, kp_INTERNATIONAL_9,
+            kp_INTERNATIONAL_4, kp_INTERNATIONAL_5, kp_INTERNATIONAL_6,
+            kp_INTERNATIONAL_1, kp_INTERNATIONAL_2, kp_INTERNATIONAL_3
+        },
+        3, 3, LAYER_COLORS[15]
+    },
+
+    // 17. Language & Specials (4x3)
+    {
+        "Language",
+        (const Binding[]){
+            kp_LANG_1,      kp_LANG_2,      kp_LANG_3,
+            kp_LANG_4,      kp_LANG_5,      kp_EXECUTE,
+            kp_APPLICATION, none,           kp_CAPS_LOCK,
+            kp_NUM_LOCK,    kp_SCROLL_LOCK, kp_ENTER
+        },
+        4, 3, LAYER_COLORS[16]
+    },
+
+    // 18. Hard Locks (1x3)
+    {
+        "Hard Locks",
+        (const Binding[]){
+            kp_LOCKING_CAPS_LOCK, kp_LOCKING_NUM_LOCK, kp_LOCKING_SCROLL_LOCK
+        },
+        1, 3, LAYER_COLORS[17]
+    },
+
+    // 19. Media Control (4x3)
+    {
+        "Media",
+        (const Binding[]){
+            cp_SCAN_PREVIOUS_TRACK, cp_PLAY_PAUSE, cp_SCAN_NEXT_TRACK,
+            cp_VOLUME_DECREMENT,    cp_MUTE,       cp_VOLUME_INCREMENT,
+            cp_STOP,                cp_EMAIL_READER, cp_AL_LOCAL_BROWSER,
+            gp_SYS_POWER_DOWN,      gp_SYS_SLEEP,  gp_SYS_WAKE_UP
+        },
+        4, 3, LAYER_COLORS[18]
+    },
+
+    // 20. MS Teams (4x3)
+    {
+        "MS Teams",
+        (const Binding[]){
+            lcs(kp_M),  lcs(kp_O),  lcs(kp_D),
+            none,       kp_UP_ARROW, none,
+            kp_LEFT_ARROW, kp_DOWN_ARROW, kp_RIGHT_ARROW,
+            kp_ESCAPE,  kp_ENTER,   kp_BACKSPACE
+        },
+        4, 3, LAYER_COLORS[19]
+    },
+
+    // 21. MS Outlook (4x3)
+    {
+        "MS Outlook",
+        (const Binding[]){
+            lcs(kp_N),  lcs(kp_R),  lcs(kp_F),
+            none,       kp_UP_ARROW, none,
+            kp_LEFT_ARROW, kp_DOWN_ARROW, kp_RIGHT_ARROW,
+            kp_DELETE,  kp_ENTER,   kp_BACKSPACE
+        },
+        4, 3, LAYER_COLORS[20]
+    },
+
+    // 22. PowerPoint (4x3)
+    {
+        "PowerPoint",
+        (const Binding[]){
+            kp_F5,       lsf(kp_F5), kp_ESCAPE,
+            none,        kp_UP_ARROW, kp_PAGE_UP,
+            kp_LEFT_ARROW, kp_DOWN_ARROW, kp_RIGHT_ARROW,
+            kp_HOME,     kp_PAGE_DOWN, kp_END
+        },
+        4, 3, LAYER_COLORS[21]
+    },
+
+    // 23. Browser Control (4x3)
+    {
+        "Browser Ctrl",
+        (const Binding[]){
+            kp_F5,       lcs(kp_R),  lcs(kp_T),
+            kp_F7,       kp_UP_ARROW, lcs(kp_W), 
+            kp_LEFT_ARROW, kp_DOWN_ARROW, kp_RIGHT_ARROW,
+            kp_HOME,     kp_F11,     kp_END
+        },
+        4, 3, LAYER_COLORS[22]
+    },
+
+    // 24. Debug IDE (4x3)
+    {
+        "Debug IDE",
+        (const Binding[]){
+            kp_F5,       kp_F9,      lcs(kp_F5),
+            kp_F10,      kp_F11,     lsf(kp_F11),
+            none,        kp_UP_ARROW, none,
+            kp_LEFT_ARROW, kp_DOWN_ARROW, kp_RIGHT_ARROW
+        },
+        4, 3, LAYER_COLORS[23]
+    },
+
+    // 25. App Launch (4x3)
+    {
+        "App Launch",
+        (const Binding[]){
+            cp_AL_WWW_BROWSER, cp_AL_LOCAL_BROWSER, cp_EMAIL_READER,
+            cp_AL_CALENDAR,    cp_AL_TASK_MANAGER,  cp_AL_CALCULATOR,
+            none,              none,                none,
+            kp_ESCAPE,         kp_ENTER,            kp_BACKSPACE
+        },
+        4, 3, LAYER_COLORS[24]
+    },
+
+    // 26. Edit Keys (3x3)
+    {
+        "Edit Keys",
+        (const Binding[]){
+            lct(kp_F),   lct(kp_Z),  none,
+            lct(kp_X),   lct(kp_C),  lct(kp_V),
+            kp_ESCAPE,   kp_ENTER,   kp_BACKSPACE
+        },
+        3, 3, LAYER_COLORS[25]
+    }
 };
 
-const uint8_t TOTAL_LAYERS = sizeof(ALL_LAYERS) / sizeof(GridLayer);
+const uint8_t LAYER_COUNT = sizeof(LAYERS) / sizeof(GridLayer);
