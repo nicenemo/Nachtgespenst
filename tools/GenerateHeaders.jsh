@@ -32,11 +32,11 @@ class Usage {
     public String getCleanName() {
         if (name == null) return "ID_" + id;
         
-        // FIX: Strip accents (e.g., MOIRÉ -> MOIRE) to prevent stray '\303' [cite: 286]
+        // FIX: Strip accents (e.g., MOIRÉ -> MOIRE) to prevent stray '\303'
         String normalized = Normalizer.normalize(name, Normalizer.Form.NFD);
         normalized = normalized.replaceAll("\\p{M}", "");
 
-        // FIX: Strict regex [^a-zA-Z0-9_] to kill invalid macro chars (+, :, .) [cite: 286]
+        // FIX: Strict regex [^a-zA-Z0-9_] to kill invalid macro chars (+, :, .)
         return normalized.replace("Keyboard ", "")
                    .replace("Keypad ", "")
                    .replace("System ", "SYS_")
@@ -47,7 +47,7 @@ class Usage {
 
     public String getPrimaryKind() {
         if (kinds == null || kinds.isEmpty()) return "OTHER";
-        // Map common HID names to short codes for template compatibility [cite: 288]
+        // Map common HID names to short codes for template compatibility
         String k = kinds.get(0);
         return switch(k) {
             case "Application Collection" -> "CA";
@@ -67,7 +67,7 @@ class Usage {
 class Page {
     @JsonProperty("Id") public int id;
     @JsonProperty("Name") public String name;
-    @JsonProperty("UsageIds") public List<Usage> usages; // Fixed JSON field mapping [cite: 290]
+    @JsonProperty("UsageIds") public List<Usage> usages; // Fixed JSON field mapping
 
     public int getId() { return id; }
     public String getName() { return name; }
@@ -76,11 +76,11 @@ class Page {
     public String getIdHex() { return String.format("%04X", id); }
 
     public String getNamespace() { 
-        return name.replaceAll("[^a-zA-Z0-9]+", ""); // Prevent NoSuchFileException [cite: 293]
+        return name.replaceAll("[^a-zA-Z0-9]+", ""); // Prevent NoSuchFileException
     }
 
     public String getConstantName() { 
-        return name.replaceAll("[^a-zA-Z0-9]+", "_").toUpperCase(); // [cite: 294]
+        return name.replaceAll("[^a-zA-Z0-9]+", "_").toUpperCase();
     }
 
     public String getFilename() { return getNamespace() + ".h"; }
@@ -92,62 +92,63 @@ class Page {
             case 0x0C -> "cp"; 
             default -> {
                 String clean = name.toLowerCase().replaceAll("[^a-z]", "");
-                yield (clean.length() >= 2) ? clean.substring(0, 2) : clean; // [cite: 298]
+                yield (clean.length() >= 2) ? clean.substring(0, 2) : clean;
             }
         };
     }
 
     public Map<String, List<Usage>> getGroupedUsages() {
         if (usages == null) return Collections.emptyMap();
-        return usages.stream().collect(Collectors.groupingBy(Usage::getPrimaryKind)); // [cite: 300]
+        return usages.stream().collect(Collectors.groupingBy(Usage::getPrimaryKind));
     }
 }
 
 class HutData {
-    @JsonProperty("UsagePages") public List<Page> pages; // Correct root object [cite: 301]
+    @JsonProperty("UsagePages") public List<Page> pages; // Correct root object
     public List<Page> getPages() { return pages; }
 }
 
-// --- MAIN EXECUTION (Original extraction logic restored) ---
+// --- MAIN EXECUTION (Original extraction logic restored with data directory fix) ---
 
 public void main() throws Exception {
-    Path dataDir = Paths.get("data"); // [cite: 301]
-    Path includeDir = Paths.get("include"); // [cite: 302]
+    Path dataDir = Paths.get("data");
+    Path includeDir = Paths.get("include");
     Path jsonPath = dataDir.resolve("hut.json");
+    Path pdfPath = dataDir.resolve("hut_spec.pdf");
 
-    // 1. Ensure Directories exist [cite: 302, 311]
+    // 1. Ensure Directories exist (Including data directory for PDF and JSON)
     Files.createDirectories(dataDir);
     Files.createDirectories(includeDir.resolve("hid_pages"));
     Files.createDirectories(includeDir.resolve("hid_shortcuts"));
 
-    // 2. Download and Extract logic (Exact original) [cite: 303, 304, 305, 306, 307]
+    // 2. Download and Extract logic (Modified to use dataDir for the PDF as well)
     if (!Files.exists(jsonPath)) {
         String pdfUrl = "https://www.usb.org/sites/default/files/hut1_7.pdf";
-        System.out.println("Downloading HUT 1.7 PDF...");
         
-        Path tempPdf = Files.createTempFile("hut_spec", ".pdf");
-        try (InputStream in = new URL(pdfUrl).openStream()) {
-            Files.copy(in, tempPdf, StandardCopyOption.REPLACE_EXISTING);
+        if (!Files.exists(pdfPath)) {
+            System.out.println("Downloading HUT 1.7 PDF to " + pdfPath + "...");
+            try (InputStream in = new URL(pdfUrl).openStream()) {
+                Files.copy(in, pdfPath, StandardCopyOption.REPLACE_EXISTING);
+            }
         }
 
-        try (PDDocument doc = PDDocument.load(tempPdf.toFile())) {
+        System.out.println("Extracting JSON from " + pdfPath + "...");
+        try (PDDocument doc = PDDocument.load(pdfPath.toFile())) {
             PDDocumentNameDictionary names = doc.getDocumentCatalog().getNames();
             Map<String, PDComplexFileSpecification> embeddedFiles = names.getEmbeddedFiles().getNames();
             for (var entry : embeddedFiles.entrySet()) {
                 if (entry.getKey().toLowerCase().endsWith(".json")) {
                     try (InputStream is = entry.getValue().getEmbeddedFile().createInputStream()) {
                         Files.copy(is, jsonPath, StandardCopyOption.REPLACE_EXISTING);
-                        System.out.println("Extracted: " + entry.getKey());
+                        System.out.println("Extracted: " + entry.getKey() + " to " + jsonPath);
                         break;
                     }
                 }
             }
-        } finally { 
-            Files.deleteIfExists(tempPdf); 
         }
     }
 
-    // 3. Load Data [cite: 309]
+    // 3. Load Data
     ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     HutData data = mapper.readValue(jsonPath.toFile(), HutData.class);
     
@@ -155,12 +156,12 @@ public void main() throws Exception {
         .filter(p -> p.getId() != 0 && p.getName() != null && !p.getName().contains("Reserved"))
         .toList();
 
-    // 4. Setup Templates [cite: 310]
+    // 4. Setup Templates
     Configuration cfg = new Configuration(Configuration.VERSION_2_3_33);
     cfg.setDirectoryForTemplateLoading(new File("templates"));
     cfg.setDefaultEncoding("UTF-8");
 
-    // 5. Generate [cite: 312, 313, 314, 315]
+    // 5. Generate
     for (var page : activePages) {
         Map<String, Object> model = Map.of("page", page);
         try (Writer writer = Files.newBufferedWriter(includeDir.resolve("hid_pages").resolve(page.getFilename()))) {
