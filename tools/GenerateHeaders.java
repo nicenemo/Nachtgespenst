@@ -18,7 +18,7 @@ import java.util.concurrent.*;
 
 // --- 1. GLOBALS ---
 // Replace with the URL you provided
-final String PDF_URL  = "https://usb.org/sites/default/files/hut1_6.pdf"; 
+final String PDF_URL  = "https://usb.org/sites/default/files/hut1_7.pdf"; 
 final Path PDF_PATH   = Path.of("data/hut1_7.pdf");
 final Path JSON_PATH  = Path.of("data/hut.json");
 final Path DIR_CONST  = Path.of("include/hid_pages");
