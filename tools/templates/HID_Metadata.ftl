@@ -1,16 +1,16 @@
 #pragma once
-#include "HID_Types.h"
+#include \"HID_Types.h\"
 
 namespace HID {
     struct PageInfo {
         uint16_t id;
         const char* name;
-        const char* macro; // Prefix used for Bindings (e.g., "kp")
+        const char* macro; 
     };
 
     namespace Page {
 <#list pages as page>
-        constexpr PageInfo ${page.namespace} = { 0x${page.idHex}, "${page.name}", "${page.macroPrefix}" };
+        constexpr PageInfo ${page.namespace} = { 0x${page.idHex}, \"${page.name}\", \"${page.macroPrefix}\" };
 </#list>
     }
 

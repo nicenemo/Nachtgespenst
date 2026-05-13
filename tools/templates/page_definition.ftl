@@ -6,7 +6,9 @@ namespace HID::${page.namespace} {
 <#list page.groupedUsages as kind, items>
     namespace ${kind} {
     <#list items as usage>
-        constexpr Usage ${usage.cleanName} = { 0x${usage.idHex}, UsageKind::${kind}, "${usage.cleanName}" };
+        <#assign safeName = usage.cleanName>
+        <#if safeName?matches("^[0-9].*")><#assign safeName = "ID_" + safeName></#if>
+        constexpr Usage ${safeName} = { 0x${usage.idHex}, UsageKind::${kind}, "${safeName}" };
     </#list>
     }
 </#list>

@@ -28,23 +28,22 @@ class Usage {
     public List<String> getKinds() { return kinds; }
 
     public String getIdHex() { return String.format("%02X", id); }
-    
+
     public String getCleanName() {
         if (name == null) return "ID_" + id;
-        
-        // FIX: Strip accents (e.g., MOIRÉ -> MOIRE) to prevent stray '\303'
         String normalized = Normalizer.normalize(name, Normalizer.Form.NFD);
         normalized = normalized.replaceAll("\\p{M}", "");
 
-        // FIX: Strict regex [^a-zA-Z0-9_] to kill invalid macro chars (+, :, .)
         return normalized.replace("Keyboard ", "")
                    .replace("Keypad ", "")
                    .replace("System ", "SYS_")
+                   .replace("AL ", "") // FIX for cp_EMAIL_READER
+                   .replace("AC ", "") // FIX for cp_WWW_BROWSER
                    .replaceAll("[^a-zA-Z0-9_]+", "_")
                    .toUpperCase()
                    .replaceAll("^_+|_+$", "");
     }
-
+    
     public String getPrimaryKind() {
         if (kinds == null || kinds.isEmpty()) return "OTHER";
         // Map common HID names to short codes for template compatibility
