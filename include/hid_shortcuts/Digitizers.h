@@ -2,111 +2,327 @@
 /**
  * Shortcuts for Digitizers
  */
-#define di_DIGITIZER Binding(HID::Page::DIGITIZERS, HID::Digitizers::CA::DIGITIZER)
-#define di_PEN Binding(HID::Page::DIGITIZERS, HID::Digitizers::CA::PEN)
-#define di_LIGHT_PEN Binding(HID::Page::DIGITIZERS, HID::Digitizers::CA::LIGHT_PEN)
-#define di_TOUCH_SCREEN Binding(HID::Page::DIGITIZERS, HID::Digitizers::CA::TOUCH_SCREEN)
-#define di_TOUCH_PAD Binding(HID::Page::DIGITIZERS, HID::Digitizers::CA::TOUCH_PAD)
-#define di_WHITEBOARD Binding(HID::Page::DIGITIZERS, HID::Digitizers::CA::WHITEBOARD)
-#define di_COORDINATE_MEASURING_MACHINE Binding(HID::Page::DIGITIZERS, HID::Digitizers::CA::COORDINATE_MEASURING_MACHINE)
-#define di_3D_DIGITIZER Binding(HID::Page::DIGITIZERS, HID::Digitizers::CA::3D_DIGITIZER)
-#define di_STEREO_PLOTTER Binding(HID::Page::DIGITIZERS, HID::Digitizers::CA::STEREO_PLOTTER)
-#define di_ARTICULATED_ARM Binding(HID::Page::DIGITIZERS, HID::Digitizers::CA::ARTICULATED_ARM)
-#define di_ARMATURE Binding(HID::Page::DIGITIZERS, HID::Digitizers::CA::ARMATURE)
-#define di_MULTIPLE_POINT_DIGITIZER Binding(HID::Page::DIGITIZERS, HID::Digitizers::CA::MULTIPLE_POINT_DIGITIZER)
-#define di_FREE_SPACE_WAND Binding(HID::Page::DIGITIZERS, HID::Digitizers::CA::FREE_SPACE_WAND)
-#define di_DEVICE_CONFIGURATION Binding(HID::Page::DIGITIZERS, HID::Digitizers::CA::DEVICE_CONFIGURATION)
-#define di_CAPACITIVE_HEAT_MAP_DIGITIZER Binding(HID::Page::DIGITIZERS, HID::Digitizers::CA::CAPACITIVE_HEAT_MAP_DIGITIZER)
-#define di_STYLUS Binding(HID::Page::DIGITIZERS, HID::Digitizers::CA::STYLUS)
-#define di_PUCK Binding(HID::Page::DIGITIZERS, HID::Digitizers::CL::PUCK)
-#define di_FINGER Binding(HID::Page::DIGITIZERS, HID::Digitizers::CL::FINGER)
-#define di_DEVICE_SETTINGS Binding(HID::Page::DIGITIZERS, HID::Digitizers::CL::DEVICE_SETTINGS)
-#define di_CHARACTER_GESTURE Binding(HID::Page::DIGITIZERS, HID::Digitizers::CL::CHARACTER_GESTURE)
-#define di_TIP_PRESSURE Binding(HID::Page::DIGITIZERS, HID::Digitizers::DV::TIP_PRESSURE)
-#define di_BARREL_PRESSURE Binding(HID::Page::DIGITIZERS, HID::Digitizers::DV::BARREL_PRESSURE)
-#define di_IN_RANGE Binding(HID::Page::DIGITIZERS, HID::Digitizers::MC::IN_RANGE)
-#define di_TOUCH Binding(HID::Page::DIGITIZERS, HID::Digitizers::MC::TOUCH)
-#define di_UNTOUCH Binding(HID::Page::DIGITIZERS, HID::Digitizers::OSC::UNTOUCH)
-#define di_TAP Binding(HID::Page::DIGITIZERS, HID::Digitizers::OSC::TAP)
-#define di_QUALITY Binding(HID::Page::DIGITIZERS, HID::Digitizers::DV::QUALITY)
-#define di_DATA_VALID Binding(HID::Page::DIGITIZERS, HID::Digitizers::MC::DATA_VALID)
-#define di_TRANSDUCER_INDEX Binding(HID::Page::DIGITIZERS, HID::Digitizers::DV::TRANSDUCER_INDEX)
-#define di_TABLET_FUNCTION_KEYS Binding(HID::Page::DIGITIZERS, HID::Digitizers::CL::TABLET_FUNCTION_KEYS)
-#define di_PROGRAM_CHANGE_KEYS Binding(HID::Page::DIGITIZERS, HID::Digitizers::CL::PROGRAM_CHANGE_KEYS)
-#define di_BATTERY_STRENGTH Binding(HID::Page::DIGITIZERS, HID::Digitizers::DV::BATTERY_STRENGTH)
-#define di_INVERT Binding(HID::Page::DIGITIZERS, HID::Digitizers::MC::INVERT)
-#define di_X_TILT Binding(HID::Page::DIGITIZERS, HID::Digitizers::DV::X_TILT)
-#define di_Y_TILT Binding(HID::Page::DIGITIZERS, HID::Digitizers::DV::Y_TILT)
-#define di_AZIMUTH Binding(HID::Page::DIGITIZERS, HID::Digitizers::DV::AZIMUTH)
-#define di_ALTITUDE Binding(HID::Page::DIGITIZERS, HID::Digitizers::DV::ALTITUDE)
-#define di_TWIST Binding(HID::Page::DIGITIZERS, HID::Digitizers::DV::TWIST)
-#define di_TIP_SWITCH Binding(HID::Page::DIGITIZERS, HID::Digitizers::MC::TIP_SWITCH)
-#define di_SECONDARY_TIP_SWITCH Binding(HID::Page::DIGITIZERS, HID::Digitizers::MC::SECONDARY_TIP_SWITCH)
-#define di_BARREL_SWITCH Binding(HID::Page::DIGITIZERS, HID::Digitizers::MC::BARREL_SWITCH)
-#define di_ERASER Binding(HID::Page::DIGITIZERS, HID::Digitizers::MC::ERASER)
-#define di_TABLET_PICK Binding(HID::Page::DIGITIZERS, HID::Digitizers::MC::TABLET_PICK)
-#define di_TOUCH_VALID Binding(HID::Page::DIGITIZERS, HID::Digitizers::MC::TOUCH_VALID)
-#define di_WIDTH Binding(HID::Page::DIGITIZERS, HID::Digitizers::DV::WIDTH)
-#define di_HEIGHT Binding(HID::Page::DIGITIZERS, HID::Digitizers::DV::HEIGHT)
-#define di_CONTACT_IDENTIFIER Binding(HID::Page::DIGITIZERS, HID::Digitizers::DV::CONTACT_IDENTIFIER)
-#define di_DEVICE_MODE Binding(HID::Page::DIGITIZERS, HID::Digitizers::DV::DEVICE_MODE)
-#define di_DEVICE_IDENTIFIER Binding(HID::Page::DIGITIZERS, HID::Digitizers::DV::DEVICE_IDENTIFIER)
-#define di_CONTACT_COUNT Binding(HID::Page::DIGITIZERS, HID::Digitizers::DV::CONTACT_COUNT)
+#ifndef di_DIGITIZER
+#define di_DIGITIZER Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::DIGITIZER)
+#endif
+#ifndef di_PEN
+#define di_PEN Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::PEN)
+#endif
+#ifndef di_LIGHT_PEN
+#define di_LIGHT_PEN Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::LIGHT_PEN)
+#endif
+#ifndef di_TOUCH_SCREEN
+#define di_TOUCH_SCREEN Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::TOUCH_SCREEN)
+#endif
+#ifndef di_TOUCH_PAD
+#define di_TOUCH_PAD Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::TOUCH_PAD)
+#endif
+#ifndef di_WHITEBOARD
+#define di_WHITEBOARD Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::WHITEBOARD)
+#endif
+#ifndef di_COORDINATE_MEASURING_MACHINE
+#define di_COORDINATE_MEASURING_MACHINE Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::COORDINATE_MEASURING_MACHINE)
+#endif
+#ifndef di_3D_DIGITIZER
+#define di_3D_DIGITIZER Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::3D_DIGITIZER)
+#endif
+#ifndef di_STEREO_PLOTTER
+#define di_STEREO_PLOTTER Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::STEREO_PLOTTER)
+#endif
+#ifndef di_ARTICULATED_ARM
+#define di_ARTICULATED_ARM Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::ARTICULATED_ARM)
+#endif
+#ifndef di_ARMATURE
+#define di_ARMATURE Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::ARMATURE)
+#endif
+#ifndef di_MULTIPLE_POINT_DIGITIZER
+#define di_MULTIPLE_POINT_DIGITIZER Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::MULTIPLE_POINT_DIGITIZER)
+#endif
+#ifndef di_FREE_SPACE_WAND
+#define di_FREE_SPACE_WAND Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::FREE_SPACE_WAND)
+#endif
+#ifndef di_DEVICE_CONFIGURATION
+#define di_DEVICE_CONFIGURATION Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::DEVICE_CONFIGURATION)
+#endif
+#ifndef di_CAPACITIVE_HEAT_MAP_DIGITIZER
+#define di_CAPACITIVE_HEAT_MAP_DIGITIZER Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::CAPACITIVE_HEAT_MAP_DIGITIZER)
+#endif
+#ifndef di_STYLUS
+#define di_STYLUS Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::STYLUS)
+#endif
+#ifndef di_PUCK
+#define di_PUCK Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::PUCK)
+#endif
+#ifndef di_FINGER
+#define di_FINGER Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::FINGER)
+#endif
+#ifndef di_DEVICE_SETTINGS
+#define di_DEVICE_SETTINGS Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::DEVICE_SETTINGS)
+#endif
+#ifndef di_CHARACTER_GESTURE
+#define di_CHARACTER_GESTURE Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::CHARACTER_GESTURE)
+#endif
+#ifndef di_TIP_PRESSURE
+#define di_TIP_PRESSURE Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::TIP_PRESSURE)
+#endif
+#ifndef di_BARREL_PRESSURE
+#define di_BARREL_PRESSURE Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::BARREL_PRESSURE)
+#endif
+#ifndef di_IN_RANGE
+#define di_IN_RANGE Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::IN_RANGE)
+#endif
+#ifndef di_TOUCH
+#define di_TOUCH Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::TOUCH)
+#endif
+#ifndef di_UNTOUCH
+#define di_UNTOUCH Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::UNTOUCH)
+#endif
+#ifndef di_TAP
+#define di_TAP Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::TAP)
+#endif
+#ifndef di_QUALITY
+#define di_QUALITY Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::QUALITY)
+#endif
+#ifndef di_DATA_VALID
+#define di_DATA_VALID Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::DATA_VALID)
+#endif
+#ifndef di_TRANSDUCER_INDEX
+#define di_TRANSDUCER_INDEX Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::TRANSDUCER_INDEX)
+#endif
+#ifndef di_TABLET_FUNCTION_KEYS
+#define di_TABLET_FUNCTION_KEYS Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::TABLET_FUNCTION_KEYS)
+#endif
+#ifndef di_PROGRAM_CHANGE_KEYS
+#define di_PROGRAM_CHANGE_KEYS Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::PROGRAM_CHANGE_KEYS)
+#endif
+#ifndef di_BATTERY_STRENGTH
+#define di_BATTERY_STRENGTH Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::BATTERY_STRENGTH)
+#endif
+#ifndef di_INVERT
+#define di_INVERT Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::INVERT)
+#endif
+#ifndef di_X_TILT
+#define di_X_TILT Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::X_TILT)
+#endif
+#ifndef di_Y_TILT
+#define di_Y_TILT Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::Y_TILT)
+#endif
+#ifndef di_AZIMUTH
+#define di_AZIMUTH Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::AZIMUTH)
+#endif
+#ifndef di_ALTITUDE
+#define di_ALTITUDE Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::ALTITUDE)
+#endif
+#ifndef di_TWIST
+#define di_TWIST Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::TWIST)
+#endif
+#ifndef di_TIP_SWITCH
+#define di_TIP_SWITCH Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::TIP_SWITCH)
+#endif
+#ifndef di_SECONDARY_TIP_SWITCH
+#define di_SECONDARY_TIP_SWITCH Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::SECONDARY_TIP_SWITCH)
+#endif
+#ifndef di_BARREL_SWITCH
+#define di_BARREL_SWITCH Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::BARREL_SWITCH)
+#endif
+#ifndef di_ERASER
+#define di_ERASER Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::ERASER)
+#endif
+#ifndef di_TABLET_PICK
+#define di_TABLET_PICK Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::TABLET_PICK)
+#endif
+#ifndef di_TOUCH_VALID
+#define di_TOUCH_VALID Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::TOUCH_VALID)
+#endif
+#ifndef di_WIDTH
+#define di_WIDTH Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::WIDTH)
+#endif
+#ifndef di_HEIGHT
+#define di_HEIGHT Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::HEIGHT)
+#endif
+#ifndef di_CONTACT_IDENTIFIER
+#define di_CONTACT_IDENTIFIER Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::CONTACT_IDENTIFIER)
+#endif
+#ifndef di_DEVICE_MODE
+#define di_DEVICE_MODE Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::DEVICE_MODE)
+#endif
+#ifndef di_DEVICE_IDENTIFIER
+#define di_DEVICE_IDENTIFIER Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::DEVICE_IDENTIFIER)
+#endif
+#ifndef di_CONTACT_COUNT
+#define di_CONTACT_COUNT Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::CONTACT_COUNT)
+#endif
+#ifndef di_CONTACT_COUNT_MAXIMUM
 #define di_CONTACT_COUNT_MAXIMUM Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::CONTACT_COUNT_MAXIMUM)
-#define di_SCAN_TIME Binding(HID::Page::DIGITIZERS, HID::Digitizers::DV::SCAN_TIME)
+#endif
+#ifndef di_SCAN_TIME
+#define di_SCAN_TIME Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::SCAN_TIME)
+#endif
+#ifndef di_SURFACE_SWITCH
 #define di_SURFACE_SWITCH Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::SURFACE_SWITCH)
+#endif
+#ifndef di_BUTTON_SWITCH
 #define di_BUTTON_SWITCH Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::BUTTON_SWITCH)
+#endif
+#ifndef di_PAD_TYPE
 #define di_PAD_TYPE Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::PAD_TYPE)
-#define di_SECONDARY_BARREL_SWITCH Binding(HID::Page::DIGITIZERS, HID::Digitizers::MC::SECONDARY_BARREL_SWITCH)
+#endif
+#ifndef di_SECONDARY_BARREL_SWITCH
+#define di_SECONDARY_BARREL_SWITCH Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::SECONDARY_BARREL_SWITCH)
+#endif
+#ifndef di_TRANSDUCER_SERIAL_NUMBER
 #define di_TRANSDUCER_SERIAL_NUMBER Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::TRANSDUCER_SERIAL_NUMBER)
-#define di_PREFERRED_COLOR Binding(HID::Page::DIGITIZERS, HID::Digitizers::DV::PREFERRED_COLOR)
-#define di_PREFERRED_COLOR_IS_LOCKED Binding(HID::Page::DIGITIZERS, HID::Digitizers::MC::PREFERRED_COLOR_IS_LOCKED)
-#define di_PREFERRED_LINE_WIDTH Binding(HID::Page::DIGITIZERS, HID::Digitizers::DV::PREFERRED_LINE_WIDTH)
-#define di_PREFERRED_LINE_WIDTH_IS_LOCKED Binding(HID::Page::DIGITIZERS, HID::Digitizers::MC::PREFERRED_LINE_WIDTH_IS_LOCKED)
+#endif
+#ifndef di_PREFERRED_COLOR
+#define di_PREFERRED_COLOR Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::PREFERRED_COLOR)
+#endif
+#ifndef di_PREFERRED_COLOR_IS_LOCKED
+#define di_PREFERRED_COLOR_IS_LOCKED Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::PREFERRED_COLOR_IS_LOCKED)
+#endif
+#ifndef di_PREFERRED_LINE_WIDTH
+#define di_PREFERRED_LINE_WIDTH Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::PREFERRED_LINE_WIDTH)
+#endif
+#ifndef di_PREFERRED_LINE_WIDTH_IS_LOCKED
+#define di_PREFERRED_LINE_WIDTH_IS_LOCKED Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::PREFERRED_LINE_WIDTH_IS_LOCKED)
+#endif
+#ifndef di_LATENCY_MODE
 #define di_LATENCY_MODE Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::LATENCY_MODE)
-#define di_GESTURE_CHARACTER_QUALITY Binding(HID::Page::DIGITIZERS, HID::Digitizers::DV::GESTURE_CHARACTER_QUALITY)
-#define di_CHARACTER_GESTURE_DATA_LENGTH Binding(HID::Page::DIGITIZERS, HID::Digitizers::DV::CHARACTER_GESTURE_DATA_LENGTH)
-#define di_CHARACTER_GESTURE_DATA Binding(HID::Page::DIGITIZERS, HID::Digitizers::DV::CHARACTER_GESTURE_DATA)
+#endif
+#ifndef di_GESTURE_CHARACTER_QUALITY
+#define di_GESTURE_CHARACTER_QUALITY Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::GESTURE_CHARACTER_QUALITY)
+#endif
+#ifndef di_CHARACTER_GESTURE_DATA_LENGTH
+#define di_CHARACTER_GESTURE_DATA_LENGTH Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::CHARACTER_GESTURE_DATA_LENGTH)
+#endif
+#ifndef di_CHARACTER_GESTURE_DATA
+#define di_CHARACTER_GESTURE_DATA Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::CHARACTER_GESTURE_DATA)
+#endif
+#ifndef di_GESTURE_CHARACTER_ENCODING
 #define di_GESTURE_CHARACTER_ENCODING Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::GESTURE_CHARACTER_ENCODING)
-#define di_UTF8_CHARACTER_GESTURE_ENCODING Binding(HID::Page::DIGITIZERS, HID::Digitizers::Sel::UTF8_CHARACTER_GESTURE_ENCODING)
-#define di_UTF16_LITTLE_ENDIAN_CHARACTER_GESTURE_ENCODING Binding(HID::Page::DIGITIZERS, HID::Digitizers::Sel::UTF16_LITTLE_ENDIAN_CHARACTER_GESTURE_ENCODING)
-#define di_UTF16_BIG_ENDIAN_CHARACTER_GESTURE_ENCODING Binding(HID::Page::DIGITIZERS, HID::Digitizers::Sel::UTF16_BIG_ENDIAN_CHARACTER_GESTURE_ENCODING)
-#define di_UTF32_LITTLE_ENDIAN_CHARACTER_GESTURE_ENCODING Binding(HID::Page::DIGITIZERS, HID::Digitizers::Sel::UTF32_LITTLE_ENDIAN_CHARACTER_GESTURE_ENCODING)
-#define di_UTF32_BIG_ENDIAN_CHARACTER_GESTURE_ENCODING Binding(HID::Page::DIGITIZERS, HID::Digitizers::Sel::UTF32_BIG_ENDIAN_CHARACTER_GESTURE_ENCODING)
+#endif
+#ifndef di_UTF8_CHARACTER_GESTURE_ENCODING
+#define di_UTF8_CHARACTER_GESTURE_ENCODING Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::UTF8_CHARACTER_GESTURE_ENCODING)
+#endif
+#ifndef di_UTF16_LITTLE_ENDIAN_CHARACTER_GESTURE_ENCODING
+#define di_UTF16_LITTLE_ENDIAN_CHARACTER_GESTURE_ENCODING Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::UTF16_LITTLE_ENDIAN_CHARACTER_GESTURE_ENCODING)
+#endif
+#ifndef di_UTF16_BIG_ENDIAN_CHARACTER_GESTURE_ENCODING
+#define di_UTF16_BIG_ENDIAN_CHARACTER_GESTURE_ENCODING Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::UTF16_BIG_ENDIAN_CHARACTER_GESTURE_ENCODING)
+#endif
+#ifndef di_UTF32_LITTLE_ENDIAN_CHARACTER_GESTURE_ENCODING
+#define di_UTF32_LITTLE_ENDIAN_CHARACTER_GESTURE_ENCODING Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::UTF32_LITTLE_ENDIAN_CHARACTER_GESTURE_ENCODING)
+#endif
+#ifndef di_UTF32_BIG_ENDIAN_CHARACTER_GESTURE_ENCODING
+#define di_UTF32_BIG_ENDIAN_CHARACTER_GESTURE_ENCODING Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::UTF32_BIG_ENDIAN_CHARACTER_GESTURE_ENCODING)
+#endif
+#ifndef di_CAPACITIVE_HEAT_MAP_PROTOCOL_VENDOR_ID
 #define di_CAPACITIVE_HEAT_MAP_PROTOCOL_VENDOR_ID Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::CAPACITIVE_HEAT_MAP_PROTOCOL_VENDOR_ID)
+#endif
+#ifndef di_CAPACITIVE_HEAT_MAP_PROTOCOL_VERSION
 #define di_CAPACITIVE_HEAT_MAP_PROTOCOL_VERSION Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::CAPACITIVE_HEAT_MAP_PROTOCOL_VERSION)
-#define di_CAPACITIVE_HEAT_MAP_FRAME_DATA Binding(HID::Page::DIGITIZERS, HID::Digitizers::DV::CAPACITIVE_HEAT_MAP_FRAME_DATA)
+#endif
+#ifndef di_CAPACITIVE_HEAT_MAP_FRAME_DATA
+#define di_CAPACITIVE_HEAT_MAP_FRAME_DATA Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::CAPACITIVE_HEAT_MAP_FRAME_DATA)
+#endif
+#ifndef di_GESTURE_CHARACTER_ENABLE
 #define di_GESTURE_CHARACTER_ENABLE Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::GESTURE_CHARACTER_ENABLE)
+#endif
+#ifndef di_TRANSDUCER_SERIAL_NUMBER_PART_2
 #define di_TRANSDUCER_SERIAL_NUMBER_PART_2 Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::TRANSDUCER_SERIAL_NUMBER_PART_2)
+#endif
+#ifndef di_NO_PREFERRED_COLOR
 #define di_NO_PREFERRED_COLOR Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::NO_PREFERRED_COLOR)
+#endif
+#ifndef di_PREFERRED_LINE_STYLE
 #define di_PREFERRED_LINE_STYLE Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::PREFERRED_LINE_STYLE)
-#define di_PREFERRED_LINE_STYLE_IS_LOCKED Binding(HID::Page::DIGITIZERS, HID::Digitizers::MC::PREFERRED_LINE_STYLE_IS_LOCKED)
-#define di_INK Binding(HID::Page::DIGITIZERS, HID::Digitizers::Sel::INK)
-#define di_PENCIL Binding(HID::Page::DIGITIZERS, HID::Digitizers::Sel::PENCIL)
-#define di_HIGHLIGHTER Binding(HID::Page::DIGITIZERS, HID::Digitizers::Sel::HIGHLIGHTER)
-#define di_CHISEL_MARKER Binding(HID::Page::DIGITIZERS, HID::Digitizers::Sel::CHISEL_MARKER)
-#define di_BRUSH Binding(HID::Page::DIGITIZERS, HID::Digitizers::Sel::BRUSH)
-#define di_NO_PREFERENCE Binding(HID::Page::DIGITIZERS, HID::Digitizers::Sel::NO_PREFERENCE)
-#define di_DIGITIZER_DIAGNOSTIC Binding(HID::Page::DIGITIZERS, HID::Digitizers::CL::DIGITIZER_DIAGNOSTIC)
+#endif
+#ifndef di_PREFERRED_LINE_STYLE_IS_LOCKED
+#define di_PREFERRED_LINE_STYLE_IS_LOCKED Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::PREFERRED_LINE_STYLE_IS_LOCKED)
+#endif
+#ifndef di_INK
+#define di_INK Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::INK)
+#endif
+#ifndef di_PENCIL
+#define di_PENCIL Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::PENCIL)
+#endif
+#ifndef di_HIGHLIGHTER
+#define di_HIGHLIGHTER Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::HIGHLIGHTER)
+#endif
+#ifndef di_CHISEL_MARKER
+#define di_CHISEL_MARKER Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::CHISEL_MARKER)
+#endif
+#ifndef di_BRUSH
+#define di_BRUSH Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::BRUSH)
+#endif
+#ifndef di_NO_PREFERENCE
+#define di_NO_PREFERENCE Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::NO_PREFERENCE)
+#endif
+#ifndef di_DIGITIZER_DIAGNOSTIC
+#define di_DIGITIZER_DIAGNOSTIC Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::DIGITIZER_DIAGNOSTIC)
+#endif
+#ifndef di_DIGITIZER_ERROR
 #define di_DIGITIZER_ERROR Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::DIGITIZER_ERROR)
-#define di_ERR_NORMAL_STATUS Binding(HID::Page::DIGITIZERS, HID::Digitizers::Sel::ERR_NORMAL_STATUS)
-#define di_ERR_TRANSDUCERS_EXCEEDED Binding(HID::Page::DIGITIZERS, HID::Digitizers::Sel::ERR_TRANSDUCERS_EXCEEDED)
-#define di_ERR_FULL_TRANS_FEATURES_UNAVAILABLE Binding(HID::Page::DIGITIZERS, HID::Digitizers::Sel::ERR_FULL_TRANS_FEATURES_UNAVAILABLE)
-#define di_ERR_CHARGE_LOW Binding(HID::Page::DIGITIZERS, HID::Digitizers::Sel::ERR_CHARGE_LOW)
-#define di_TRANSDUCER_SOFTWARE_INFO Binding(HID::Page::DIGITIZERS, HID::Digitizers::CL::TRANSDUCER_SOFTWARE_INFO)
+#endif
+#ifndef di_ERR_NORMAL_STATUS
+#define di_ERR_NORMAL_STATUS Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::ERR_NORMAL_STATUS)
+#endif
+#ifndef di_ERR_TRANSDUCERS_EXCEEDED
+#define di_ERR_TRANSDUCERS_EXCEEDED Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::ERR_TRANSDUCERS_EXCEEDED)
+#endif
+#ifndef di_ERR_FULL_TRANS_FEATURES_UNAVAILABLE
+#define di_ERR_FULL_TRANS_FEATURES_UNAVAILABLE Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::ERR_FULL_TRANS_FEATURES_UNAVAILABLE)
+#endif
+#ifndef di_ERR_CHARGE_LOW
+#define di_ERR_CHARGE_LOW Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::ERR_CHARGE_LOW)
+#endif
+#ifndef di_TRANSDUCER_SOFTWARE_INFO
+#define di_TRANSDUCER_SOFTWARE_INFO Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::TRANSDUCER_SOFTWARE_INFO)
+#endif
+#ifndef di_TRANSDUCER_VENDOR_ID
 #define di_TRANSDUCER_VENDOR_ID Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::TRANSDUCER_VENDOR_ID)
+#endif
+#ifndef di_TRANSDUCER_PRODUCT_ID
 #define di_TRANSDUCER_PRODUCT_ID Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::TRANSDUCER_PRODUCT_ID)
+#endif
+#ifndef di_DEVICE_SUPPORTED_PROTOCOLS
 #define di_DEVICE_SUPPORTED_PROTOCOLS Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::DEVICE_SUPPORTED_PROTOCOLS)
+#endif
+#ifndef di_TRANSDUCER_SUPPORTED_PROTOCOLS
 #define di_TRANSDUCER_SUPPORTED_PROTOCOLS Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::TRANSDUCER_SUPPORTED_PROTOCOLS)
-#define di_NO_PROTOCOL Binding(HID::Page::DIGITIZERS, HID::Digitizers::Sel::NO_PROTOCOL)
-#define di_WACOM_AES_PROTOCOL Binding(HID::Page::DIGITIZERS, HID::Digitizers::Sel::WACOM_AES_PROTOCOL)
-#define di_USI_PROTOCOL Binding(HID::Page::DIGITIZERS, HID::Digitizers::Sel::USI_PROTOCOL)
-#define di_MICROSOFT_PEN_PROTOCOL Binding(HID::Page::DIGITIZERS, HID::Digitizers::Sel::MICROSOFT_PEN_PROTOCOL)
+#endif
+#ifndef di_NO_PROTOCOL
+#define di_NO_PROTOCOL Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::NO_PROTOCOL)
+#endif
+#ifndef di_WACOM_AES_PROTOCOL
+#define di_WACOM_AES_PROTOCOL Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::WACOM_AES_PROTOCOL)
+#endif
+#ifndef di_USI_PROTOCOL
+#define di_USI_PROTOCOL Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::USI_PROTOCOL)
+#endif
+#ifndef di_MICROSOFT_PEN_PROTOCOL
+#define di_MICROSOFT_PEN_PROTOCOL Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::MICROSOFT_PEN_PROTOCOL)
+#endif
+#ifndef di_SUPPORTED_REPORT_RATES
 #define di_SUPPORTED_REPORT_RATES Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::SUPPORTED_REPORT_RATES)
-#define di_REPORT_RATE Binding(HID::Page::DIGITIZERS, HID::Digitizers::DV::REPORT_RATE)
+#endif
+#ifndef di_REPORT_RATE
+#define di_REPORT_RATE Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::REPORT_RATE)
+#endif
+#ifndef di_TRANSDUCER_CONNECTED
 #define di_TRANSDUCER_CONNECTED Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::TRANSDUCER_CONNECTED)
-#define di_SWITCH_DISABLED Binding(HID::Page::DIGITIZERS, HID::Digitizers::Sel::SWITCH_DISABLED)
-#define di_SWITCH_UNIMPLEMENTED Binding(HID::Page::DIGITIZERS, HID::Digitizers::Sel::SWITCH_UNIMPLEMENTED)
-#define di_TRANSDUCER_SWITCHES Binding(HID::Page::DIGITIZERS, HID::Digitizers::CL::TRANSDUCER_SWITCHES)
-#define di_TRANSDUCER_INDEX_SELECTOR Binding(HID::Page::DIGITIZERS, HID::Digitizers::DV::TRANSDUCER_INDEX_SELECTOR)
-#define di_BUTTON_PRESS_THRESHOLD Binding(HID::Page::DIGITIZERS, HID::Digitizers::DV::BUTTON_PRESS_THRESHOLD)
+#endif
+#ifndef di_SWITCH_DISABLED
+#define di_SWITCH_DISABLED Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::SWITCH_DISABLED)
+#endif
+#ifndef di_SWITCH_UNIMPLEMENTED
+#define di_SWITCH_UNIMPLEMENTED Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::SWITCH_UNIMPLEMENTED)
+#endif
+#ifndef di_TRANSDUCER_SWITCHES
+#define di_TRANSDUCER_SWITCHES Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::TRANSDUCER_SWITCHES)
+#endif
+#ifndef di_TRANSDUCER_INDEX_SELECTOR
+#define di_TRANSDUCER_INDEX_SELECTOR Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::TRANSDUCER_INDEX_SELECTOR)
+#endif
+#ifndef di_BUTTON_PRESS_THRESHOLD
+#define di_BUTTON_PRESS_THRESHOLD Binding(HID::Page::DIGITIZERS, HID::Digitizers::OTHER::BUTTON_PRESS_THRESHOLD)
+#endif

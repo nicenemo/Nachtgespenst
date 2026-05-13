@@ -2,37 +2,105 @@
 /**
  * Shortcuts for Eye and Head Trackers
  */
-#define ey_EYE_TRACKER Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::CA::EYE_TRACKER)
-#define ey_HEAD_TRACKER Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::CA::HEAD_TRACKER)
-#define ey_TRACKING_DATA Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::CP::TRACKING_DATA)
-#define ey_CAPABILITIES Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::CL::CAPABILITIES)
-#define ey_CONFIGURATION Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::CL::CONFIGURATION)
-#define ey_STATUS Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::CL::STATUS)
-#define ey_CONTROL Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::CL::CONTROL)
-#define ey_SENSOR_TIMESTAMP Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::DV::SENSOR_TIMESTAMP)
-#define ey_POSITION_X Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::DV::POSITION_X)
-#define ey_POSITION_Y Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::DV::POSITION_Y)
-#define ey_POSITION_Z Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::DV::POSITION_Z)
-#define ey_GAZE_POINT Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::CP::GAZE_POINT)
-#define ey_LEFT_EYE_POSITION Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::CP::LEFT_EYE_POSITION)
-#define ey_RIGHT_EYE_POSITION Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::CP::RIGHT_EYE_POSITION)
-#define ey_HEAD_POSITION Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::CP::HEAD_POSITION)
-#define ey_HEAD_DIRECTION_POINT Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::CP::HEAD_DIRECTION_POINT)
-#define ey_ROTATION_ABOUT_X_AXIS Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::DV::ROTATION_ABOUT_X_AXIS)
-#define ey_ROTATION_ABOUT_Y_AXIS Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::DV::ROTATION_ABOUT_Y_AXIS)
-#define ey_ROTATION_ABOUT_Z_AXIS Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::DV::ROTATION_ABOUT_Z_AXIS)
+#ifndef ey_EYE_TRACKER
+#define ey_EYE_TRACKER Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::OTHER::EYE_TRACKER)
+#endif
+#ifndef ey_HEAD_TRACKER
+#define ey_HEAD_TRACKER Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::OTHER::HEAD_TRACKER)
+#endif
+#ifndef ey_TRACKING_DATA
+#define ey_TRACKING_DATA Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::OTHER::TRACKING_DATA)
+#endif
+#ifndef ey_CAPABILITIES
+#define ey_CAPABILITIES Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::OTHER::CAPABILITIES)
+#endif
+#ifndef ey_CONFIGURATION
+#define ey_CONFIGURATION Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::OTHER::CONFIGURATION)
+#endif
+#ifndef ey_STATUS
+#define ey_STATUS Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::OTHER::STATUS)
+#endif
+#ifndef ey_CONTROL
+#define ey_CONTROL Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::OTHER::CONTROL)
+#endif
+#ifndef ey_SENSOR_TIMESTAMP
+#define ey_SENSOR_TIMESTAMP Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::OTHER::SENSOR_TIMESTAMP)
+#endif
+#ifndef ey_POSITION_X
+#define ey_POSITION_X Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::OTHER::POSITION_X)
+#endif
+#ifndef ey_POSITION_Y
+#define ey_POSITION_Y Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::OTHER::POSITION_Y)
+#endif
+#ifndef ey_POSITION_Z
+#define ey_POSITION_Z Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::OTHER::POSITION_Z)
+#endif
+#ifndef ey_GAZE_POINT
+#define ey_GAZE_POINT Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::OTHER::GAZE_POINT)
+#endif
+#ifndef ey_LEFT_EYE_POSITION
+#define ey_LEFT_EYE_POSITION Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::OTHER::LEFT_EYE_POSITION)
+#endif
+#ifndef ey_RIGHT_EYE_POSITION
+#define ey_RIGHT_EYE_POSITION Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::OTHER::RIGHT_EYE_POSITION)
+#endif
+#ifndef ey_HEAD_POSITION
+#define ey_HEAD_POSITION Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::OTHER::HEAD_POSITION)
+#endif
+#ifndef ey_HEAD_DIRECTION_POINT
+#define ey_HEAD_DIRECTION_POINT Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::OTHER::HEAD_DIRECTION_POINT)
+#endif
+#ifndef ey_ROTATION_ABOUT_X_AXIS
+#define ey_ROTATION_ABOUT_X_AXIS Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::OTHER::ROTATION_ABOUT_X_AXIS)
+#endif
+#ifndef ey_ROTATION_ABOUT_Y_AXIS
+#define ey_ROTATION_ABOUT_Y_AXIS Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::OTHER::ROTATION_ABOUT_Y_AXIS)
+#endif
+#ifndef ey_ROTATION_ABOUT_Z_AXIS
+#define ey_ROTATION_ABOUT_Z_AXIS Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::OTHER::ROTATION_ABOUT_Z_AXIS)
+#endif
+#ifndef ey_TRACKER_QUALITY
 #define ey_TRACKER_QUALITY Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::OTHER::TRACKER_QUALITY)
+#endif
+#ifndef ey_MINIMUM_TRACKING_DISTANCE
 #define ey_MINIMUM_TRACKING_DISTANCE Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::OTHER::MINIMUM_TRACKING_DISTANCE)
+#endif
+#ifndef ey_OPTIMUM_TRACKING_DISTANCE
 #define ey_OPTIMUM_TRACKING_DISTANCE Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::OTHER::OPTIMUM_TRACKING_DISTANCE)
+#endif
+#ifndef ey_MAXIMUM_TRACKING_DISTANCE
 #define ey_MAXIMUM_TRACKING_DISTANCE Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::OTHER::MAXIMUM_TRACKING_DISTANCE)
+#endif
+#ifndef ey_MAXIMUM_SCREEN_PLANE_WIDTH
 #define ey_MAXIMUM_SCREEN_PLANE_WIDTH Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::OTHER::MAXIMUM_SCREEN_PLANE_WIDTH)
+#endif
+#ifndef ey_MAXIMUM_SCREEN_PLANE_HEIGHT
 #define ey_MAXIMUM_SCREEN_PLANE_HEIGHT Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::OTHER::MAXIMUM_SCREEN_PLANE_HEIGHT)
+#endif
+#ifndef ey_DISPLAY_MANUFACTURER_ID
 #define ey_DISPLAY_MANUFACTURER_ID Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::OTHER::DISPLAY_MANUFACTURER_ID)
+#endif
+#ifndef ey_DISPLAY_PRODUCT_ID
 #define ey_DISPLAY_PRODUCT_ID Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::OTHER::DISPLAY_PRODUCT_ID)
+#endif
+#ifndef ey_DISPLAY_SERIAL_NUMBER
 #define ey_DISPLAY_SERIAL_NUMBER Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::OTHER::DISPLAY_SERIAL_NUMBER)
+#endif
+#ifndef ey_DISPLAY_MANUFACTURER_DATE
 #define ey_DISPLAY_MANUFACTURER_DATE Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::OTHER::DISPLAY_MANUFACTURER_DATE)
+#endif
+#ifndef ey_CALIBRATED_SCREEN_WIDTH
 #define ey_CALIBRATED_SCREEN_WIDTH Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::OTHER::CALIBRATED_SCREEN_WIDTH)
+#endif
+#ifndef ey_CALIBRATED_SCREEN_HEIGHT
 #define ey_CALIBRATED_SCREEN_HEIGHT Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::OTHER::CALIBRATED_SCREEN_HEIGHT)
-#define ey_SAMPLING_FREQUENCY Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::DV::SAMPLING_FREQUENCY)
-#define ey_CONFIGURATION_STATUS Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::DV::CONFIGURATION_STATUS)
-#define ey_DEVICE_MODE_REQUEST Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::DV::DEVICE_MODE_REQUEST)
+#endif
+#ifndef ey_SAMPLING_FREQUENCY
+#define ey_SAMPLING_FREQUENCY Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::OTHER::SAMPLING_FREQUENCY)
+#endif
+#ifndef ey_CONFIGURATION_STATUS
+#define ey_CONFIGURATION_STATUS Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::OTHER::CONFIGURATION_STATUS)
+#endif
+#ifndef ey_DEVICE_MODE_REQUEST
+#define ey_DEVICE_MODE_REQUEST Binding(HID::Page::EYE_AND_HEAD_TRACKERS, HID::EyeandHeadTrackers::OTHER::DEVICE_MODE_REQUEST)
+#endif

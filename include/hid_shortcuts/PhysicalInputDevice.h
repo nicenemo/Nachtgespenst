@@ -2,108 +2,318 @@
 /**
  * Shortcuts for Physical Input Device
  */
-#define ph_PHYSICAL_INPUT_DEVICE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::CA::PHYSICAL_INPUT_DEVICE)
-#define ph_NORMAL Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::DV::NORMAL)
-#define ph_SET_EFFECT_REPORT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::CL::SET_EFFECT_REPORT)
-#define ph_EFFECT_PARAMETER_BLOCK_INDEX Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::DV::EFFECT_PARAMETER_BLOCK_INDEX)
-#define ph_PARAMETER_BLOCK_OFFSET Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::DV::PARAMETER_BLOCK_OFFSET)
+#ifndef ph_PHYSICAL_INPUT_DEVICE
+#define ph_PHYSICAL_INPUT_DEVICE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::PHYSICAL_INPUT_DEVICE)
+#endif
+#ifndef ph_NORMAL
+#define ph_NORMAL Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::NORMAL)
+#endif
+#ifndef ph_SET_EFFECT_REPORT
+#define ph_SET_EFFECT_REPORT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::SET_EFFECT_REPORT)
+#endif
+#ifndef ph_EFFECT_PARAMETER_BLOCK_INDEX
+#define ph_EFFECT_PARAMETER_BLOCK_INDEX Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::EFFECT_PARAMETER_BLOCK_INDEX)
+#endif
+#ifndef ph_PARAMETER_BLOCK_OFFSET
+#define ph_PARAMETER_BLOCK_OFFSET Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::PARAMETER_BLOCK_OFFSET)
+#endif
+#ifndef ph_ROM_FLAG
 #define ph_ROM_FLAG Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::ROM_FLAG)
+#endif
+#ifndef ph_EFFECT_TYPE
 #define ph_EFFECT_TYPE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::EFFECT_TYPE)
-#define ph_ET_CONSTANT_FORCE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::Sel::ET_CONSTANT_FORCE)
-#define ph_ET_RAMP Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::Sel::ET_RAMP)
-#define ph_ET_CUSTOM_FORCE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::Sel::ET_CUSTOM_FORCE)
-#define ph_ET_SQUARE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::Sel::ET_SQUARE)
-#define ph_ET_SINE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::Sel::ET_SINE)
-#define ph_ET_TRIANGLE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::Sel::ET_TRIANGLE)
-#define ph_ET_SAWTOOTH_UP Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::Sel::ET_SAWTOOTH_UP)
-#define ph_ET_SAWTOOTH_DOWN Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::Sel::ET_SAWTOOTH_DOWN)
-#define ph_ET_SPRING Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::Sel::ET_SPRING)
-#define ph_ET_DAMPER Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::Sel::ET_DAMPER)
-#define ph_ET_INERTIA Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::Sel::ET_INERTIA)
-#define ph_ET_FRICTION Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::Sel::ET_FRICTION)
-#define ph_DURATION Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::DV::DURATION)
-#define ph_SAMPLE_PERIOD Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::DV::SAMPLE_PERIOD)
-#define ph_GAIN Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::DV::GAIN)
-#define ph_TRIGGER_BUTTON Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::DV::TRIGGER_BUTTON)
-#define ph_TRIGGER_REPEAT_INTERVAL Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::DV::TRIGGER_REPEAT_INTERVAL)
+#endif
+#ifndef ph_ET_CONSTANT_FORCE
+#define ph_ET_CONSTANT_FORCE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::ET_CONSTANT_FORCE)
+#endif
+#ifndef ph_ET_RAMP
+#define ph_ET_RAMP Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::ET_RAMP)
+#endif
+#ifndef ph_ET_CUSTOM_FORCE
+#define ph_ET_CUSTOM_FORCE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::ET_CUSTOM_FORCE)
+#endif
+#ifndef ph_ET_SQUARE
+#define ph_ET_SQUARE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::ET_SQUARE)
+#endif
+#ifndef ph_ET_SINE
+#define ph_ET_SINE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::ET_SINE)
+#endif
+#ifndef ph_ET_TRIANGLE
+#define ph_ET_TRIANGLE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::ET_TRIANGLE)
+#endif
+#ifndef ph_ET_SAWTOOTH_UP
+#define ph_ET_SAWTOOTH_UP Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::ET_SAWTOOTH_UP)
+#endif
+#ifndef ph_ET_SAWTOOTH_DOWN
+#define ph_ET_SAWTOOTH_DOWN Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::ET_SAWTOOTH_DOWN)
+#endif
+#ifndef ph_ET_SPRING
+#define ph_ET_SPRING Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::ET_SPRING)
+#endif
+#ifndef ph_ET_DAMPER
+#define ph_ET_DAMPER Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::ET_DAMPER)
+#endif
+#ifndef ph_ET_INERTIA
+#define ph_ET_INERTIA Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::ET_INERTIA)
+#endif
+#ifndef ph_ET_FRICTION
+#define ph_ET_FRICTION Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::ET_FRICTION)
+#endif
+#ifndef ph_DURATION
+#define ph_DURATION Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::DURATION)
+#endif
+#ifndef ph_SAMPLE_PERIOD
+#define ph_SAMPLE_PERIOD Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::SAMPLE_PERIOD)
+#endif
+#ifndef ph_GAIN
+#define ph_GAIN Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::GAIN)
+#endif
+#ifndef ph_TRIGGER_BUTTON
+#define ph_TRIGGER_BUTTON Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::TRIGGER_BUTTON)
+#endif
+#ifndef ph_TRIGGER_REPEAT_INTERVAL
+#define ph_TRIGGER_REPEAT_INTERVAL Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::TRIGGER_REPEAT_INTERVAL)
+#endif
+#ifndef ph_AXES_ENABLE
 #define ph_AXES_ENABLE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::AXES_ENABLE)
+#endif
+#ifndef ph_DIRECTION_ENABLE
 #define ph_DIRECTION_ENABLE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::DIRECTION_ENABLE)
-#define ph_DIRECTION Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::CL::DIRECTION)
-#define ph_TYPE_SPECIFIC_BLOCK_OFFSET Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::CL::TYPE_SPECIFIC_BLOCK_OFFSET)
+#endif
+#ifndef ph_DIRECTION
+#define ph_DIRECTION Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::DIRECTION)
+#endif
+#ifndef ph_TYPE_SPECIFIC_BLOCK_OFFSET
+#define ph_TYPE_SPECIFIC_BLOCK_OFFSET Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::TYPE_SPECIFIC_BLOCK_OFFSET)
+#endif
+#ifndef ph_BLOCK_TYPE
 #define ph_BLOCK_TYPE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::BLOCK_TYPE)
-#define ph_SET_ENVELOPE_REPORT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::CL::SET_ENVELOPE_REPORT)
-#define ph_ATTACK_LEVEL Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::DV::ATTACK_LEVEL)
-#define ph_ATTACK_TIME Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::DV::ATTACK_TIME)
-#define ph_FADE_LEVEL Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::DV::FADE_LEVEL)
-#define ph_FADE_TIME Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::DV::FADE_TIME)
-#define ph_SET_CONDITION_REPORT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::CL::SET_CONDITION_REPORT)
-#define ph_CENTER_POINT_OFFSET Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::DV::CENTER_POINT_OFFSET)
-#define ph_POSITIVE_COEFFICIENT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::DV::POSITIVE_COEFFICIENT)
-#define ph_NEGATIVE_COEFFICIENT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::DV::NEGATIVE_COEFFICIENT)
-#define ph_POSITIVE_SATURATION Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::DV::POSITIVE_SATURATION)
-#define ph_NEGATIVE_SATURATION Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::DV::NEGATIVE_SATURATION)
-#define ph_DEAD_BAND Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::DV::DEAD_BAND)
-#define ph_DOWNLOAD_FORCE_SAMPLE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::CL::DOWNLOAD_FORCE_SAMPLE)
+#endif
+#ifndef ph_SET_ENVELOPE_REPORT
+#define ph_SET_ENVELOPE_REPORT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::SET_ENVELOPE_REPORT)
+#endif
+#ifndef ph_ATTACK_LEVEL
+#define ph_ATTACK_LEVEL Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::ATTACK_LEVEL)
+#endif
+#ifndef ph_ATTACK_TIME
+#define ph_ATTACK_TIME Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::ATTACK_TIME)
+#endif
+#ifndef ph_FADE_LEVEL
+#define ph_FADE_LEVEL Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::FADE_LEVEL)
+#endif
+#ifndef ph_FADE_TIME
+#define ph_FADE_TIME Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::FADE_TIME)
+#endif
+#ifndef ph_SET_CONDITION_REPORT
+#define ph_SET_CONDITION_REPORT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::SET_CONDITION_REPORT)
+#endif
+#ifndef ph_CENTER_POINT_OFFSET
+#define ph_CENTER_POINT_OFFSET Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::CENTER_POINT_OFFSET)
+#endif
+#ifndef ph_POSITIVE_COEFFICIENT
+#define ph_POSITIVE_COEFFICIENT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::POSITIVE_COEFFICIENT)
+#endif
+#ifndef ph_NEGATIVE_COEFFICIENT
+#define ph_NEGATIVE_COEFFICIENT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::NEGATIVE_COEFFICIENT)
+#endif
+#ifndef ph_POSITIVE_SATURATION
+#define ph_POSITIVE_SATURATION Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::POSITIVE_SATURATION)
+#endif
+#ifndef ph_NEGATIVE_SATURATION
+#define ph_NEGATIVE_SATURATION Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::NEGATIVE_SATURATION)
+#endif
+#ifndef ph_DEAD_BAND
+#define ph_DEAD_BAND Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::DEAD_BAND)
+#endif
+#ifndef ph_DOWNLOAD_FORCE_SAMPLE
+#define ph_DOWNLOAD_FORCE_SAMPLE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::DOWNLOAD_FORCE_SAMPLE)
+#endif
+#ifndef ph_ISOCH_CUSTOM_FORCE_ENABLE
 #define ph_ISOCH_CUSTOM_FORCE_ENABLE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::ISOCH_CUSTOM_FORCE_ENABLE)
-#define ph_CUSTOM_FORCE_DATA_REPORT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::CL::CUSTOM_FORCE_DATA_REPORT)
-#define ph_CUSTOM_FORCE_DATA Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::DV::CUSTOM_FORCE_DATA)
-#define ph_CUSTOM_FORCE_VENDOR_DEFINED_DATA Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::DV::CUSTOM_FORCE_VENDOR_DEFINED_DATA)
-#define ph_SET_CUSTOM_FORCE_REPORT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::CL::SET_CUSTOM_FORCE_REPORT)
-#define ph_CUSTOM_FORCE_DATA_OFFSET Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::DV::CUSTOM_FORCE_DATA_OFFSET)
-#define ph_SAMPLE_COUNT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::DV::SAMPLE_COUNT)
-#define ph_SET_PERIODIC_REPORT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::CL::SET_PERIODIC_REPORT)
-#define ph_OFFSET Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::DV::OFFSET)
-#define ph_MAGNITUDE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::DV::MAGNITUDE)
-#define ph_PHASE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::DV::PHASE)
-#define ph_PERIOD Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::DV::PERIOD)
-#define ph_SET_CONSTANT_FORCE_REPORT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::CL::SET_CONSTANT_FORCE_REPORT)
-#define ph_SET_RAMP_FORCE_REPORT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::CL::SET_RAMP_FORCE_REPORT)
-#define ph_RAMP_START Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::DV::RAMP_START)
-#define ph_RAMP_END Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::DV::RAMP_END)
-#define ph_EFFECT_OPERATION_REPORT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::CL::EFFECT_OPERATION_REPORT)
+#endif
+#ifndef ph_CUSTOM_FORCE_DATA_REPORT
+#define ph_CUSTOM_FORCE_DATA_REPORT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::CUSTOM_FORCE_DATA_REPORT)
+#endif
+#ifndef ph_CUSTOM_FORCE_DATA
+#define ph_CUSTOM_FORCE_DATA Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::CUSTOM_FORCE_DATA)
+#endif
+#ifndef ph_CUSTOM_FORCE_VENDOR_DEFINED_DATA
+#define ph_CUSTOM_FORCE_VENDOR_DEFINED_DATA Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::CUSTOM_FORCE_VENDOR_DEFINED_DATA)
+#endif
+#ifndef ph_SET_CUSTOM_FORCE_REPORT
+#define ph_SET_CUSTOM_FORCE_REPORT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::SET_CUSTOM_FORCE_REPORT)
+#endif
+#ifndef ph_CUSTOM_FORCE_DATA_OFFSET
+#define ph_CUSTOM_FORCE_DATA_OFFSET Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::CUSTOM_FORCE_DATA_OFFSET)
+#endif
+#ifndef ph_SAMPLE_COUNT
+#define ph_SAMPLE_COUNT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::SAMPLE_COUNT)
+#endif
+#ifndef ph_SET_PERIODIC_REPORT
+#define ph_SET_PERIODIC_REPORT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::SET_PERIODIC_REPORT)
+#endif
+#ifndef ph_OFFSET
+#define ph_OFFSET Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::OFFSET)
+#endif
+#ifndef ph_MAGNITUDE
+#define ph_MAGNITUDE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::MAGNITUDE)
+#endif
+#ifndef ph_PHASE
+#define ph_PHASE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::PHASE)
+#endif
+#ifndef ph_PERIOD
+#define ph_PERIOD Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::PERIOD)
+#endif
+#ifndef ph_SET_CONSTANT_FORCE_REPORT
+#define ph_SET_CONSTANT_FORCE_REPORT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::SET_CONSTANT_FORCE_REPORT)
+#endif
+#ifndef ph_SET_RAMP_FORCE_REPORT
+#define ph_SET_RAMP_FORCE_REPORT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::SET_RAMP_FORCE_REPORT)
+#endif
+#ifndef ph_RAMP_START
+#define ph_RAMP_START Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::RAMP_START)
+#endif
+#ifndef ph_RAMP_END
+#define ph_RAMP_END Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::RAMP_END)
+#endif
+#ifndef ph_EFFECT_OPERATION_REPORT
+#define ph_EFFECT_OPERATION_REPORT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::EFFECT_OPERATION_REPORT)
+#endif
+#ifndef ph_EFFECT_OPERATION
 #define ph_EFFECT_OPERATION Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::EFFECT_OPERATION)
-#define ph_OP_EFFECT_START Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::Sel::OP_EFFECT_START)
-#define ph_OP_EFFECT_START_SOLO Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::Sel::OP_EFFECT_START_SOLO)
-#define ph_OP_EFFECT_STOP Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::Sel::OP_EFFECT_STOP)
-#define ph_LOOP_COUNT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::DV::LOOP_COUNT)
-#define ph_DEVICE_GAIN_REPORT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::CL::DEVICE_GAIN_REPORT)
-#define ph_DEVICE_GAIN Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::DV::DEVICE_GAIN)
-#define ph_PARAMETER_BLOCK_POOLS_REPORT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::CL::PARAMETER_BLOCK_POOLS_REPORT)
-#define ph_RAM_POOL_SIZE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::DV::RAM_POOL_SIZE)
+#endif
+#ifndef ph_OP_EFFECT_START
+#define ph_OP_EFFECT_START Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::OP_EFFECT_START)
+#endif
+#ifndef ph_OP_EFFECT_START_SOLO
+#define ph_OP_EFFECT_START_SOLO Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::OP_EFFECT_START_SOLO)
+#endif
+#ifndef ph_OP_EFFECT_STOP
+#define ph_OP_EFFECT_STOP Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::OP_EFFECT_STOP)
+#endif
+#ifndef ph_LOOP_COUNT
+#define ph_LOOP_COUNT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::LOOP_COUNT)
+#endif
+#ifndef ph_DEVICE_GAIN_REPORT
+#define ph_DEVICE_GAIN_REPORT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::DEVICE_GAIN_REPORT)
+#endif
+#ifndef ph_DEVICE_GAIN
+#define ph_DEVICE_GAIN Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::DEVICE_GAIN)
+#endif
+#ifndef ph_PARAMETER_BLOCK_POOLS_REPORT
+#define ph_PARAMETER_BLOCK_POOLS_REPORT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::PARAMETER_BLOCK_POOLS_REPORT)
+#endif
+#ifndef ph_RAM_POOL_SIZE
+#define ph_RAM_POOL_SIZE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::RAM_POOL_SIZE)
+#endif
+#ifndef ph_ROM_POOL_SIZE
 #define ph_ROM_POOL_SIZE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::ROM_POOL_SIZE)
+#endif
+#ifndef ph_ROM_EFFECT_BLOCK_COUNT
 #define ph_ROM_EFFECT_BLOCK_COUNT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::ROM_EFFECT_BLOCK_COUNT)
+#endif
+#ifndef ph_SIMULTANEOUS_EFFECTS_MAX
 #define ph_SIMULTANEOUS_EFFECTS_MAX Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::SIMULTANEOUS_EFFECTS_MAX)
+#endif
+#ifndef ph_POOL_ALIGNMENT
 #define ph_POOL_ALIGNMENT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::POOL_ALIGNMENT)
-#define ph_PARAMETER_BLOCK_MOVE_REPORT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::CL::PARAMETER_BLOCK_MOVE_REPORT)
-#define ph_MOVE_SOURCE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::DV::MOVE_SOURCE)
-#define ph_MOVE_DESTINATION Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::DV::MOVE_DESTINATION)
-#define ph_MOVE_LENGTH Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::DV::MOVE_LENGTH)
-#define ph_EFFECT_PARAMETER_BLOCK_LOAD_REPORT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::CL::EFFECT_PARAMETER_BLOCK_LOAD_REPORT)
+#endif
+#ifndef ph_PARAMETER_BLOCK_MOVE_REPORT
+#define ph_PARAMETER_BLOCK_MOVE_REPORT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::PARAMETER_BLOCK_MOVE_REPORT)
+#endif
+#ifndef ph_MOVE_SOURCE
+#define ph_MOVE_SOURCE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::MOVE_SOURCE)
+#endif
+#ifndef ph_MOVE_DESTINATION
+#define ph_MOVE_DESTINATION Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::MOVE_DESTINATION)
+#endif
+#ifndef ph_MOVE_LENGTH
+#define ph_MOVE_LENGTH Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::MOVE_LENGTH)
+#endif
+#ifndef ph_EFFECT_PARAMETER_BLOCK_LOAD_REPORT
+#define ph_EFFECT_PARAMETER_BLOCK_LOAD_REPORT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::EFFECT_PARAMETER_BLOCK_LOAD_REPORT)
+#endif
+#ifndef ph_EFFECT_PARAMETER_BLOCK_LOAD_STATUS
 #define ph_EFFECT_PARAMETER_BLOCK_LOAD_STATUS Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::EFFECT_PARAMETER_BLOCK_LOAD_STATUS)
-#define ph_BLOCK_LOAD_SUCCESS Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::Sel::BLOCK_LOAD_SUCCESS)
-#define ph_BLOCK_LOAD_FULL Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::Sel::BLOCK_LOAD_FULL)
-#define ph_BLOCK_LOAD_ERROR Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::Sel::BLOCK_LOAD_ERROR)
-#define ph_BLOCK_HANDLE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::DV::BLOCK_HANDLE)
-#define ph_EFFECT_PARAMETER_BLOCK_FREE_REPORT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::CL::EFFECT_PARAMETER_BLOCK_FREE_REPORT)
-#define ph_TYPE_SPECIFIC_BLOCK_HANDLE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::CL::TYPE_SPECIFIC_BLOCK_HANDLE)
-#define ph_PID_STATE_REPORT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::CL::PID_STATE_REPORT)
+#endif
+#ifndef ph_BLOCK_LOAD_SUCCESS
+#define ph_BLOCK_LOAD_SUCCESS Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::BLOCK_LOAD_SUCCESS)
+#endif
+#ifndef ph_BLOCK_LOAD_FULL
+#define ph_BLOCK_LOAD_FULL Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::BLOCK_LOAD_FULL)
+#endif
+#ifndef ph_BLOCK_LOAD_ERROR
+#define ph_BLOCK_LOAD_ERROR Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::BLOCK_LOAD_ERROR)
+#endif
+#ifndef ph_BLOCK_HANDLE
+#define ph_BLOCK_HANDLE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::BLOCK_HANDLE)
+#endif
+#ifndef ph_EFFECT_PARAMETER_BLOCK_FREE_REPORT
+#define ph_EFFECT_PARAMETER_BLOCK_FREE_REPORT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::EFFECT_PARAMETER_BLOCK_FREE_REPORT)
+#endif
+#ifndef ph_TYPE_SPECIFIC_BLOCK_HANDLE
+#define ph_TYPE_SPECIFIC_BLOCK_HANDLE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::TYPE_SPECIFIC_BLOCK_HANDLE)
+#endif
+#ifndef ph_PID_STATE_REPORT
+#define ph_PID_STATE_REPORT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::PID_STATE_REPORT)
+#endif
+#ifndef ph_EFFECT_PLAYING
 #define ph_EFFECT_PLAYING Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::EFFECT_PLAYING)
-#define ph_PID_DEVICE_CONTROL_REPORT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::CL::PID_DEVICE_CONTROL_REPORT)
+#endif
+#ifndef ph_PID_DEVICE_CONTROL_REPORT
+#define ph_PID_DEVICE_CONTROL_REPORT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::PID_DEVICE_CONTROL_REPORT)
+#endif
+#ifndef ph_PID_DEVICE_CONTROL
 #define ph_PID_DEVICE_CONTROL Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::PID_DEVICE_CONTROL)
-#define ph_DC_ENABLE_ACTUATORS Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::Sel::DC_ENABLE_ACTUATORS)
-#define ph_DC_DISABLE_ACTUATORS Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::Sel::DC_DISABLE_ACTUATORS)
-#define ph_DC_STOP_ALL_EFFECTS Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::Sel::DC_STOP_ALL_EFFECTS)
-#define ph_DC_RESET Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::Sel::DC_RESET)
-#define ph_DC_PAUSE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::Sel::DC_PAUSE)
-#define ph_DC_CONTINUE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::Sel::DC_CONTINUE)
+#endif
+#ifndef ph_DC_ENABLE_ACTUATORS
+#define ph_DC_ENABLE_ACTUATORS Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::DC_ENABLE_ACTUATORS)
+#endif
+#ifndef ph_DC_DISABLE_ACTUATORS
+#define ph_DC_DISABLE_ACTUATORS Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::DC_DISABLE_ACTUATORS)
+#endif
+#ifndef ph_DC_STOP_ALL_EFFECTS
+#define ph_DC_STOP_ALL_EFFECTS Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::DC_STOP_ALL_EFFECTS)
+#endif
+#ifndef ph_DC_RESET
+#define ph_DC_RESET Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::DC_RESET)
+#endif
+#ifndef ph_DC_PAUSE
+#define ph_DC_PAUSE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::DC_PAUSE)
+#endif
+#ifndef ph_DC_CONTINUE
+#define ph_DC_CONTINUE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::DC_CONTINUE)
+#endif
+#ifndef ph_DEVICE_PAUSED
 #define ph_DEVICE_PAUSED Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::DEVICE_PAUSED)
+#endif
+#ifndef ph_ACTUATORS_ENABLED
 #define ph_ACTUATORS_ENABLED Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::ACTUATORS_ENABLED)
+#endif
+#ifndef ph_SAFETY_SWITCH
 #define ph_SAFETY_SWITCH Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::SAFETY_SWITCH)
+#endif
+#ifndef ph_ACTUATOR_OVERRIDE_SWITCH
 #define ph_ACTUATOR_OVERRIDE_SWITCH Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::ACTUATOR_OVERRIDE_SWITCH)
-#define ph_ACTUATOR_POWER Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OOC::ACTUATOR_POWER)
-#define ph_START_DELAY Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::DV::START_DELAY)
-#define ph_PARAMETER_BLOCK_SIZE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::CL::PARAMETER_BLOCK_SIZE)
+#endif
+#ifndef ph_ACTUATOR_POWER
+#define ph_ACTUATOR_POWER Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::ACTUATOR_POWER)
+#endif
+#ifndef ph_START_DELAY
+#define ph_START_DELAY Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::START_DELAY)
+#endif
+#ifndef ph_PARAMETER_BLOCK_SIZE
+#define ph_PARAMETER_BLOCK_SIZE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::PARAMETER_BLOCK_SIZE)
+#endif
+#ifndef ph_DEVICE_MANAGED_POOL
 #define ph_DEVICE_MANAGED_POOL Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::DEVICE_MANAGED_POOL)
+#endif
+#ifndef ph_SHARED_PARAMETER_BLOCKS
 #define ph_SHARED_PARAMETER_BLOCKS Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::SHARED_PARAMETER_BLOCKS)
-#define ph_CREATE_NEW_EFFECT_PARAMETER_BLOCK_REPORT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::CL::CREATE_NEW_EFFECT_PARAMETER_BLOCK_REPORT)
-#define ph_RAM_POOL_AVAILABLE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::DV::RAM_POOL_AVAILABLE)
+#endif
+#ifndef ph_CREATE_NEW_EFFECT_PARAMETER_BLOCK_REPORT
+#define ph_CREATE_NEW_EFFECT_PARAMETER_BLOCK_REPORT Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::CREATE_NEW_EFFECT_PARAMETER_BLOCK_REPORT)
+#endif
+#ifndef ph_RAM_POOL_AVAILABLE
+#define ph_RAM_POOL_AVAILABLE Binding(HID::Page::PHYSICAL_INPUT_DEVICE, HID::PhysicalInputDevice::OTHER::RAM_POOL_AVAILABLE)
+#endif

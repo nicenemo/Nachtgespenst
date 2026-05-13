@@ -5,17 +5,41 @@ namespace HID::Power {
     constexpr uint8_t PAGE_ID = 0x0084;
     namespace OTHER {
         constexpr Usage INAME = { 0x01, UsageKind::OTHER, "INAME" };
+        constexpr Usage PRESENT_STATUS = { 0x02, UsageKind::OTHER, "PRESENT_STATUS" };
+        constexpr Usage CHANGED_STATUS = { 0x03, UsageKind::OTHER, "CHANGED_STATUS" };
+        constexpr Usage UPS = { 0x04, UsageKind::OTHER, "UPS" };
+        constexpr Usage POWER_SUPPLY = { 0x05, UsageKind::OTHER, "POWER_SUPPLY" };
+        constexpr Usage BATTERY_SYSTEM = { 0x10, UsageKind::OTHER, "BATTERY_SYSTEM" };
         constexpr Usage BATTERY_SYS_ID = { 0x11, UsageKind::OTHER, "BATTERY_SYS_ID" };
+        constexpr Usage BATTERY = { 0x12, UsageKind::OTHER, "BATTERY" };
         constexpr Usage BATTERY_ID = { 0x13, UsageKind::OTHER, "BATTERY_ID" };
+        constexpr Usage CHARGER = { 0x14, UsageKind::OTHER, "CHARGER" };
         constexpr Usage CHARGER_ID = { 0x15, UsageKind::OTHER, "CHARGER_ID" };
+        constexpr Usage POWER_CONVERTER = { 0x16, UsageKind::OTHER, "POWER_CONVERTER" };
         constexpr Usage POWER_CONVERTER_ID = { 0x17, UsageKind::OTHER, "POWER_CONVERTER_ID" };
+        constexpr Usage OUTLET_SYSTEM = { 0x18, UsageKind::OTHER, "OUTLET_SYSTEM" };
         constexpr Usage OUTLET_SYS_ID = { 0x19, UsageKind::OTHER, "OUTLET_SYS_ID" };
+        constexpr Usage INPUT = { 0x1A, UsageKind::OTHER, "INPUT" };
         constexpr Usage INPUT_ID = { 0x1B, UsageKind::OTHER, "INPUT_ID" };
+        constexpr Usage OUTPUT = { 0x1C, UsageKind::OTHER, "OUTPUT" };
         constexpr Usage OUTPUT_ID = { 0x1D, UsageKind::OTHER, "OUTPUT_ID" };
+        constexpr Usage FLOW = { 0x1E, UsageKind::OTHER, "FLOW" };
         constexpr Usage FLOW_ID = { 0x1F, UsageKind::OTHER, "FLOW_ID" };
+        constexpr Usage OUTLET = { 0x20, UsageKind::OTHER, "OUTLET" };
         constexpr Usage OUTLET_ID = { 0x21, UsageKind::OTHER, "OUTLET_ID" };
+        constexpr Usage GANG = { 0x22, UsageKind::OTHER, "GANG" };
         constexpr Usage GANG_ID = { 0x23, UsageKind::OTHER, "GANG_ID" };
+        constexpr Usage POWER_SUMMARY = { 0x24, UsageKind::OTHER, "POWER_SUMMARY" };
         constexpr Usage POWER_SUMMARY_ID = { 0x25, UsageKind::OTHER, "POWER_SUMMARY_ID" };
+        constexpr Usage VOLTAGE = { 0x30, UsageKind::OTHER, "VOLTAGE" };
+        constexpr Usage CURRENT = { 0x31, UsageKind::OTHER, "CURRENT" };
+        constexpr Usage FREQUENCY = { 0x32, UsageKind::OTHER, "FREQUENCY" };
+        constexpr Usage APPARENT_POWER = { 0x33, UsageKind::OTHER, "APPARENT_POWER" };
+        constexpr Usage ACTIVE_POWER = { 0x34, UsageKind::OTHER, "ACTIVE_POWER" };
+        constexpr Usage PERCENT_LOAD = { 0x35, UsageKind::OTHER, "PERCENT_LOAD" };
+        constexpr Usage TEMPERATURE = { 0x36, UsageKind::OTHER, "TEMPERATURE" };
+        constexpr Usage HUMIDITY = { 0x37, UsageKind::OTHER, "HUMIDITY" };
+        constexpr Usage BAD_COUNT = { 0x38, UsageKind::OTHER, "BAD_COUNT" };
         constexpr Usage CONFIG_VOLTAGE = { 0x40, UsageKind::OTHER, "CONFIG_VOLTAGE" };
         constexpr Usage CONFIG_CURRENT = { 0x41, UsageKind::OTHER, "CONFIG_CURRENT" };
         constexpr Usage CONFIG_FREQUENCY = { 0x42, UsageKind::OTHER, "CONFIG_FREQUENCY" };
@@ -24,6 +48,17 @@ namespace HID::Power {
         constexpr Usage CONFIG_PERCENT_LOAD = { 0x45, UsageKind::OTHER, "CONFIG_PERCENT_LOAD" };
         constexpr Usage CONFIG_TEMPERATURE = { 0x46, UsageKind::OTHER, "CONFIG_TEMPERATURE" };
         constexpr Usage CONFIG_HUMIDITY = { 0x47, UsageKind::OTHER, "CONFIG_HUMIDITY" };
+        constexpr Usage SWITCH_ON_CONTROL = { 0x50, UsageKind::OTHER, "SWITCH_ON_CONTROL" };
+        constexpr Usage SWITCH_OFF_CONTROL = { 0x51, UsageKind::OTHER, "SWITCH_OFF_CONTROL" };
+        constexpr Usage TOGGLE_CONTROL = { 0x52, UsageKind::OTHER, "TOGGLE_CONTROL" };
+        constexpr Usage LOW_VOLTAGE_TRANSFER = { 0x53, UsageKind::OTHER, "LOW_VOLTAGE_TRANSFER" };
+        constexpr Usage HIGH_VOLTAGE_TRANSFER = { 0x54, UsageKind::OTHER, "HIGH_VOLTAGE_TRANSFER" };
+        constexpr Usage DELAY_BEFORE_REBOOT = { 0x55, UsageKind::OTHER, "DELAY_BEFORE_REBOOT" };
+        constexpr Usage DELAY_BEFORE_STARTUP = { 0x56, UsageKind::OTHER, "DELAY_BEFORE_STARTUP" };
+        constexpr Usage DELAY_BEFORE_SHUTDOWN = { 0x57, UsageKind::OTHER, "DELAY_BEFORE_SHUTDOWN" };
+        constexpr Usage TEST = { 0x58, UsageKind::OTHER, "TEST" };
+        constexpr Usage MODULE_RESET = { 0x59, UsageKind::OTHER, "MODULE_RESET" };
+        constexpr Usage AUDIBLE_ALARM_CONTROL = { 0x5A, UsageKind::OTHER, "AUDIBLE_ALARM_CONTROL" };
         constexpr Usage PRESENT = { 0x60, UsageKind::OTHER, "PRESENT" };
         constexpr Usage GOOD = { 0x61, UsageKind::OTHER, "GOOD" };
         constexpr Usage INTERNAL_FAILURE = { 0x62, UsageKind::OTHER, "INTERNAL_FAILURE" };
@@ -46,48 +81,5 @@ namespace HID::Power {
         constexpr Usage IMANUFACTURER = { 0xFD, UsageKind::OTHER, "IMANUFACTURER" };
         constexpr Usage IPRODUCT = { 0xFE, UsageKind::OTHER, "IPRODUCT" };
         constexpr Usage ISERIALNUMBER = { 0xFF, UsageKind::OTHER, "ISERIALNUMBER" };
-    }
-    namespace DV {
-        constexpr Usage VOLTAGE = { 0x30, UsageKind::DV, "VOLTAGE" };
-        constexpr Usage CURRENT = { 0x31, UsageKind::DV, "CURRENT" };
-        constexpr Usage FREQUENCY = { 0x32, UsageKind::DV, "FREQUENCY" };
-        constexpr Usage APPARENT_POWER = { 0x33, UsageKind::DV, "APPARENT_POWER" };
-        constexpr Usage ACTIVE_POWER = { 0x34, UsageKind::DV, "ACTIVE_POWER" };
-        constexpr Usage PERCENT_LOAD = { 0x35, UsageKind::DV, "PERCENT_LOAD" };
-        constexpr Usage TEMPERATURE = { 0x36, UsageKind::DV, "TEMPERATURE" };
-        constexpr Usage HUMIDITY = { 0x37, UsageKind::DV, "HUMIDITY" };
-        constexpr Usage BAD_COUNT = { 0x38, UsageKind::DV, "BAD_COUNT" };
-        constexpr Usage SWITCH_ON_CONTROL = { 0x50, UsageKind::DV, "SWITCH_ON_CONTROL" };
-        constexpr Usage SWITCH_OFF_CONTROL = { 0x51, UsageKind::DV, "SWITCH_OFF_CONTROL" };
-        constexpr Usage TOGGLE_CONTROL = { 0x52, UsageKind::DV, "TOGGLE_CONTROL" };
-        constexpr Usage LOW_VOLTAGE_TRANSFER = { 0x53, UsageKind::DV, "LOW_VOLTAGE_TRANSFER" };
-        constexpr Usage HIGH_VOLTAGE_TRANSFER = { 0x54, UsageKind::DV, "HIGH_VOLTAGE_TRANSFER" };
-        constexpr Usage DELAY_BEFORE_REBOOT = { 0x55, UsageKind::DV, "DELAY_BEFORE_REBOOT" };
-        constexpr Usage DELAY_BEFORE_STARTUP = { 0x56, UsageKind::DV, "DELAY_BEFORE_STARTUP" };
-        constexpr Usage DELAY_BEFORE_SHUTDOWN = { 0x57, UsageKind::DV, "DELAY_BEFORE_SHUTDOWN" };
-        constexpr Usage TEST = { 0x58, UsageKind::DV, "TEST" };
-        constexpr Usage MODULE_RESET = { 0x59, UsageKind::DV, "MODULE_RESET" };
-        constexpr Usage AUDIBLE_ALARM_CONTROL = { 0x5A, UsageKind::DV, "AUDIBLE_ALARM_CONTROL" };
-    }
-    namespace CL {
-        constexpr Usage PRESENT_STATUS = { 0x02, UsageKind::CL, "PRESENT_STATUS" };
-        constexpr Usage CHANGED_STATUS = { 0x03, UsageKind::CL, "CHANGED_STATUS" };
-        constexpr Usage GANG = { 0x22, UsageKind::CL, "GANG" };
-        constexpr Usage POWER_SUMMARY = { 0x24, UsageKind::CL, "POWER_SUMMARY" };
-    }
-    namespace CP {
-        constexpr Usage BATTERY_SYSTEM = { 0x10, UsageKind::CP, "BATTERY_SYSTEM" };
-        constexpr Usage BATTERY = { 0x12, UsageKind::CP, "BATTERY" };
-        constexpr Usage CHARGER = { 0x14, UsageKind::CP, "CHARGER" };
-        constexpr Usage POWER_CONVERTER = { 0x16, UsageKind::CP, "POWER_CONVERTER" };
-        constexpr Usage OUTLET_SYSTEM = { 0x18, UsageKind::CP, "OUTLET_SYSTEM" };
-        constexpr Usage INPUT = { 0x1A, UsageKind::CP, "INPUT" };
-        constexpr Usage OUTPUT = { 0x1C, UsageKind::CP, "OUTPUT" };
-        constexpr Usage FLOW = { 0x1E, UsageKind::CP, "FLOW" };
-        constexpr Usage OUTLET = { 0x20, UsageKind::CP, "OUTLET" };
-    }
-    namespace CA {
-        constexpr Usage UPS = { 0x04, UsageKind::CA, "UPS" };
-        constexpr Usage POWER_SUPPLY = { 0x05, UsageKind::CA, "POWER_SUPPLY" };
     }
 }

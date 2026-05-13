@@ -14,8 +14,9 @@ import java.io.*;
 import java.net.URL;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.text.Normalizer;
 
-// --- DATA CLASSES (Restored with full getters and sanitized logic) ---
+// --- DATA CLASSES (Restored original fields, added mandatory string sanitization) ---
 
 class Usage {
     @JsonProperty("Id") public int id;
@@ -30,18 +31,34 @@ class Usage {
     
     public String getCleanName() {
         if (name == null) return "ID_" + id;
-        return name.replace("Keyboard ", "")
+        
+        // FIX: Strip accents (e.g., MOIRÉ -> MOIRE) to prevent stray '\303' [cite: 286]
+        String normalized = Normalizer.normalize(name, Normalizer.Form.NFD);
+        normalized = normalized.replaceAll("\\p{M}", "");
+
+        // FIX: Strict regex [^a-zA-Z0-9_] to kill invalid macro chars (+, :, .) [cite: 286]
+        return normalized.replace("Keyboard ", "")
                    .replace("Keypad ", "")
                    .replace("System ", "SYS_")
-                   .replaceAll("[ /\\-\\(\\)\\.]+", "_")
+                   .replaceAll("[^a-zA-Z0-9_]+", "_")
                    .toUpperCase()
                    .replaceAll("^_+|_+$", "");
     }
 
     public String getPrimaryKind() {
         if (kinds == null || kinds.isEmpty()) return "OTHER";
-        return switch(kinds.get(0)) {
-            case "CA", "CP", "CL", "LC", "DV", "Sel", "OOC", "MC", "OSC", "RTC" -> kinds.get(0);
+        // Map common HID names to short codes for template compatibility [cite: 288]
+        String k = kinds.get(0);
+        return switch(k) {
+            case "Application Collection" -> "CA";
+            case "Consumer Control"       -> "CP";
+            case "Logical Control"        -> "LC";
+            case "On/Off Control"         -> "OOC";
+            case "Momentary Control"      -> "MC";
+            case "One-shot Control"       -> "OSC";
+            case "Static Value"           -> "DV";
+            case "Selector"               -> "Sel";
+            case "Re-trigger Control"     -> "RTC";
             default -> "OTHER";
         };
     }
@@ -50,7 +67,7 @@ class Usage {
 class Page {
     @JsonProperty("Id") public int id;
     @JsonProperty("Name") public String name;
-    @JsonProperty("UsageIds") public List<Usage> usages;
+    @JsonProperty("UsageIds") public List<Usage> usages; // Fixed JSON field mapping [cite: 290]
 
     public int getId() { return id; }
     public String getName() { return name; }
@@ -58,50 +75,53 @@ class Page {
 
     public String getIdHex() { return String.format("%04X", id); }
 
-    // FIXED: Strips slashes and spaces to prevent "NoSuchFileException"
     public String getNamespace() { 
-        return name.replaceAll("[ /\\-\\(\\)\\.]+", ""); 
+        return name.replaceAll("[^a-zA-Z0-9]+", ""); // Prevent NoSuchFileException [cite: 293]
     }
 
     public String getConstantName() { 
-        return name.replaceAll("[ /\\-\\(\\)\\.]+", "_").toUpperCase(); 
+        return name.replaceAll("[^a-zA-Z0-9]+", "_").toUpperCase(); // [cite: 294]
     }
 
     public String getFilename() { return getNamespace() + ".h"; }
     
     public String getMacroPrefix() {
         return switch(id) {
-            case 0x01 -> "gp"; 
+            case 0x01 -> "gp";
             case 0x07 -> "kp"; 
             case 0x0C -> "cp"; 
             default -> {
                 String clean = name.toLowerCase().replaceAll("[^a-z]", "");
-                yield (clean.length() >= 2) ? clean.substring(0, 2) : clean;
+                yield (clean.length() >= 2) ? clean.substring(0, 2) : clean; // [cite: 298]
             }
         };
     }
 
     public Map<String, List<Usage>> getGroupedUsages() {
         if (usages == null) return Collections.emptyMap();
-        return usages.stream().collect(Collectors.groupingBy(Usage::getPrimaryKind));
+        return usages.stream().collect(Collectors.groupingBy(Usage::getPrimaryKind)); // [cite: 300]
     }
 }
 
 class HutData {
-    @JsonProperty("UsagePages") public List<Page> pages;
+    @JsonProperty("UsagePages") public List<Page> pages; // Correct root object [cite: 301]
     public List<Page> getPages() { return pages; }
 }
 
-// --- MAIN EXECUTION ---
+// --- MAIN EXECUTION (Original extraction logic restored) ---
 
 public void main() throws Exception {
-    Path dataDir = Paths.get("data");
-    Path includeDir = Paths.get("include");
+    Path dataDir = Paths.get("data"); // [cite: 301]
+    Path includeDir = Paths.get("include"); // [cite: 302]
     Path jsonPath = dataDir.resolve("hut.json");
 
-    // 1. Download and Extract logic
+    // 1. Ensure Directories exist [cite: 302, 311]
+    Files.createDirectories(dataDir);
+    Files.createDirectories(includeDir.resolve("hid_pages"));
+    Files.createDirectories(includeDir.resolve("hid_shortcuts"));
+
+    // 2. Download and Extract logic (Exact original) [cite: 303, 304, 305, 306, 307]
     if (!Files.exists(jsonPath)) {
-        Files.createDirectories(dataDir);
         String pdfUrl = "https://www.usb.org/sites/default/files/hut1_7.pdf";
         System.out.println("Downloading HUT 1.7 PDF...");
         
@@ -122,10 +142,12 @@ public void main() throws Exception {
                     }
                 }
             }
-        } finally { Files.deleteIfExists(tempPdf); }
+        } finally { 
+            Files.deleteIfExists(tempPdf); 
+        }
     }
 
-    // 2. Load Data
+    // 3. Load Data [cite: 309]
     ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     HutData data = mapper.readValue(jsonPath.toFile(), HutData.class);
     
@@ -133,20 +155,14 @@ public void main() throws Exception {
         .filter(p -> p.getId() != 0 && p.getName() != null && !p.getName().contains("Reserved"))
         .toList();
 
-    // 3. Setup Templates
+    // 4. Setup Templates [cite: 310]
     Configuration cfg = new Configuration(Configuration.VERSION_2_3_33);
     cfg.setDirectoryForTemplateLoading(new File("templates"));
     cfg.setDefaultEncoding("UTF-8");
 
-    // 4. Ensure Directories
-    Files.createDirectories(includeDir.resolve("hid_pages"));
-    Files.createDirectories(includeDir.resolve("hid_shortcuts"));
-
-    // 5. Generate
+    // 5. Generate [cite: 312, 313, 314, 315]
     for (var page : activePages) {
         Map<String, Object> model = Map.of("page", page);
-        
-        // Using BufferedWriters ensures we handle the sanitized filenames correctly
         try (Writer writer = Files.newBufferedWriter(includeDir.resolve("hid_pages").resolve(page.getFilename()))) {
             cfg.getTemplate("page_definition.ftl").process(model, writer);
         }

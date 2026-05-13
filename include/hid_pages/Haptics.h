@@ -4,9 +4,15 @@
 namespace HID::Haptics {
     constexpr uint8_t PAGE_ID = 0x000E;
     namespace OTHER {
+        constexpr Usage SIMPLE_HAPTIC_CONTROLLER = { 0x01, UsageKind::OTHER, "SIMPLE_HAPTIC_CONTROLLER" };
         constexpr Usage WAVEFORM_LIST = { 0x10, UsageKind::OTHER, "WAVEFORM_LIST" };
         constexpr Usage DURATION_LIST = { 0x11, UsageKind::OTHER, "DURATION_LIST" };
+        constexpr Usage AUTO_TRIGGER = { 0x20, UsageKind::OTHER, "AUTO_TRIGGER" };
+        constexpr Usage MANUAL_TRIGGER = { 0x21, UsageKind::OTHER, "MANUAL_TRIGGER" };
         constexpr Usage AUTO_TRIGGER_ASSOCIATED_CONTROL = { 0x22, UsageKind::OTHER, "AUTO_TRIGGER_ASSOCIATED_CONTROL" };
+        constexpr Usage INTENSITY = { 0x23, UsageKind::OTHER, "INTENSITY" };
+        constexpr Usage REPEAT_COUNT = { 0x24, UsageKind::OTHER, "REPEAT_COUNT" };
+        constexpr Usage RETRIGGER_PERIOD = { 0x25, UsageKind::OTHER, "RETRIGGER_PERIOD" };
         constexpr Usage WAVEFORM_VENDOR_PAGE = { 0x26, UsageKind::OTHER, "WAVEFORM_VENDOR_PAGE" };
         constexpr Usage WAVEFORM_VENDOR_ID = { 0x27, UsageKind::OTHER, "WAVEFORM_VENDOR_ID" };
         constexpr Usage WAVEFORM_CUTOFF_TIME = { 0x28, UsageKind::OTHER, "WAVEFORM_CUTOFF_TIME" };
@@ -27,15 +33,5 @@ namespace HID::Haptics {
         constexpr Usage WAVEFORM_BRUSH_CONTINUOUS = { 0x100F, UsageKind::OTHER, "WAVEFORM_BRUSH_CONTINUOUS" };
         constexpr Usage WAVEFORM_ERASER_CONTINUOUS = { 0x1010, UsageKind::OTHER, "WAVEFORM_ERASER_CONTINUOUS" };
         constexpr Usage WAVEFORM_SPARKLE_CONTINUOUS = { 0x1011, UsageKind::OTHER, "WAVEFORM_SPARKLE_CONTINUOUS" };
-    }
-    namespace DV {
-        constexpr Usage AUTO_TRIGGER = { 0x20, UsageKind::DV, "AUTO_TRIGGER" };
-        constexpr Usage MANUAL_TRIGGER = { 0x21, UsageKind::DV, "MANUAL_TRIGGER" };
-        constexpr Usage INTENSITY = { 0x23, UsageKind::DV, "INTENSITY" };
-        constexpr Usage REPEAT_COUNT = { 0x24, UsageKind::DV, "REPEAT_COUNT" };
-        constexpr Usage RETRIGGER_PERIOD = { 0x25, UsageKind::DV, "RETRIGGER_PERIOD" };
-    }
-    namespace CA {
-        constexpr Usage SIMPLE_HAPTIC_CONTROLLER = { 0x01, UsageKind::CA, "SIMPLE_HAPTIC_CONTROLLER" };
     }
 }
