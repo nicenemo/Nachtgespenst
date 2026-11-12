@@ -391,8 +391,21 @@ void ui_screenshot(Stream& out) {
     out.print("\nEND\n");
 }
 
+// Backlight: dim after 60 s without touch/button, off after 5 min; any touch wakes
+// it (no re-init needed, unlike deep sleep).
+static void idleBacklight() {
+    static uint32_t lastActive = 0;
+    static uint8_t level = 255;
+    if (M5.Touch.getCount() > 0 || M5.BtnA.isPressed() || M5.BtnB.isPressed() || M5.BtnC.isPressed())
+        lastActive = millis();
+    uint32_t idle = millis() - lastActive;
+    uint8_t want = idle < 60000 ? 128 : (idle < 300000 ? 16 : 0);
+    if (want != level) { level = want; M5.Display.setBrightness(want); }
+}
+
 void ui_loop() {
     static uint32_t lastLedPoll = 0;
+    idleBacklight();
     // Keep in sync with the HID layer (local toggles do not always fire the listener).
     if (millis() - lastLedPoll > 100) {
         lastLedPoll = millis();

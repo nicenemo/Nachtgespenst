@@ -1,10 +1,13 @@
 #pragma once
 #include <Arduino.h>
-// Transport: USB HID on the Core S3 (NG_TRANSPORT_USB=1), BLE otherwise.
+// Transports (can be combined): USB HID (NG_TRANSPORT_USB=1, Core S3) and BLE (default on).
 #ifndef NG_TRANSPORT_USB
 #define NG_TRANSPORT_USB 0
 #endif
-#if !NG_TRANSPORT_USB
+#ifndef NG_TRANSPORT_BLE
+#define NG_TRANSPORT_BLE 1
+#endif
+#if NG_TRANSPORT_BLE
 #include <NimBLEDevice.h>
 #include <NimBLEHIDDevice.h>
 #endif
@@ -28,7 +31,13 @@ namespace HIDManager {
     void begin(const char* deviceName, const char* manufacturer);
     
     // Status check
-    bool isConnected();
+    bool isConnected();      // USB or BLE
+    bool isUsbConnected();
+    bool isBleConnected();
+
+    // Prevent double keystrokes: while USB is connected, skip BLE (default on).
+    void setPreferUsb(bool prefer);
+    bool preferUsb();
 
     // De centrale verzendmethode (beslist welke report gestuurd wordt)
     void send(const Binding& b);
