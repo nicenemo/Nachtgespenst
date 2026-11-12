@@ -2,7 +2,7 @@
 #include "../HID_Types.h"
 
 namespace HID::MagneticStripeReader {
-    constexpr uint8_t PAGE_ID = 0x008E;
+    constexpr uint16_t PAGE_ID = 0x008E;
     namespace OTHER {
         constexpr Usage MSR_DEVICE_READ_ONLY = { 0x01, UsageKind::OTHER, "MSR_DEVICE_READ_ONLY" };
         constexpr Usage TRACK_1_LENGTH = { 0x11, UsageKind::OTHER, "TRACK_1_LENGTH" };

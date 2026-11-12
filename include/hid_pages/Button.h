@@ -2,5 +2,5 @@
 #include "../HID_Types.h"
 
 namespace HID::Button {
-    constexpr uint8_t PAGE_ID = 0x0009;
+    constexpr uint16_t PAGE_ID = 0x0009;
 }

@@ -2,7 +2,7 @@
 #include "../HID_Types.h"
 
 namespace HID::LightingAndIllumination {
-    constexpr uint8_t PAGE_ID = 0x0059;
+    constexpr uint16_t PAGE_ID = 0x0059;
     namespace OTHER {
         constexpr Usage LAMPARRAY = { 0x01, UsageKind::OTHER, "LAMPARRAY" };
         constexpr Usage LAMPARRAYATTRIBUTESREPORT = { 0x02, UsageKind::OTHER, "LAMPARRAYATTRIBUTESREPORT" };

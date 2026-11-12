@@ -2,7 +2,7 @@
 #include "../HID_Types.h"
 
 namespace HID::Digitizers {
-    constexpr uint8_t PAGE_ID = 0x000D;
+    constexpr uint16_t PAGE_ID = 0x000D;
     namespace OTHER {
         constexpr Usage DIGITIZER = { 0x01, UsageKind::OTHER, "DIGITIZER" };
         constexpr Usage PEN = { 0x02, UsageKind::OTHER, "PEN" };
@@ -11,7 +11,7 @@ namespace HID::Digitizers {
         constexpr Usage TOUCH_PAD = { 0x05, UsageKind::OTHER, "TOUCH_PAD" };
         constexpr Usage WHITEBOARD = { 0x06, UsageKind::OTHER, "WHITEBOARD" };
         constexpr Usage COORDINATE_MEASURING_MACHINE = { 0x07, UsageKind::OTHER, "COORDINATE_MEASURING_MACHINE" };
-        constexpr Usage 3D_DIGITIZER = { 0x08, UsageKind::OTHER, "3D_DIGITIZER" };
+        constexpr Usage ID_3D_DIGITIZER = { 0x08, UsageKind::OTHER, "ID_3D_DIGITIZER" };
         constexpr Usage STEREO_PLOTTER = { 0x09, UsageKind::OTHER, "STEREO_PLOTTER" };
         constexpr Usage ARTICULATED_ARM = { 0x0A, UsageKind::OTHER, "ARTICULATED_ARM" };
         constexpr Usage ARMATURE = { 0x0B, UsageKind::OTHER, "ARMATURE" };

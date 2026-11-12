@@ -2,7 +2,7 @@
 #include "../HID_Types.h"
 
 namespace HID::LED {
-    constexpr uint8_t PAGE_ID = 0x0008;
+    constexpr uint16_t PAGE_ID = 0x0008;
     namespace OTHER {
         constexpr Usage NUM_LOCK = { 0x01, UsageKind::OTHER, "NUM_LOCK" };
         constexpr Usage CAPS_LOCK = { 0x02, UsageKind::OTHER, "CAPS_LOCK" };

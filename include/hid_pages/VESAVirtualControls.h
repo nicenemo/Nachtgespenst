@@ -2,7 +2,7 @@
 #include "../HID_Types.h"
 
 namespace HID::VESAVirtualControls {
-    constexpr uint8_t PAGE_ID = 0x0082;
+    constexpr uint16_t PAGE_ID = 0x0082;
     namespace OTHER {
         constexpr Usage DEGAUSS = { 0x01, UsageKind::OTHER, "DEGAUSS" };
         constexpr Usage BRIGHTNESS = { 0x10, UsageKind::OTHER, "BRIGHTNESS" };

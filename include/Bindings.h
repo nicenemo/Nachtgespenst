@@ -32,12 +32,6 @@
 #define M_RMEH (M_RCTL | M_RSFT | M_RALT)
 #define M_RHYP (M_RCTL | M_RSFT | M_RALT | M_RGUI)
 
-// --- Symmetric Wrappers ---
-#define M_BCTL (M_LCTL | M_RCTL)
-#define M_BSFT (M_LSFT | M_RSFT)
-#define M_BALT (M_LALT | M_RALT)
-#define M_BGUI (M_LGUI | M_RGUI)
-
 struct Binding {
     HID::Page page;
     HID::Usage usage;
@@ -45,12 +39,12 @@ struct Binding {
     const char* label;
     HID::UsageKind kind;
 
-    constexpr Binding() 
-        : page((HID::Page)0), usage({0, HID::UsageKind::OTHER, " "}), 
-          modifier(M_NONE), label(nullptr), kind(HID::UsageKind::OTHER) {}
+    // Constructor for generated macros (e.g., cp_MUTE)
+    constexpr Binding(HID::Page p, HID::Usage u) 
+        : page(p), usage(u), modifier(0), label(nullptr), kind(u.kind) {}
 
-    constexpr Binding(HID::Page p, HID::Usage u, uint8_t m = M_NONE, 
-                      const char* l = nullptr, HID::UsageKind k = HID::UsageKind::OTHER)
+    // Full constructor for manual bindings with labels/modifiers
+    constexpr Binding(HID::Page p, HID::Usage u, uint8_t m, const char* l, HID::UsageKind k)
         : page(p), usage(u), modifier(m), label(l), kind(k) {}
 
     constexpr Binding operator|(uint8_t mod) const {
@@ -70,7 +64,7 @@ struct Binding {
 #define lsg(b)  ((b) | M_LSG)
 #define lag(b)  ((b) | M_LAG)
 #define lmeh(b) ((b) | M_LMEH)
-#define lhyp(b) ((b) | M_LHYP)
+#define lhyp(b) ((b) | M_LMEH | M_LGUI)
 
 // --- Right Wrapper Macros ---
 #define rct(b)  ((b) | M_RCTL)
@@ -80,56 +74,11 @@ struct Binding {
 #define rcs(b)  ((b) | M_RCS)
 #define rca(b)  ((b) | M_RCA)
 #define rcg(b)  ((b) | M_RCG)
-#define rsa(b)  ((b) | M_RSA)
-#define rsg(b)  ((b) | M_RSG)
-#define rag(b)  ((b) | M_RAG)
+#define rsa(b)  ((b) | M_RSFT | M_RALT)
+#define rsg(b)  ((b) | M_RSFT | M_RGUI)
+#define rag(b)  ((b) | M_RALT | M_RGUI)
 #define rmeh(b) ((b) | M_RMEH)
-#define rhyp(b) ((b) | M_RHYP)
+#define rhyp(b) ((b) | M_RMEH | M_RGUI)
 
-// --- Both Hand Macros ---
-#define bct(b)  ((b) | M_BCTL)
-#define bsf(b)  ((b) | M_BSFT)
-#define bal(b)  ((b) | M_BALT)
-#define bgui(b) ((b) | M_BGUI)
-
-#define none Binding()
-
-// Fixed: Added base helper macros
-#define kp(u, ...) Binding(HID::Page::Keyboard, u, M_NONE, ##__VA_ARGS__)
-#define cp(u, ...) Binding(HID::Page::Consumer, u, M_NONE, ##__VA_ARGS__)
-#define gp(u, ...) Binding(HID::Page::GenericDesktop, u, M_NONE, ##__VA_ARGS__)
-
-// --- Shortcut Includes ---
-#include "hid_shortcuts/Arcade.h"
-#include "hid_shortcuts/AuxiliaryDisplay.h"
-#include "hid_shortcuts/BarcodeScanner.h"
-#include "hid_shortcuts/BatterySystem.h"
-#include "hid_shortcuts/BrailleDisplay.h"
-#include "hid_shortcuts/Button.h"
-#include "hid_shortcuts/CameraControl.h"
-#include "hid_shortcuts/Consumer.h"
-#include "hid_shortcuts/Digitizers.h"
-#include "hid_shortcuts/EyeandHeadTrackers.h"
-#include "hid_shortcuts/FIDOAlliance.h"
-#include "hid_shortcuts/GameControls.h"
-#include "hid_shortcuts/GenericDesktop.h"
-#include "hid_shortcuts/GenericDeviceControls.h"
-#include "hid_shortcuts/Haptics.h"
-#include "hid_shortcuts/KeyboardKeypad.h"
-#include "hid_shortcuts/LED.h"
-#include "hid_shortcuts/LightingAndIllumination.h"
-#include "hid_shortcuts/MagneticStripeReader.h"
-#include "hid_shortcuts/MedicalInstrument.h"
-#include "hid_shortcuts/Monitor.h"
-#include "hid_shortcuts/MonitorEnumerated.h"
-#include "hid_shortcuts/Ordinal.h"
-#include "hid_shortcuts/PhysicalInputDevice.h"
-#include "hid_shortcuts/Power.h"
-#include "hid_shortcuts/Scales.h"
-#include "hid_shortcuts/Sensors.h"
-#include "hid_shortcuts/SimulationControls.h"
-#include "hid_shortcuts/SoC.h"
-#include "hid_shortcuts/SportControls.h"
-#include "hid_shortcuts/TelephonyDevice.h"
-#include "hid_shortcuts/VESAVirtualControls.h"
-#include "hid_shortcuts/VRControls.h"
+// Static none binding for empty slots
+static constexpr Binding none = Binding(HID::Page::UNDEFINED, {0, HID::UsageKind::OTHER, "NONE"});

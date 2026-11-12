@@ -2,7 +2,7 @@
 #include "../HID_Types.h"
 
 namespace HID::GenericDesktop {
-    constexpr uint8_t PAGE_ID = 0x0001;
+    constexpr uint16_t PAGE_ID = 0x0001;
     namespace OTHER {
         constexpr Usage POINTER = { 0x01, UsageKind::OTHER, "POINTER" };
         constexpr Usage MOUSE = { 0x02, UsageKind::OTHER, "MOUSE" };

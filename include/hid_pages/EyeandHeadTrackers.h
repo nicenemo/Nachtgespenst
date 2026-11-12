@@ -2,7 +2,7 @@
 #include "../HID_Types.h"
 
 namespace HID::EyeandHeadTrackers {
-    constexpr uint8_t PAGE_ID = 0x0012;
+    constexpr uint16_t PAGE_ID = 0x0012;
     namespace OTHER {
         constexpr Usage EYE_TRACKER = { 0x01, UsageKind::OTHER, "EYE_TRACKER" };
         constexpr Usage HEAD_TRACKER = { 0x02, UsageKind::OTHER, "HEAD_TRACKER" };

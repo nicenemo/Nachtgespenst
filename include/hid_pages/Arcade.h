@@ -2,7 +2,7 @@
 #include "../HID_Types.h"
 
 namespace HID::Arcade {
-    constexpr uint8_t PAGE_ID = 0x0091;
+    constexpr uint16_t PAGE_ID = 0x0091;
     namespace OTHER {
         constexpr Usage GENERAL_PURPOSE_IO_CARD = { 0x01, UsageKind::OTHER, "GENERAL_PURPOSE_IO_CARD" };
         constexpr Usage COIN_DOOR = { 0x02, UsageKind::OTHER, "COIN_DOOR" };

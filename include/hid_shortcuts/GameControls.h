@@ -2,8 +2,8 @@
 /**
  * Shortcuts for Game Controls
  */
-#ifndef ga_3D_GAME_CONTROLLER
-#define ga_3D_GAME_CONTROLLER Binding(HID::Page::GAME_CONTROLS, HID::GameControls::OTHER::3D_GAME_CONTROLLER)
+#ifndef ga_ID_3D_GAME_CONTROLLER
+#define ga_ID_3D_GAME_CONTROLLER Binding(HID::Page::GAME_CONTROLS, HID::GameControls::OTHER::ID_3D_GAME_CONTROLLER)
 #endif
 #ifndef ga_PINBALL_DEVICE
 #define ga_PINBALL_DEVICE Binding(HID::Page::GAME_CONTROLS, HID::GameControls::OTHER::PINBALL_DEVICE)

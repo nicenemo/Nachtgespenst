@@ -2,7 +2,7 @@
 #include "../HID_Types.h"
 
 namespace HID::SoC {
-    constexpr uint8_t PAGE_ID = 0x0011;
+    constexpr uint16_t PAGE_ID = 0x0011;
     namespace OTHER {
         constexpr Usage SOCCONTROL = { 0x01, UsageKind::OTHER, "SOCCONTROL" };
         constexpr Usage FIRMWARETRANSFER = { 0x02, UsageKind::OTHER, "FIRMWARETRANSFER" };

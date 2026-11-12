@@ -13,6 +13,7 @@ namespace HID {
     };
 
     enum class Page : uint16_t {
+        UNDEFINED = 0x0000,
             ARCADE = 0x0091,
         AUXILIARY_DISPLAY = 0x0014,
         BARCODE_SCANNER = 0x008C,

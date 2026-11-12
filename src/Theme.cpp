@@ -1,3 +1,4 @@
+#include <M5Unified.h>
 #include "Theme.h"
 
 ThemeMode ThemeManager::_currentMode = ThemeMode::DARK;

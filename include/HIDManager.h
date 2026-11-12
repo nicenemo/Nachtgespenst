@@ -1,6 +1,13 @@
 #pragma once
+#include <Arduino.h>
+// Transport: USB HID on the Core S3 (NG_TRANSPORT_USB=1), BLE otherwise.
+#ifndef NG_TRANSPORT_USB
+#define NG_TRANSPORT_USB 0
+#endif
+#if !NG_TRANSPORT_USB
 #include <NimBLEDevice.h>
 #include <NimBLEHIDDevice.h>
+#endif
 #include "Bindings.h"
 
 namespace HIDManager {

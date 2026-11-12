@@ -2,7 +2,7 @@
 #include "../HID_Types.h"
 
 namespace HID::PhysicalInputDevice {
-    constexpr uint8_t PAGE_ID = 0x000F;
+    constexpr uint16_t PAGE_ID = 0x000F;
     namespace OTHER {
         constexpr Usage PHYSICAL_INPUT_DEVICE = { 0x01, UsageKind::OTHER, "PHYSICAL_INPUT_DEVICE" };
         constexpr Usage NORMAL = { 0x20, UsageKind::OTHER, "NORMAL" };

@@ -23,11 +23,11 @@
 #ifndef cp_BACKLIGHT
 #define cp_BACKLIGHT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::BACKLIGHT)
 #endif
-#ifndef cp_10
-#define cp_10 Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::10)
+#ifndef cp_ID_10
+#define cp_ID_10 Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::ID_10)
 #endif
-#ifndef cp_100
-#define cp_100 Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::100)
+#ifndef cp_ID_100
+#define cp_ID_100 Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::ID_100)
 #endif
 #ifndef cp_AM_PM
 #define cp_AM_PM Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AM_PM)
@@ -122,8 +122,8 @@
 #ifndef cp_ASPECT
 #define cp_ASPECT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::ASPECT)
 #endif
-#ifndef cp_3D_MODE_SELECT
-#define cp_3D_MODE_SELECT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::3D_MODE_SELECT)
+#ifndef cp_ID_3D_MODE_SELECT
+#define cp_ID_3D_MODE_SELECT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::ID_3D_MODE_SELECT)
 #endif
 #ifndef cp_DISPLAY_BRIGHTNESS_INCREMENT
 #define cp_DISPLAY_BRIGHTNESS_INCREMENT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::DISPLAY_BRIGHTNESS_INCREMENT)
@@ -572,671 +572,671 @@
 #ifndef cp_APPLICATION_LAUNCH_BUTTONS
 #define cp_APPLICATION_LAUNCH_BUTTONS Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::APPLICATION_LAUNCH_BUTTONS)
 #endif
-#ifndef cp_AL_LAUNCH_BUTTON_CONFIGURATION_TOOL
-#define cp_AL_LAUNCH_BUTTON_CONFIGURATION_TOOL Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_LAUNCH_BUTTON_CONFIGURATION_TOOL)
+#ifndef cp_LAUNCH_BUTTON_CONFIGURATION_TOOL
+#define cp_LAUNCH_BUTTON_CONFIGURATION_TOOL Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::LAUNCH_BUTTON_CONFIGURATION_TOOL)
 #endif
-#ifndef cp_AL_PROGRAMMABLE_BUTTON_CONFIGURATION
-#define cp_AL_PROGRAMMABLE_BUTTON_CONFIGURATION Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_PROGRAMMABLE_BUTTON_CONFIGURATION)
+#ifndef cp_PROGRAMMABLE_BUTTON_CONFIGURATION
+#define cp_PROGRAMMABLE_BUTTON_CONFIGURATION Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::PROGRAMMABLE_BUTTON_CONFIGURATION)
 #endif
-#ifndef cp_AL_CONSUMER_CONTROL_CONFIGURATION
-#define cp_AL_CONSUMER_CONTROL_CONFIGURATION Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_CONSUMER_CONTROL_CONFIGURATION)
+#ifndef cp_CONSUMER_CONTROL_CONFIGURATION
+#define cp_CONSUMER_CONTROL_CONFIGURATION Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::CONSUMER_CONTROL_CONFIGURATION)
 #endif
-#ifndef cp_AL_WORD_PROCESSOR
-#define cp_AL_WORD_PROCESSOR Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_WORD_PROCESSOR)
+#ifndef cp_WORD_PROCESSOR
+#define cp_WORD_PROCESSOR Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::WORD_PROCESSOR)
 #endif
-#ifndef cp_AL_TEXT_EDITOR
-#define cp_AL_TEXT_EDITOR Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_TEXT_EDITOR)
+#ifndef cp_TEXT_EDITOR
+#define cp_TEXT_EDITOR Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::TEXT_EDITOR)
 #endif
-#ifndef cp_AL_SPREADSHEET
-#define cp_AL_SPREADSHEET Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_SPREADSHEET)
+#ifndef cp_SPREADSHEET
+#define cp_SPREADSHEET Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::SPREADSHEET)
 #endif
-#ifndef cp_AL_GRAPHICS_EDITOR
-#define cp_AL_GRAPHICS_EDITOR Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_GRAPHICS_EDITOR)
+#ifndef cp_GRAPHICS_EDITOR
+#define cp_GRAPHICS_EDITOR Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::GRAPHICS_EDITOR)
 #endif
-#ifndef cp_AL_PRESENTATION_APP
-#define cp_AL_PRESENTATION_APP Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_PRESENTATION_APP)
+#ifndef cp_PRESENTATION_APP
+#define cp_PRESENTATION_APP Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::PRESENTATION_APP)
 #endif
-#ifndef cp_AL_DATABASE_APP
-#define cp_AL_DATABASE_APP Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_DATABASE_APP)
+#ifndef cp_DATABASE_APP
+#define cp_DATABASE_APP Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::DATABASE_APP)
 #endif
-#ifndef cp_AL_EMAIL_READER
-#define cp_AL_EMAIL_READER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_EMAIL_READER)
+#ifndef cp_EMAIL_READER
+#define cp_EMAIL_READER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::EMAIL_READER)
 #endif
-#ifndef cp_AL_NEWSREADER
-#define cp_AL_NEWSREADER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_NEWSREADER)
+#ifndef cp_NEWSREADER
+#define cp_NEWSREADER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::NEWSREADER)
 #endif
-#ifndef cp_AL_VOICEMAIL
-#define cp_AL_VOICEMAIL Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_VOICEMAIL)
+#ifndef cp_VOICEMAIL
+#define cp_VOICEMAIL Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::VOICEMAIL)
 #endif
-#ifndef cp_AL_CONTACTS_ADDRESS_BOOK
-#define cp_AL_CONTACTS_ADDRESS_BOOK Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_CONTACTS_ADDRESS_BOOK)
+#ifndef cp_CONTACTS_ADDRESS_BOOK
+#define cp_CONTACTS_ADDRESS_BOOK Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::CONTACTS_ADDRESS_BOOK)
 #endif
-#ifndef cp_AL_CALENDAR_SCHEDULE
-#define cp_AL_CALENDAR_SCHEDULE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_CALENDAR_SCHEDULE)
+#ifndef cp_CALENDAR_SCHEDULE
+#define cp_CALENDAR_SCHEDULE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::CALENDAR_SCHEDULE)
 #endif
-#ifndef cp_AL_TASK_PROJECT_MANAGER
-#define cp_AL_TASK_PROJECT_MANAGER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_TASK_PROJECT_MANAGER)
+#ifndef cp_TASK_PROJECT_MANAGER
+#define cp_TASK_PROJECT_MANAGER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::TASK_PROJECT_MANAGER)
 #endif
-#ifndef cp_AL_LOG_JOURNAL_TIMECARD
-#define cp_AL_LOG_JOURNAL_TIMECARD Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_LOG_JOURNAL_TIMECARD)
+#ifndef cp_LOG_JOURNAL_TIMECARD
+#define cp_LOG_JOURNAL_TIMECARD Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::LOG_JOURNAL_TIMECARD)
 #endif
-#ifndef cp_AL_CHECKBOOK_FINANCE
-#define cp_AL_CHECKBOOK_FINANCE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_CHECKBOOK_FINANCE)
+#ifndef cp_CHECKBOOK_FINANCE
+#define cp_CHECKBOOK_FINANCE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::CHECKBOOK_FINANCE)
 #endif
-#ifndef cp_AL_CALCULATOR
-#define cp_AL_CALCULATOR Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_CALCULATOR)
+#ifndef cp_CALCULATOR
+#define cp_CALCULATOR Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::CALCULATOR)
 #endif
-#ifndef cp_AL_A_V_CAPTURE_PLAYBACK
-#define cp_AL_A_V_CAPTURE_PLAYBACK Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_A_V_CAPTURE_PLAYBACK)
+#ifndef cp_A_V_CAPTURE_PLAYBACK
+#define cp_A_V_CAPTURE_PLAYBACK Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::A_V_CAPTURE_PLAYBACK)
 #endif
-#ifndef cp_AL_LOCAL_MACHINE_BROWSER
-#define cp_AL_LOCAL_MACHINE_BROWSER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_LOCAL_MACHINE_BROWSER)
+#ifndef cp_LOCAL_MACHINE_BROWSER
+#define cp_LOCAL_MACHINE_BROWSER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::LOCAL_MACHINE_BROWSER)
 #endif
-#ifndef cp_AL_LAN_WAN_BROWSER
-#define cp_AL_LAN_WAN_BROWSER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_LAN_WAN_BROWSER)
+#ifndef cp_LAN_WAN_BROWSER
+#define cp_LAN_WAN_BROWSER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::LAN_WAN_BROWSER)
 #endif
-#ifndef cp_AL_INTERNET_BROWSER
-#define cp_AL_INTERNET_BROWSER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_INTERNET_BROWSER)
+#ifndef cp_INTERNET_BROWSER
+#define cp_INTERNET_BROWSER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::INTERNET_BROWSER)
 #endif
-#ifndef cp_AL_REMOTE_NETWORKING_ISP_CONNECT
-#define cp_AL_REMOTE_NETWORKING_ISP_CONNECT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_REMOTE_NETWORKING_ISP_CONNECT)
+#ifndef cp_REMOTE_NETWORKING_ISP_CONNECT
+#define cp_REMOTE_NETWORKING_ISP_CONNECT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::REMOTE_NETWORKING_ISP_CONNECT)
 #endif
-#ifndef cp_AL_NETWORK_CONFERENCE
-#define cp_AL_NETWORK_CONFERENCE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_NETWORK_CONFERENCE)
+#ifndef cp_NETWORK_CONFERENCE
+#define cp_NETWORK_CONFERENCE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::NETWORK_CONFERENCE)
 #endif
-#ifndef cp_AL_NETWORK_CHAT
-#define cp_AL_NETWORK_CHAT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_NETWORK_CHAT)
+#ifndef cp_NETWORK_CHAT
+#define cp_NETWORK_CHAT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::NETWORK_CHAT)
 #endif
-#ifndef cp_AL_TELEPHONY_DIALER
-#define cp_AL_TELEPHONY_DIALER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_TELEPHONY_DIALER)
+#ifndef cp_TELEPHONY_DIALER
+#define cp_TELEPHONY_DIALER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::TELEPHONY_DIALER)
 #endif
-#ifndef cp_AL_LOGON
-#define cp_AL_LOGON Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_LOGON)
+#ifndef cp_LOGON
+#define cp_LOGON Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::LOGON)
 #endif
-#ifndef cp_AL_LOGOFF
-#define cp_AL_LOGOFF Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_LOGOFF)
+#ifndef cp_LOGOFF
+#define cp_LOGOFF Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::LOGOFF)
 #endif
-#ifndef cp_AL_LOGON_LOGOFF
-#define cp_AL_LOGON_LOGOFF Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_LOGON_LOGOFF)
+#ifndef cp_LOGON_LOGOFF
+#define cp_LOGON_LOGOFF Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::LOGON_LOGOFF)
 #endif
-#ifndef cp_AL_TERMINAL_LOCK_SCREENSAVER
-#define cp_AL_TERMINAL_LOCK_SCREENSAVER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_TERMINAL_LOCK_SCREENSAVER)
+#ifndef cp_TERMINAL_LOCK_SCREENSAVER
+#define cp_TERMINAL_LOCK_SCREENSAVER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::TERMINAL_LOCK_SCREENSAVER)
 #endif
-#ifndef cp_AL_CONTROL_PANEL
-#define cp_AL_CONTROL_PANEL Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_CONTROL_PANEL)
+#ifndef cp_CONTROL_PANEL
+#define cp_CONTROL_PANEL Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::CONTROL_PANEL)
 #endif
-#ifndef cp_AL_COMMAND_LINE_PROCESSOR_RUN
-#define cp_AL_COMMAND_LINE_PROCESSOR_RUN Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_COMMAND_LINE_PROCESSOR_RUN)
+#ifndef cp_COMMAND_LINE_PROCESSOR_RUN
+#define cp_COMMAND_LINE_PROCESSOR_RUN Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::COMMAND_LINE_PROCESSOR_RUN)
 #endif
-#ifndef cp_AL_PROCESS_TASK_MANAGER
-#define cp_AL_PROCESS_TASK_MANAGER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_PROCESS_TASK_MANAGER)
+#ifndef cp_PROCESS_TASK_MANAGER
+#define cp_PROCESS_TASK_MANAGER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::PROCESS_TASK_MANAGER)
 #endif
-#ifndef cp_AL_SELECT_TASK_APPLICATION
-#define cp_AL_SELECT_TASK_APPLICATION Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_SELECT_TASK_APPLICATION)
+#ifndef cp_SELECT_TASK_APPLICATION
+#define cp_SELECT_TASK_APPLICATION Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::SELECT_TASK_APPLICATION)
 #endif
-#ifndef cp_AL_NEXT_TASK_APPLICATION
-#define cp_AL_NEXT_TASK_APPLICATION Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_NEXT_TASK_APPLICATION)
+#ifndef cp_NEXT_TASK_APPLICATION
+#define cp_NEXT_TASK_APPLICATION Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::NEXT_TASK_APPLICATION)
 #endif
-#ifndef cp_AL_PREVIOUS_TASK_APPLICATION
-#define cp_AL_PREVIOUS_TASK_APPLICATION Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_PREVIOUS_TASK_APPLICATION)
+#ifndef cp_PREVIOUS_TASK_APPLICATION
+#define cp_PREVIOUS_TASK_APPLICATION Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::PREVIOUS_TASK_APPLICATION)
 #endif
-#ifndef cp_AL_PREEMPTIVE_HALT_TASK_APPLICATION
-#define cp_AL_PREEMPTIVE_HALT_TASK_APPLICATION Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_PREEMPTIVE_HALT_TASK_APPLICATION)
+#ifndef cp_PREEMPTIVE_HALT_TASK_APPLICATION
+#define cp_PREEMPTIVE_HALT_TASK_APPLICATION Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::PREEMPTIVE_HALT_TASK_APPLICATION)
 #endif
-#ifndef cp_AL_INTEGRATED_HELP_CENTER
-#define cp_AL_INTEGRATED_HELP_CENTER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_INTEGRATED_HELP_CENTER)
+#ifndef cp_INTEGRATED_HELP_CENTER
+#define cp_INTEGRATED_HELP_CENTER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::INTEGRATED_HELP_CENTER)
 #endif
-#ifndef cp_AL_DOCUMENTS
-#define cp_AL_DOCUMENTS Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_DOCUMENTS)
+#ifndef cp_DOCUMENTS
+#define cp_DOCUMENTS Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::DOCUMENTS)
 #endif
-#ifndef cp_AL_THESAURUS
-#define cp_AL_THESAURUS Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_THESAURUS)
+#ifndef cp_THESAURUS
+#define cp_THESAURUS Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::THESAURUS)
 #endif
-#ifndef cp_AL_DICTIONARY
-#define cp_AL_DICTIONARY Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_DICTIONARY)
+#ifndef cp_DICTIONARY
+#define cp_DICTIONARY Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::DICTIONARY)
 #endif
-#ifndef cp_AL_DESKTOP
-#define cp_AL_DESKTOP Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_DESKTOP)
+#ifndef cp_DESKTOP
+#define cp_DESKTOP Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::DESKTOP)
 #endif
-#ifndef cp_AL_SPELL_CHECK
-#define cp_AL_SPELL_CHECK Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_SPELL_CHECK)
+#ifndef cp_SPELL_CHECK
+#define cp_SPELL_CHECK Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::SPELL_CHECK)
 #endif
-#ifndef cp_AL_GRAMMAR_CHECK
-#define cp_AL_GRAMMAR_CHECK Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_GRAMMAR_CHECK)
+#ifndef cp_GRAMMAR_CHECK
+#define cp_GRAMMAR_CHECK Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::GRAMMAR_CHECK)
 #endif
-#ifndef cp_AL_WIRELESS_STATUS
-#define cp_AL_WIRELESS_STATUS Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_WIRELESS_STATUS)
+#ifndef cp_WIRELESS_STATUS
+#define cp_WIRELESS_STATUS Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::WIRELESS_STATUS)
 #endif
-#ifndef cp_AL_LAYOUT
-#define cp_AL_LAYOUT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_LAYOUT)
+#ifndef cp_LAYOUT
+#define cp_LAYOUT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::LAYOUT)
 #endif
-#ifndef cp_AL_VIRUS_PROTECTION
-#define cp_AL_VIRUS_PROTECTION Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_VIRUS_PROTECTION)
+#ifndef cp_VIRUS_PROTECTION
+#define cp_VIRUS_PROTECTION Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::VIRUS_PROTECTION)
 #endif
-#ifndef cp_AL_ENCRYPTION
-#define cp_AL_ENCRYPTION Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_ENCRYPTION)
+#ifndef cp_ENCRYPTION
+#define cp_ENCRYPTION Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::ENCRYPTION)
 #endif
-#ifndef cp_AL_SCREEN_SAVER
-#define cp_AL_SCREEN_SAVER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_SCREEN_SAVER)
+#ifndef cp_SCREEN_SAVER
+#define cp_SCREEN_SAVER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::SCREEN_SAVER)
 #endif
-#ifndef cp_AL_ALARMS
-#define cp_AL_ALARMS Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_ALARMS)
+#ifndef cp_ALARMS
+#define cp_ALARMS Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::ALARMS)
 #endif
-#ifndef cp_AL_CLOCK
-#define cp_AL_CLOCK Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_CLOCK)
+#ifndef cp_CLOCK
+#define cp_CLOCK Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::CLOCK)
 #endif
-#ifndef cp_AL_FILE_BROWSER
-#define cp_AL_FILE_BROWSER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_FILE_BROWSER)
+#ifndef cp_FILE_BROWSER
+#define cp_FILE_BROWSER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::FILE_BROWSER)
 #endif
-#ifndef cp_AL_POWER_STATUS
-#define cp_AL_POWER_STATUS Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_POWER_STATUS)
+#ifndef cp_POWER_STATUS
+#define cp_POWER_STATUS Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::POWER_STATUS)
 #endif
-#ifndef cp_AL_IMAGE_BROWSER
-#define cp_AL_IMAGE_BROWSER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_IMAGE_BROWSER)
+#ifndef cp_IMAGE_BROWSER
+#define cp_IMAGE_BROWSER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::IMAGE_BROWSER)
 #endif
-#ifndef cp_AL_AUDIO_BROWSER
-#define cp_AL_AUDIO_BROWSER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_AUDIO_BROWSER)
+#ifndef cp_AUDIO_BROWSER
+#define cp_AUDIO_BROWSER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AUDIO_BROWSER)
 #endif
-#ifndef cp_AL_MOVIE_BROWSER
-#define cp_AL_MOVIE_BROWSER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_MOVIE_BROWSER)
+#ifndef cp_MOVIE_BROWSER
+#define cp_MOVIE_BROWSER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::MOVIE_BROWSER)
 #endif
-#ifndef cp_AL_DIGITAL_RIGHTS_MANAGER
-#define cp_AL_DIGITAL_RIGHTS_MANAGER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_DIGITAL_RIGHTS_MANAGER)
+#ifndef cp_DIGITAL_RIGHTS_MANAGER
+#define cp_DIGITAL_RIGHTS_MANAGER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::DIGITAL_RIGHTS_MANAGER)
 #endif
-#ifndef cp_AL_DIGITAL_WALLET
-#define cp_AL_DIGITAL_WALLET Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_DIGITAL_WALLET)
+#ifndef cp_DIGITAL_WALLET
+#define cp_DIGITAL_WALLET Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::DIGITAL_WALLET)
 #endif
-#ifndef cp_AL_INSTANT_MESSAGING
-#define cp_AL_INSTANT_MESSAGING Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_INSTANT_MESSAGING)
+#ifndef cp_INSTANT_MESSAGING
+#define cp_INSTANT_MESSAGING Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::INSTANT_MESSAGING)
 #endif
-#ifndef cp_AL_OEM_FEATURES_TIPS_TUTORIAL_BROWSER
-#define cp_AL_OEM_FEATURES_TIPS_TUTORIAL_BROWSER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_OEM_FEATURES_TIPS_TUTORIAL_BROWSER)
+#ifndef cp_OEM_FEATURES_TIPS_TUTORIAL_BROWSER
+#define cp_OEM_FEATURES_TIPS_TUTORIAL_BROWSER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::OEM_FEATURES_TIPS_TUTORIAL_BROWSER)
 #endif
-#ifndef cp_AL_OEM_HELP
-#define cp_AL_OEM_HELP Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_OEM_HELP)
+#ifndef cp_OEM_HELP
+#define cp_OEM_HELP Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::OEM_HELP)
 #endif
-#ifndef cp_AL_ONLINE_COMMUNITY
-#define cp_AL_ONLINE_COMMUNITY Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_ONLINE_COMMUNITY)
+#ifndef cp_ONLINE_COMMUNITY
+#define cp_ONLINE_COMMUNITY Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::ONLINE_COMMUNITY)
 #endif
-#ifndef cp_AL_ENTERTAINMENT_CONTENT_BROWSER
-#define cp_AL_ENTERTAINMENT_CONTENT_BROWSER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_ENTERTAINMENT_CONTENT_BROWSER)
+#ifndef cp_ENTERTAINMENT_CONTENT_BROWSER
+#define cp_ENTERTAINMENT_CONTENT_BROWSER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::ENTERTAINMENT_CONTENT_BROWSER)
 #endif
-#ifndef cp_AL_ONLINE_SHOPPING_BROWSER
-#define cp_AL_ONLINE_SHOPPING_BROWSER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_ONLINE_SHOPPING_BROWSER)
+#ifndef cp_ONLINE_SHOPPING_BROWSER
+#define cp_ONLINE_SHOPPING_BROWSER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::ONLINE_SHOPPING_BROWSER)
 #endif
-#ifndef cp_AL_SMARTCARD_INFORMATION_HELP
-#define cp_AL_SMARTCARD_INFORMATION_HELP Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_SMARTCARD_INFORMATION_HELP)
+#ifndef cp_SMARTCARD_INFORMATION_HELP
+#define cp_SMARTCARD_INFORMATION_HELP Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::SMARTCARD_INFORMATION_HELP)
 #endif
-#ifndef cp_AL_MARKET_MONITOR_FINANCE_BROWSER
-#define cp_AL_MARKET_MONITOR_FINANCE_BROWSER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_MARKET_MONITOR_FINANCE_BROWSER)
+#ifndef cp_MARKET_MONITOR_FINANCE_BROWSER
+#define cp_MARKET_MONITOR_FINANCE_BROWSER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::MARKET_MONITOR_FINANCE_BROWSER)
 #endif
-#ifndef cp_AL_CUSTOMIZED_CORPORATE_NEWS_BROWSER
-#define cp_AL_CUSTOMIZED_CORPORATE_NEWS_BROWSER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_CUSTOMIZED_CORPORATE_NEWS_BROWSER)
+#ifndef cp_CUSTOMIZED_CORPORATE_NEWS_BROWSER
+#define cp_CUSTOMIZED_CORPORATE_NEWS_BROWSER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::CUSTOMIZED_CORPORATE_NEWS_BROWSER)
 #endif
-#ifndef cp_AL_ONLINE_ACTIVITY_BROWSER
-#define cp_AL_ONLINE_ACTIVITY_BROWSER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_ONLINE_ACTIVITY_BROWSER)
+#ifndef cp_ONLINE_ACTIVITY_BROWSER
+#define cp_ONLINE_ACTIVITY_BROWSER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::ONLINE_ACTIVITY_BROWSER)
 #endif
-#ifndef cp_AL_RESEARCH_SEARCH_BROWSER
-#define cp_AL_RESEARCH_SEARCH_BROWSER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_RESEARCH_SEARCH_BROWSER)
+#ifndef cp_RESEARCH_SEARCH_BROWSER
+#define cp_RESEARCH_SEARCH_BROWSER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::RESEARCH_SEARCH_BROWSER)
 #endif
-#ifndef cp_AL_AUDIO_PLAYER
-#define cp_AL_AUDIO_PLAYER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_AUDIO_PLAYER)
+#ifndef cp_AUDIO_PLAYER
+#define cp_AUDIO_PLAYER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AUDIO_PLAYER)
 #endif
-#ifndef cp_AL_MESSAGE_STATUS
-#define cp_AL_MESSAGE_STATUS Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_MESSAGE_STATUS)
+#ifndef cp_MESSAGE_STATUS
+#define cp_MESSAGE_STATUS Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::MESSAGE_STATUS)
 #endif
-#ifndef cp_AL_CONTACT_SYNC
-#define cp_AL_CONTACT_SYNC Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_CONTACT_SYNC)
+#ifndef cp_CONTACT_SYNC
+#define cp_CONTACT_SYNC Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::CONTACT_SYNC)
 #endif
-#ifndef cp_AL_NAVIGATION
-#define cp_AL_NAVIGATION Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_NAVIGATION)
+#ifndef cp_NAVIGATION
+#define cp_NAVIGATION Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::NAVIGATION)
 #endif
-#ifndef cp_AL_CONTEXT_AWARE_DESKTOP_ASSISTANT
-#define cp_AL_CONTEXT_AWARE_DESKTOP_ASSISTANT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AL_CONTEXT_AWARE_DESKTOP_ASSISTANT)
+#ifndef cp_CONTEXT_AWARE_DESKTOP_ASSISTANT
+#define cp_CONTEXT_AWARE_DESKTOP_ASSISTANT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::CONTEXT_AWARE_DESKTOP_ASSISTANT)
 #endif
 #ifndef cp_GENERIC_GUI_APPLICATION_CONTROLS
 #define cp_GENERIC_GUI_APPLICATION_CONTROLS Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::GENERIC_GUI_APPLICATION_CONTROLS)
 #endif
-#ifndef cp_AC_NEW
-#define cp_AC_NEW Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_NEW)
+#ifndef cp_NEW
+#define cp_NEW Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::NEW)
 #endif
-#ifndef cp_AC_OPEN
-#define cp_AC_OPEN Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_OPEN)
+#ifndef cp_OPEN
+#define cp_OPEN Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::OPEN)
 #endif
-#ifndef cp_AC_CLOSE
-#define cp_AC_CLOSE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_CLOSE)
+#ifndef cp_CLOSE
+#define cp_CLOSE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::CLOSE)
 #endif
-#ifndef cp_AC_EXIT
-#define cp_AC_EXIT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_EXIT)
+#ifndef cp_EXIT
+#define cp_EXIT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::EXIT)
 #endif
-#ifndef cp_AC_MAXIMIZE
-#define cp_AC_MAXIMIZE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_MAXIMIZE)
+#ifndef cp_MAXIMIZE
+#define cp_MAXIMIZE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::MAXIMIZE)
 #endif
-#ifndef cp_AC_MINIMIZE
-#define cp_AC_MINIMIZE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_MINIMIZE)
+#ifndef cp_MINIMIZE
+#define cp_MINIMIZE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::MINIMIZE)
 #endif
-#ifndef cp_AC_SAVE
-#define cp_AC_SAVE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_SAVE)
+#ifndef cp_SAVE
+#define cp_SAVE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::SAVE)
 #endif
-#ifndef cp_AC_PRINT
-#define cp_AC_PRINT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_PRINT)
+#ifndef cp_PRINT
+#define cp_PRINT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::PRINT)
 #endif
-#ifndef cp_AC_PROPERTIES
-#define cp_AC_PROPERTIES Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_PROPERTIES)
+#ifndef cp_PROPERTIES
+#define cp_PROPERTIES Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::PROPERTIES)
 #endif
-#ifndef cp_AC_UNDO
-#define cp_AC_UNDO Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_UNDO)
+#ifndef cp_UNDO
+#define cp_UNDO Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::UNDO)
 #endif
-#ifndef cp_AC_COPY
-#define cp_AC_COPY Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_COPY)
+#ifndef cp_COPY
+#define cp_COPY Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::COPY)
 #endif
-#ifndef cp_AC_CUT
-#define cp_AC_CUT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_CUT)
+#ifndef cp_CUT
+#define cp_CUT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::CUT)
 #endif
-#ifndef cp_AC_PASTE
-#define cp_AC_PASTE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_PASTE)
+#ifndef cp_PASTE
+#define cp_PASTE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::PASTE)
 #endif
-#ifndef cp_AC_SELECT_ALL
-#define cp_AC_SELECT_ALL Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_SELECT_ALL)
+#ifndef cp_SELECT_ALL
+#define cp_SELECT_ALL Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::SELECT_ALL)
 #endif
-#ifndef cp_AC_FIND
-#define cp_AC_FIND Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_FIND)
+#ifndef cp_FIND
+#define cp_FIND Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::FIND)
 #endif
-#ifndef cp_AC_FIND_AND_REPLACE
-#define cp_AC_FIND_AND_REPLACE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_FIND_AND_REPLACE)
+#ifndef cp_FIND_AND_REPLACE
+#define cp_FIND_AND_REPLACE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::FIND_AND_REPLACE)
 #endif
-#ifndef cp_AC_SEARCH
-#define cp_AC_SEARCH Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_SEARCH)
+#ifndef cp_SEARCH
+#define cp_SEARCH Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::SEARCH)
 #endif
-#ifndef cp_AC_GO_TO
-#define cp_AC_GO_TO Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_GO_TO)
+#ifndef cp_GO_TO
+#define cp_GO_TO Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::GO_TO)
 #endif
-#ifndef cp_AC_HOME
-#define cp_AC_HOME Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_HOME)
+#ifndef cp_HOME
+#define cp_HOME Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::HOME)
 #endif
-#ifndef cp_AC_BACK
-#define cp_AC_BACK Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_BACK)
+#ifndef cp_BACK
+#define cp_BACK Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::BACK)
 #endif
-#ifndef cp_AC_FORWARD
-#define cp_AC_FORWARD Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_FORWARD)
+#ifndef cp_FORWARD
+#define cp_FORWARD Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::FORWARD)
 #endif
-#ifndef cp_AC_STOP
-#define cp_AC_STOP Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_STOP)
+#ifndef cp_STOP_226
+#define cp_STOP_226 Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::STOP_226)
 #endif
-#ifndef cp_AC_REFRESH
-#define cp_AC_REFRESH Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_REFRESH)
+#ifndef cp_REFRESH
+#define cp_REFRESH Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::REFRESH)
 #endif
-#ifndef cp_AC_PREVIOUS_LINK
-#define cp_AC_PREVIOUS_LINK Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_PREVIOUS_LINK)
+#ifndef cp_PREVIOUS_LINK
+#define cp_PREVIOUS_LINK Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::PREVIOUS_LINK)
 #endif
-#ifndef cp_AC_NEXT_LINK
-#define cp_AC_NEXT_LINK Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_NEXT_LINK)
+#ifndef cp_NEXT_LINK
+#define cp_NEXT_LINK Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::NEXT_LINK)
 #endif
-#ifndef cp_AC_BOOKMARKS
-#define cp_AC_BOOKMARKS Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_BOOKMARKS)
+#ifndef cp_BOOKMARKS
+#define cp_BOOKMARKS Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::BOOKMARKS)
 #endif
-#ifndef cp_AC_HISTORY
-#define cp_AC_HISTORY Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_HISTORY)
+#ifndef cp_HISTORY
+#define cp_HISTORY Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::HISTORY)
 #endif
-#ifndef cp_AC_SUBSCRIPTIONS
-#define cp_AC_SUBSCRIPTIONS Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_SUBSCRIPTIONS)
+#ifndef cp_SUBSCRIPTIONS
+#define cp_SUBSCRIPTIONS Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::SUBSCRIPTIONS)
 #endif
-#ifndef cp_AC_ZOOM_IN
-#define cp_AC_ZOOM_IN Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_ZOOM_IN)
+#ifndef cp_ZOOM_IN
+#define cp_ZOOM_IN Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::ZOOM_IN)
 #endif
-#ifndef cp_AC_ZOOM_OUT
-#define cp_AC_ZOOM_OUT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_ZOOM_OUT)
+#ifndef cp_ZOOM_OUT
+#define cp_ZOOM_OUT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::ZOOM_OUT)
 #endif
-#ifndef cp_AC_ZOOM
-#define cp_AC_ZOOM Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_ZOOM)
+#ifndef cp_ZOOM
+#define cp_ZOOM Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::ZOOM)
 #endif
-#ifndef cp_AC_FULL_SCREEN_VIEW
-#define cp_AC_FULL_SCREEN_VIEW Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_FULL_SCREEN_VIEW)
+#ifndef cp_FULL_SCREEN_VIEW
+#define cp_FULL_SCREEN_VIEW Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::FULL_SCREEN_VIEW)
 #endif
-#ifndef cp_AC_NORMAL_VIEW
-#define cp_AC_NORMAL_VIEW Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_NORMAL_VIEW)
+#ifndef cp_NORMAL_VIEW
+#define cp_NORMAL_VIEW Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::NORMAL_VIEW)
 #endif
-#ifndef cp_AC_VIEW_TOGGLE
-#define cp_AC_VIEW_TOGGLE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_VIEW_TOGGLE)
+#ifndef cp_VIEW_TOGGLE
+#define cp_VIEW_TOGGLE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::VIEW_TOGGLE)
 #endif
-#ifndef cp_AC_SCROLL_UP
-#define cp_AC_SCROLL_UP Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_SCROLL_UP)
+#ifndef cp_SCROLL_UP
+#define cp_SCROLL_UP Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::SCROLL_UP)
 #endif
-#ifndef cp_AC_SCROLL_DOWN
-#define cp_AC_SCROLL_DOWN Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_SCROLL_DOWN)
+#ifndef cp_SCROLL_DOWN
+#define cp_SCROLL_DOWN Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::SCROLL_DOWN)
 #endif
-#ifndef cp_AC_SCROLL
-#define cp_AC_SCROLL Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_SCROLL)
+#ifndef cp_SCROLL
+#define cp_SCROLL Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::SCROLL)
 #endif
-#ifndef cp_AC_PAN_LEFT
-#define cp_AC_PAN_LEFT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_PAN_LEFT)
+#ifndef cp_PAN_LEFT
+#define cp_PAN_LEFT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::PAN_LEFT)
 #endif
-#ifndef cp_AC_PAN_RIGHT
-#define cp_AC_PAN_RIGHT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_PAN_RIGHT)
+#ifndef cp_PAN_RIGHT
+#define cp_PAN_RIGHT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::PAN_RIGHT)
 #endif
-#ifndef cp_AC_PAN
-#define cp_AC_PAN Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_PAN)
+#ifndef cp_PAN
+#define cp_PAN Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::PAN)
 #endif
-#ifndef cp_AC_NEW_WINDOW
-#define cp_AC_NEW_WINDOW Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_NEW_WINDOW)
+#ifndef cp_NEW_WINDOW
+#define cp_NEW_WINDOW Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::NEW_WINDOW)
 #endif
-#ifndef cp_AC_TILE_HORIZONTALLY
-#define cp_AC_TILE_HORIZONTALLY Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_TILE_HORIZONTALLY)
+#ifndef cp_TILE_HORIZONTALLY
+#define cp_TILE_HORIZONTALLY Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::TILE_HORIZONTALLY)
 #endif
-#ifndef cp_AC_TILE_VERTICALLY
-#define cp_AC_TILE_VERTICALLY Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_TILE_VERTICALLY)
+#ifndef cp_TILE_VERTICALLY
+#define cp_TILE_VERTICALLY Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::TILE_VERTICALLY)
 #endif
-#ifndef cp_AC_FORMAT
-#define cp_AC_FORMAT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_FORMAT)
+#ifndef cp_FORMAT
+#define cp_FORMAT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::FORMAT)
 #endif
-#ifndef cp_AC_EDIT
-#define cp_AC_EDIT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_EDIT)
+#ifndef cp_EDIT
+#define cp_EDIT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::EDIT)
 #endif
-#ifndef cp_AC_BOLD
-#define cp_AC_BOLD Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_BOLD)
+#ifndef cp_BOLD
+#define cp_BOLD Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::BOLD)
 #endif
-#ifndef cp_AC_ITALICS
-#define cp_AC_ITALICS Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_ITALICS)
+#ifndef cp_ITALICS
+#define cp_ITALICS Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::ITALICS)
 #endif
-#ifndef cp_AC_UNDERLINE
-#define cp_AC_UNDERLINE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_UNDERLINE)
+#ifndef cp_UNDERLINE
+#define cp_UNDERLINE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::UNDERLINE)
 #endif
-#ifndef cp_AC_STRIKETHROUGH
-#define cp_AC_STRIKETHROUGH Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_STRIKETHROUGH)
+#ifndef cp_STRIKETHROUGH
+#define cp_STRIKETHROUGH Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::STRIKETHROUGH)
 #endif
-#ifndef cp_AC_SUBSCRIPT
-#define cp_AC_SUBSCRIPT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_SUBSCRIPT)
+#ifndef cp_SUBSCRIPT
+#define cp_SUBSCRIPT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::SUBSCRIPT)
 #endif
-#ifndef cp_AC_SUPERSCRIPT
-#define cp_AC_SUPERSCRIPT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_SUPERSCRIPT)
+#ifndef cp_SUPERSCRIPT
+#define cp_SUPERSCRIPT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::SUPERSCRIPT)
 #endif
-#ifndef cp_AC_ALL_CAPS
-#define cp_AC_ALL_CAPS Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_ALL_CAPS)
+#ifndef cp_ALL_CAPS
+#define cp_ALL_CAPS Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::ALL_CAPS)
 #endif
-#ifndef cp_AC_ROTATE
-#define cp_AC_ROTATE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_ROTATE)
+#ifndef cp_ROTATE
+#define cp_ROTATE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::ROTATE)
 #endif
-#ifndef cp_AC_RESIZE
-#define cp_AC_RESIZE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_RESIZE)
+#ifndef cp_RESIZE
+#define cp_RESIZE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::RESIZE)
 #endif
-#ifndef cp_AC_FLIP_HORIZONTAL
-#define cp_AC_FLIP_HORIZONTAL Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_FLIP_HORIZONTAL)
+#ifndef cp_FLIP_HORIZONTAL
+#define cp_FLIP_HORIZONTAL Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::FLIP_HORIZONTAL)
 #endif
-#ifndef cp_AC_FLIP_VERTICAL
-#define cp_AC_FLIP_VERTICAL Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_FLIP_VERTICAL)
+#ifndef cp_FLIP_VERTICAL
+#define cp_FLIP_VERTICAL Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::FLIP_VERTICAL)
 #endif
-#ifndef cp_AC_MIRROR_HORIZONTAL
-#define cp_AC_MIRROR_HORIZONTAL Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_MIRROR_HORIZONTAL)
+#ifndef cp_MIRROR_HORIZONTAL
+#define cp_MIRROR_HORIZONTAL Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::MIRROR_HORIZONTAL)
 #endif
-#ifndef cp_AC_MIRROR_VERTICAL
-#define cp_AC_MIRROR_VERTICAL Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_MIRROR_VERTICAL)
+#ifndef cp_MIRROR_VERTICAL
+#define cp_MIRROR_VERTICAL Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::MIRROR_VERTICAL)
 #endif
-#ifndef cp_AC_FONT_SELECT
-#define cp_AC_FONT_SELECT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_FONT_SELECT)
+#ifndef cp_FONT_SELECT
+#define cp_FONT_SELECT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::FONT_SELECT)
 #endif
-#ifndef cp_AC_FONT_COLOR
-#define cp_AC_FONT_COLOR Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_FONT_COLOR)
+#ifndef cp_FONT_COLOR
+#define cp_FONT_COLOR Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::FONT_COLOR)
 #endif
-#ifndef cp_AC_FONT_SIZE
-#define cp_AC_FONT_SIZE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_FONT_SIZE)
+#ifndef cp_FONT_SIZE
+#define cp_FONT_SIZE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::FONT_SIZE)
 #endif
-#ifndef cp_AC_JUSTIFY_LEFT
-#define cp_AC_JUSTIFY_LEFT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_JUSTIFY_LEFT)
+#ifndef cp_JUSTIFY_LEFT
+#define cp_JUSTIFY_LEFT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::JUSTIFY_LEFT)
 #endif
-#ifndef cp_AC_JUSTIFY_CENTER_H
-#define cp_AC_JUSTIFY_CENTER_H Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_JUSTIFY_CENTER_H)
+#ifndef cp_JUSTIFY_CENTER_H
+#define cp_JUSTIFY_CENTER_H Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::JUSTIFY_CENTER_H)
 #endif
-#ifndef cp_AC_JUSTIFY_RIGHT
-#define cp_AC_JUSTIFY_RIGHT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_JUSTIFY_RIGHT)
+#ifndef cp_JUSTIFY_RIGHT
+#define cp_JUSTIFY_RIGHT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::JUSTIFY_RIGHT)
 #endif
-#ifndef cp_AC_JUSTIFY_BLOCK_H
-#define cp_AC_JUSTIFY_BLOCK_H Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_JUSTIFY_BLOCK_H)
+#ifndef cp_JUSTIFY_BLOCK_H
+#define cp_JUSTIFY_BLOCK_H Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::JUSTIFY_BLOCK_H)
 #endif
-#ifndef cp_AC_JUSTIFY_TOP
-#define cp_AC_JUSTIFY_TOP Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_JUSTIFY_TOP)
+#ifndef cp_JUSTIFY_TOP
+#define cp_JUSTIFY_TOP Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::JUSTIFY_TOP)
 #endif
-#ifndef cp_AC_JUSTIFY_CENTER_V
-#define cp_AC_JUSTIFY_CENTER_V Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_JUSTIFY_CENTER_V)
+#ifndef cp_JUSTIFY_CENTER_V
+#define cp_JUSTIFY_CENTER_V Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::JUSTIFY_CENTER_V)
 #endif
-#ifndef cp_AC_JUSTIFY_BOTTOM
-#define cp_AC_JUSTIFY_BOTTOM Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_JUSTIFY_BOTTOM)
+#ifndef cp_JUSTIFY_BOTTOM
+#define cp_JUSTIFY_BOTTOM Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::JUSTIFY_BOTTOM)
 #endif
-#ifndef cp_AC_JUSTIFY_BLOCK_V
-#define cp_AC_JUSTIFY_BLOCK_V Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_JUSTIFY_BLOCK_V)
+#ifndef cp_JUSTIFY_BLOCK_V
+#define cp_JUSTIFY_BLOCK_V Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::JUSTIFY_BLOCK_V)
 #endif
-#ifndef cp_AC_INDENT_DECREASE
-#define cp_AC_INDENT_DECREASE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_INDENT_DECREASE)
+#ifndef cp_INDENT_DECREASE
+#define cp_INDENT_DECREASE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::INDENT_DECREASE)
 #endif
-#ifndef cp_AC_INDENT_INCREASE
-#define cp_AC_INDENT_INCREASE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_INDENT_INCREASE)
+#ifndef cp_INDENT_INCREASE
+#define cp_INDENT_INCREASE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::INDENT_INCREASE)
 #endif
-#ifndef cp_AC_NUMBERED_LIST
-#define cp_AC_NUMBERED_LIST Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_NUMBERED_LIST)
+#ifndef cp_NUMBERED_LIST
+#define cp_NUMBERED_LIST Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::NUMBERED_LIST)
 #endif
-#ifndef cp_AC_RESTART_NUMBERING
-#define cp_AC_RESTART_NUMBERING Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_RESTART_NUMBERING)
+#ifndef cp_RESTART_NUMBERING
+#define cp_RESTART_NUMBERING Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::RESTART_NUMBERING)
 #endif
-#ifndef cp_AC_BULLETED_LIST
-#define cp_AC_BULLETED_LIST Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_BULLETED_LIST)
+#ifndef cp_BULLETED_LIST
+#define cp_BULLETED_LIST Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::BULLETED_LIST)
 #endif
-#ifndef cp_AC_PROMOTE
-#define cp_AC_PROMOTE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_PROMOTE)
+#ifndef cp_PROMOTE
+#define cp_PROMOTE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::PROMOTE)
 #endif
-#ifndef cp_AC_DEMOTE
-#define cp_AC_DEMOTE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_DEMOTE)
+#ifndef cp_DEMOTE
+#define cp_DEMOTE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::DEMOTE)
 #endif
-#ifndef cp_AC_YES
-#define cp_AC_YES Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_YES)
+#ifndef cp_YES
+#define cp_YES Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::YES)
 #endif
-#ifndef cp_AC_NO
-#define cp_AC_NO Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_NO)
+#ifndef cp_NO
+#define cp_NO Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::NO)
 #endif
-#ifndef cp_AC_CANCEL
-#define cp_AC_CANCEL Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_CANCEL)
+#ifndef cp_CANCEL
+#define cp_CANCEL Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::CANCEL)
 #endif
-#ifndef cp_AC_CATALOG
-#define cp_AC_CATALOG Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_CATALOG)
+#ifndef cp_CATALOG
+#define cp_CATALOG Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::CATALOG)
 #endif
-#ifndef cp_AC_BUY_CHECKOUT
-#define cp_AC_BUY_CHECKOUT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_BUY_CHECKOUT)
+#ifndef cp_BUY_CHECKOUT
+#define cp_BUY_CHECKOUT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::BUY_CHECKOUT)
 #endif
-#ifndef cp_AC_ADD_TO_CART
-#define cp_AC_ADD_TO_CART Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_ADD_TO_CART)
+#ifndef cp_ADD_TO_CART
+#define cp_ADD_TO_CART Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::ADD_TO_CART)
 #endif
-#ifndef cp_AC_EXPAND
-#define cp_AC_EXPAND Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_EXPAND)
+#ifndef cp_EXPAND
+#define cp_EXPAND Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::EXPAND)
 #endif
-#ifndef cp_AC_EXPAND_ALL
-#define cp_AC_EXPAND_ALL Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_EXPAND_ALL)
+#ifndef cp_EXPAND_ALL
+#define cp_EXPAND_ALL Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::EXPAND_ALL)
 #endif
-#ifndef cp_AC_COLLAPSE
-#define cp_AC_COLLAPSE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_COLLAPSE)
+#ifndef cp_COLLAPSE
+#define cp_COLLAPSE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::COLLAPSE)
 #endif
-#ifndef cp_AC_COLLAPSE_ALL
-#define cp_AC_COLLAPSE_ALL Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_COLLAPSE_ALL)
+#ifndef cp_COLLAPSE_ALL
+#define cp_COLLAPSE_ALL Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::COLLAPSE_ALL)
 #endif
-#ifndef cp_AC_PRINT_PREVIEW
-#define cp_AC_PRINT_PREVIEW Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_PRINT_PREVIEW)
+#ifndef cp_PRINT_PREVIEW
+#define cp_PRINT_PREVIEW Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::PRINT_PREVIEW)
 #endif
-#ifndef cp_AC_PASTE_SPECIAL
-#define cp_AC_PASTE_SPECIAL Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_PASTE_SPECIAL)
+#ifndef cp_PASTE_SPECIAL
+#define cp_PASTE_SPECIAL Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::PASTE_SPECIAL)
 #endif
-#ifndef cp_AC_INSERT_MODE
-#define cp_AC_INSERT_MODE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_INSERT_MODE)
+#ifndef cp_INSERT_MODE
+#define cp_INSERT_MODE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::INSERT_MODE)
 #endif
-#ifndef cp_AC_DELETE
-#define cp_AC_DELETE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_DELETE)
+#ifndef cp_DELETE
+#define cp_DELETE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::DELETE)
 #endif
-#ifndef cp_AC_LOCK
-#define cp_AC_LOCK Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_LOCK)
+#ifndef cp_LOCK
+#define cp_LOCK Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::LOCK)
 #endif
-#ifndef cp_AC_UNLOCK
-#define cp_AC_UNLOCK Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_UNLOCK)
+#ifndef cp_UNLOCK
+#define cp_UNLOCK Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::UNLOCK)
 #endif
-#ifndef cp_AC_PROTECT
-#define cp_AC_PROTECT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_PROTECT)
+#ifndef cp_PROTECT
+#define cp_PROTECT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::PROTECT)
 #endif
-#ifndef cp_AC_UNPROTECT
-#define cp_AC_UNPROTECT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_UNPROTECT)
+#ifndef cp_UNPROTECT
+#define cp_UNPROTECT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::UNPROTECT)
 #endif
-#ifndef cp_AC_ATTACH_COMMENT
-#define cp_AC_ATTACH_COMMENT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_ATTACH_COMMENT)
+#ifndef cp_ATTACH_COMMENT
+#define cp_ATTACH_COMMENT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::ATTACH_COMMENT)
 #endif
-#ifndef cp_AC_DELETE_COMMENT
-#define cp_AC_DELETE_COMMENT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_DELETE_COMMENT)
+#ifndef cp_DELETE_COMMENT
+#define cp_DELETE_COMMENT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::DELETE_COMMENT)
 #endif
-#ifndef cp_AC_VIEW_COMMENT
-#define cp_AC_VIEW_COMMENT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_VIEW_COMMENT)
+#ifndef cp_VIEW_COMMENT
+#define cp_VIEW_COMMENT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::VIEW_COMMENT)
 #endif
-#ifndef cp_AC_SELECT_WORD
-#define cp_AC_SELECT_WORD Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_SELECT_WORD)
+#ifndef cp_SELECT_WORD
+#define cp_SELECT_WORD Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::SELECT_WORD)
 #endif
-#ifndef cp_AC_SELECT_SENTENCE
-#define cp_AC_SELECT_SENTENCE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_SELECT_SENTENCE)
+#ifndef cp_SELECT_SENTENCE
+#define cp_SELECT_SENTENCE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::SELECT_SENTENCE)
 #endif
-#ifndef cp_AC_SELECT_PARAGRAPH
-#define cp_AC_SELECT_PARAGRAPH Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_SELECT_PARAGRAPH)
+#ifndef cp_SELECT_PARAGRAPH
+#define cp_SELECT_PARAGRAPH Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::SELECT_PARAGRAPH)
 #endif
-#ifndef cp_AC_SELECT_COLUMN
-#define cp_AC_SELECT_COLUMN Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_SELECT_COLUMN)
+#ifndef cp_SELECT_COLUMN
+#define cp_SELECT_COLUMN Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::SELECT_COLUMN)
 #endif
-#ifndef cp_AC_SELECT_ROW
-#define cp_AC_SELECT_ROW Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_SELECT_ROW)
+#ifndef cp_SELECT_ROW
+#define cp_SELECT_ROW Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::SELECT_ROW)
 #endif
-#ifndef cp_AC_SELECT_TABLE
-#define cp_AC_SELECT_TABLE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_SELECT_TABLE)
+#ifndef cp_SELECT_TABLE
+#define cp_SELECT_TABLE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::SELECT_TABLE)
 #endif
-#ifndef cp_AC_SELECT_OBJECT
-#define cp_AC_SELECT_OBJECT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_SELECT_OBJECT)
+#ifndef cp_SELECT_OBJECT
+#define cp_SELECT_OBJECT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::SELECT_OBJECT)
 #endif
-#ifndef cp_AC_REDO_REPEAT
-#define cp_AC_REDO_REPEAT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_REDO_REPEAT)
+#ifndef cp_REDO_REPEAT
+#define cp_REDO_REPEAT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::REDO_REPEAT)
 #endif
-#ifndef cp_AC_SORT
-#define cp_AC_SORT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_SORT)
+#ifndef cp_SORT
+#define cp_SORT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::SORT)
 #endif
-#ifndef cp_AC_SORT_ASCENDING
-#define cp_AC_SORT_ASCENDING Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_SORT_ASCENDING)
+#ifndef cp_SORT_ASCENDING
+#define cp_SORT_ASCENDING Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::SORT_ASCENDING)
 #endif
-#ifndef cp_AC_SORT_DESCENDING
-#define cp_AC_SORT_DESCENDING Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_SORT_DESCENDING)
+#ifndef cp_SORT_DESCENDING
+#define cp_SORT_DESCENDING Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::SORT_DESCENDING)
 #endif
-#ifndef cp_AC_FILTER
-#define cp_AC_FILTER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_FILTER)
+#ifndef cp_FILTER
+#define cp_FILTER Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::FILTER)
 #endif
-#ifndef cp_AC_SET_CLOCK
-#define cp_AC_SET_CLOCK Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_SET_CLOCK)
+#ifndef cp_SET_CLOCK
+#define cp_SET_CLOCK Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::SET_CLOCK)
 #endif
-#ifndef cp_AC_VIEW_CLOCK
-#define cp_AC_VIEW_CLOCK Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_VIEW_CLOCK)
+#ifndef cp_VIEW_CLOCK
+#define cp_VIEW_CLOCK Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::VIEW_CLOCK)
 #endif
-#ifndef cp_AC_SELECT_TIME_ZONE
-#define cp_AC_SELECT_TIME_ZONE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_SELECT_TIME_ZONE)
+#ifndef cp_SELECT_TIME_ZONE
+#define cp_SELECT_TIME_ZONE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::SELECT_TIME_ZONE)
 #endif
-#ifndef cp_AC_EDIT_TIME_ZONES
-#define cp_AC_EDIT_TIME_ZONES Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_EDIT_TIME_ZONES)
+#ifndef cp_EDIT_TIME_ZONES
+#define cp_EDIT_TIME_ZONES Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::EDIT_TIME_ZONES)
 #endif
-#ifndef cp_AC_SET_ALARM
-#define cp_AC_SET_ALARM Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_SET_ALARM)
+#ifndef cp_SET_ALARM
+#define cp_SET_ALARM Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::SET_ALARM)
 #endif
-#ifndef cp_AC_CLEAR_ALARM
-#define cp_AC_CLEAR_ALARM Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_CLEAR_ALARM)
+#ifndef cp_CLEAR_ALARM
+#define cp_CLEAR_ALARM Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::CLEAR_ALARM)
 #endif
-#ifndef cp_AC_SNOOZE_ALARM
-#define cp_AC_SNOOZE_ALARM Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_SNOOZE_ALARM)
+#ifndef cp_SNOOZE_ALARM
+#define cp_SNOOZE_ALARM Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::SNOOZE_ALARM)
 #endif
-#ifndef cp_AC_RESET_ALARM
-#define cp_AC_RESET_ALARM Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_RESET_ALARM)
+#ifndef cp_RESET_ALARM
+#define cp_RESET_ALARM Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::RESET_ALARM)
 #endif
-#ifndef cp_AC_SYNCHRONIZE
-#define cp_AC_SYNCHRONIZE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_SYNCHRONIZE)
+#ifndef cp_SYNCHRONIZE
+#define cp_SYNCHRONIZE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::SYNCHRONIZE)
 #endif
-#ifndef cp_AC_SEND_RECEIVE
-#define cp_AC_SEND_RECEIVE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_SEND_RECEIVE)
+#ifndef cp_SEND_RECEIVE
+#define cp_SEND_RECEIVE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::SEND_RECEIVE)
 #endif
-#ifndef cp_AC_SEND_TO
-#define cp_AC_SEND_TO Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_SEND_TO)
+#ifndef cp_SEND_TO
+#define cp_SEND_TO Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::SEND_TO)
 #endif
-#ifndef cp_AC_REPLY
-#define cp_AC_REPLY Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_REPLY)
+#ifndef cp_REPLY
+#define cp_REPLY Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::REPLY)
 #endif
-#ifndef cp_AC_REPLY_ALL
-#define cp_AC_REPLY_ALL Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_REPLY_ALL)
+#ifndef cp_REPLY_ALL
+#define cp_REPLY_ALL Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::REPLY_ALL)
 #endif
-#ifndef cp_AC_FORWARD_MSG
-#define cp_AC_FORWARD_MSG Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_FORWARD_MSG)
+#ifndef cp_FORWARD_MSG
+#define cp_FORWARD_MSG Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::FORWARD_MSG)
 #endif
-#ifndef cp_AC_SEND
-#define cp_AC_SEND Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_SEND)
+#ifndef cp_SEND
+#define cp_SEND Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::SEND)
 #endif
-#ifndef cp_AC_ATTACH_FILE
-#define cp_AC_ATTACH_FILE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_ATTACH_FILE)
+#ifndef cp_ATTACH_FILE
+#define cp_ATTACH_FILE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::ATTACH_FILE)
 #endif
-#ifndef cp_AC_UPLOAD
-#define cp_AC_UPLOAD Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_UPLOAD)
+#ifndef cp_UPLOAD
+#define cp_UPLOAD Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::UPLOAD)
 #endif
-#ifndef cp_AC_DOWNLOAD_SAVE_TARGET_AS
-#define cp_AC_DOWNLOAD_SAVE_TARGET_AS Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_DOWNLOAD_SAVE_TARGET_AS)
+#ifndef cp_DOWNLOAD_SAVE_TARGET_AS
+#define cp_DOWNLOAD_SAVE_TARGET_AS Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::DOWNLOAD_SAVE_TARGET_AS)
 #endif
-#ifndef cp_AC_SET_BORDERS
-#define cp_AC_SET_BORDERS Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_SET_BORDERS)
+#ifndef cp_SET_BORDERS
+#define cp_SET_BORDERS Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::SET_BORDERS)
 #endif
-#ifndef cp_AC_INSERT_ROW
-#define cp_AC_INSERT_ROW Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_INSERT_ROW)
+#ifndef cp_INSERT_ROW
+#define cp_INSERT_ROW Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::INSERT_ROW)
 #endif
-#ifndef cp_AC_INSERT_COLUMN
-#define cp_AC_INSERT_COLUMN Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_INSERT_COLUMN)
+#ifndef cp_INSERT_COLUMN
+#define cp_INSERT_COLUMN Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::INSERT_COLUMN)
 #endif
-#ifndef cp_AC_INSERT_FILE
-#define cp_AC_INSERT_FILE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_INSERT_FILE)
+#ifndef cp_INSERT_FILE
+#define cp_INSERT_FILE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::INSERT_FILE)
 #endif
-#ifndef cp_AC_INSERT_PICTURE
-#define cp_AC_INSERT_PICTURE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_INSERT_PICTURE)
+#ifndef cp_INSERT_PICTURE
+#define cp_INSERT_PICTURE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::INSERT_PICTURE)
 #endif
-#ifndef cp_AC_INSERT_OBJECT
-#define cp_AC_INSERT_OBJECT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_INSERT_OBJECT)
+#ifndef cp_INSERT_OBJECT
+#define cp_INSERT_OBJECT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::INSERT_OBJECT)
 #endif
-#ifndef cp_AC_INSERT_SYMBOL
-#define cp_AC_INSERT_SYMBOL Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_INSERT_SYMBOL)
+#ifndef cp_INSERT_SYMBOL
+#define cp_INSERT_SYMBOL Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::INSERT_SYMBOL)
 #endif
-#ifndef cp_AC_SAVE_AND_CLOSE
-#define cp_AC_SAVE_AND_CLOSE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_SAVE_AND_CLOSE)
+#ifndef cp_SAVE_AND_CLOSE
+#define cp_SAVE_AND_CLOSE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::SAVE_AND_CLOSE)
 #endif
-#ifndef cp_AC_RENAME
-#define cp_AC_RENAME Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_RENAME)
+#ifndef cp_RENAME
+#define cp_RENAME Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::RENAME)
 #endif
-#ifndef cp_AC_MERGE
-#define cp_AC_MERGE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_MERGE)
+#ifndef cp_MERGE
+#define cp_MERGE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::MERGE)
 #endif
-#ifndef cp_AC_SPLIT
-#define cp_AC_SPLIT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_SPLIT)
+#ifndef cp_SPLIT
+#define cp_SPLIT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::SPLIT)
 #endif
-#ifndef cp_AC_DISRIBUTE_HORIZONTALLY
-#define cp_AC_DISRIBUTE_HORIZONTALLY Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_DISRIBUTE_HORIZONTALLY)
+#ifndef cp_DISRIBUTE_HORIZONTALLY
+#define cp_DISRIBUTE_HORIZONTALLY Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::DISRIBUTE_HORIZONTALLY)
 #endif
-#ifndef cp_AC_DISTRIBUTE_VERTICALLY
-#define cp_AC_DISTRIBUTE_VERTICALLY Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_DISTRIBUTE_VERTICALLY)
+#ifndef cp_DISTRIBUTE_VERTICALLY
+#define cp_DISTRIBUTE_VERTICALLY Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::DISTRIBUTE_VERTICALLY)
 #endif
-#ifndef cp_AC_NEXT_LAYOUT_SELECT
-#define cp_AC_NEXT_LAYOUT_SELECT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_NEXT_LAYOUT_SELECT)
+#ifndef cp_NEXT_LAYOUT_SELECT
+#define cp_NEXT_LAYOUT_SELECT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::NEXT_LAYOUT_SELECT)
 #endif
-#ifndef cp_AC_NAVIGATION_GUIDANCE
-#define cp_AC_NAVIGATION_GUIDANCE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_NAVIGATION_GUIDANCE)
+#ifndef cp_NAVIGATION_GUIDANCE
+#define cp_NAVIGATION_GUIDANCE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::NAVIGATION_GUIDANCE)
 #endif
-#ifndef cp_AC_DESKTOP_SHOW_ALL_WINDOWS
-#define cp_AC_DESKTOP_SHOW_ALL_WINDOWS Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_DESKTOP_SHOW_ALL_WINDOWS)
+#ifndef cp_DESKTOP_SHOW_ALL_WINDOWS
+#define cp_DESKTOP_SHOW_ALL_WINDOWS Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::DESKTOP_SHOW_ALL_WINDOWS)
 #endif
-#ifndef cp_AC_SOFT_KEY_LEFT
-#define cp_AC_SOFT_KEY_LEFT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_SOFT_KEY_LEFT)
+#ifndef cp_SOFT_KEY_LEFT
+#define cp_SOFT_KEY_LEFT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::SOFT_KEY_LEFT)
 #endif
-#ifndef cp_AC_SOFT_KEY_RIGHT
-#define cp_AC_SOFT_KEY_RIGHT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_SOFT_KEY_RIGHT)
+#ifndef cp_SOFT_KEY_RIGHT
+#define cp_SOFT_KEY_RIGHT Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::SOFT_KEY_RIGHT)
 #endif
-#ifndef cp_AC_DESKTOP_SHOW_ALL_APPLICATIONS
-#define cp_AC_DESKTOP_SHOW_ALL_APPLICATIONS Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_DESKTOP_SHOW_ALL_APPLICATIONS)
+#ifndef cp_DESKTOP_SHOW_ALL_APPLICATIONS
+#define cp_DESKTOP_SHOW_ALL_APPLICATIONS Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::DESKTOP_SHOW_ALL_APPLICATIONS)
 #endif
-#ifndef cp_AC_IDLE_KEEP_ALIVE
-#define cp_AC_IDLE_KEEP_ALIVE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::AC_IDLE_KEEP_ALIVE)
+#ifndef cp_IDLE_KEEP_ALIVE
+#define cp_IDLE_KEEP_ALIVE Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::IDLE_KEEP_ALIVE)
 #endif
 #ifndef cp_EXTENDED_ATTRIBUTES_COLLECTION
 #define cp_EXTENDED_ATTRIBUTES_COLLECTION Binding(HID::Page::CONSUMER, HID::Consumer::OTHER::EXTENDED_ATTRIBUTES_COLLECTION)

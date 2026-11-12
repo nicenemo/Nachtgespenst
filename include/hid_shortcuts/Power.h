@@ -47,14 +47,14 @@
 #ifndef po_OUTLET_SYS_ID
 #define po_OUTLET_SYS_ID Binding(HID::Page::POWER, HID::Power::OTHER::OUTLET_SYS_ID)
 #endif
-#ifndef po_INPUT
-#define po_INPUT Binding(HID::Page::POWER, HID::Power::OTHER::INPUT)
+#ifndef po_INPUT_
+#define po_INPUT_ Binding(HID::Page::POWER, HID::Power::OTHER::INPUT_)
 #endif
 #ifndef po_INPUT_ID
 #define po_INPUT_ID Binding(HID::Page::POWER, HID::Power::OTHER::INPUT_ID)
 #endif
-#ifndef po_OUTPUT
-#define po_OUTPUT Binding(HID::Page::POWER, HID::Power::OTHER::OUTPUT)
+#ifndef po_OUTPUT_
+#define po_OUTPUT_ Binding(HID::Page::POWER, HID::Power::OTHER::OUTPUT_)
 #endif
 #ifndef po_OUTPUT_ID
 #define po_OUTPUT_ID Binding(HID::Page::POWER, HID::Power::OTHER::OUTPUT_ID)

@@ -2,7 +2,7 @@
 #include "../HID_Types.h"
 
 namespace HID::Haptics {
-    constexpr uint8_t PAGE_ID = 0x000E;
+    constexpr uint16_t PAGE_ID = 0x000E;
     namespace OTHER {
         constexpr Usage SIMPLE_HAPTIC_CONTROLLER = { 0x01, UsageKind::OTHER, "SIMPLE_HAPTIC_CONTROLLER" };
         constexpr Usage WAVEFORM_LIST = { 0x10, UsageKind::OTHER, "WAVEFORM_LIST" };

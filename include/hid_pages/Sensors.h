@@ -2,7 +2,7 @@
 #include "../HID_Types.h"
 
 namespace HID::Sensors {
-    constexpr uint8_t PAGE_ID = 0x0020;
+    constexpr uint16_t PAGE_ID = 0x0020;
     namespace OTHER {
         constexpr Usage SENSOR = { 0x01, UsageKind::OTHER, "SENSOR" };
         constexpr Usage BIOMETRIC = { 0x10, UsageKind::OTHER, "BIOMETRIC" };

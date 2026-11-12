@@ -2,12 +2,12 @@
 #include "../HID_Types.h"
 
 namespace HID::BrailleDisplay {
-    constexpr uint8_t PAGE_ID = 0x0041;
+    constexpr uint16_t PAGE_ID = 0x0041;
     namespace OTHER {
         constexpr Usage BRAILLE_DISPLAY = { 0x01, UsageKind::OTHER, "BRAILLE_DISPLAY" };
         constexpr Usage BRAILLE_ROW = { 0x02, UsageKind::OTHER, "BRAILLE_ROW" };
-        constexpr Usage 8_DOT_BRAILLE_CELL = { 0x03, UsageKind::OTHER, "8_DOT_BRAILLE_CELL" };
-        constexpr Usage 6_DOT_BRAILLE_CELL = { 0x04, UsageKind::OTHER, "6_DOT_BRAILLE_CELL" };
+        constexpr Usage ID_8_DOT_BRAILLE_CELL = { 0x03, UsageKind::OTHER, "ID_8_DOT_BRAILLE_CELL" };
+        constexpr Usage ID_6_DOT_BRAILLE_CELL = { 0x04, UsageKind::OTHER, "ID_6_DOT_BRAILLE_CELL" };
         constexpr Usage NUMBER_OF_BRAILLE_CELLS = { 0x05, UsageKind::OTHER, "NUMBER_OF_BRAILLE_CELLS" };
         constexpr Usage SCREEN_READER_CONTROL = { 0x06, UsageKind::OTHER, "SCREEN_READER_CONTROL" };
         constexpr Usage SCREEN_READER_IDENTIFIER = { 0x07, UsageKind::OTHER, "SCREEN_READER_IDENTIFIER" };

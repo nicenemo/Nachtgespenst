@@ -2,7 +2,7 @@
 #include "../HID_Types.h"
 
 namespace HID::BatterySystem {
-    constexpr uint8_t PAGE_ID = 0x0085;
+    constexpr uint16_t PAGE_ID = 0x0085;
     namespace OTHER {
         constexpr Usage SMART_BATTERY_BATTERY_MODE = { 0x01, UsageKind::OTHER, "SMART_BATTERY_BATTERY_MODE" };
         constexpr Usage SMART_BATTERY_BATTERY_STATUS = { 0x02, UsageKind::OTHER, "SMART_BATTERY_BATTERY_STATUS" };
@@ -78,7 +78,7 @@ namespace HID::BatterySystem {
         constexpr Usage INHIBIT_CHARGE = { 0xC0, UsageKind::OTHER, "INHIBIT_CHARGE" };
         constexpr Usage ENABLE_POLLING = { 0xC1, UsageKind::OTHER, "ENABLE_POLLING" };
         constexpr Usage RESET_TO_ZERO = { 0xC2, UsageKind::OTHER, "RESET_TO_ZERO" };
-        constexpr Usage AC_PRESENT = { 0xD0, UsageKind::OTHER, "AC_PRESENT" };
+        constexpr Usage PRESENT = { 0xD0, UsageKind::OTHER, "PRESENT" };
         constexpr Usage BATTERY_PRESENT = { 0xD1, UsageKind::OTHER, "BATTERY_PRESENT" };
         constexpr Usage POWER_FAIL = { 0xD2, UsageKind::OTHER, "POWER_FAIL" };
         constexpr Usage ALARM_INHIBITED = { 0xD3, UsageKind::OTHER, "ALARM_INHIBITED" };

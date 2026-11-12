@@ -2,9 +2,9 @@
 #include "../HID_Types.h"
 
 namespace HID::GameControls {
-    constexpr uint8_t PAGE_ID = 0x0005;
+    constexpr uint16_t PAGE_ID = 0x0005;
     namespace OTHER {
-        constexpr Usage 3D_GAME_CONTROLLER = { 0x01, UsageKind::OTHER, "3D_GAME_CONTROLLER" };
+        constexpr Usage ID_3D_GAME_CONTROLLER = { 0x01, UsageKind::OTHER, "ID_3D_GAME_CONTROLLER" };
         constexpr Usage PINBALL_DEVICE = { 0x02, UsageKind::OTHER, "PINBALL_DEVICE" };
         constexpr Usage GUN_DEVICE = { 0x03, UsageKind::OTHER, "GUN_DEVICE" };
         constexpr Usage POINT_OF_VIEW = { 0x20, UsageKind::OTHER, "POINT_OF_VIEW" };

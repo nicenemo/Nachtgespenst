@@ -1,62 +1,38 @@
 #include <M5Unified.h>
-#include <FastLED.h>
 #include "Config.h"
 #include "Keymap.h"
 #include "HIDManager.h"
-#include "LedColors.h"
-#include "Theme.h"
+#include "ui.h"
+#include "SerialCmd.h"
 
-int currentLayerIndex = 0;
-CRGB leds[LED_COUNT];
+void setup() {
+    auto cfg = M5.config();
+    cfg.internal_spk = false; // no beeps: speaker/amp never initialised
+    cfg.internal_mic = false;
+    M5.begin(cfg);
+    Serial.begin(115200);
+#if ARDUINO_USB_CDC_ON_BOOT
+    for (uint32_t t = millis(); !Serial && millis() - t < 1500;) yield(); // wait for CDC, bounded
+#endif
+    Serial.printf("NACHTGESPENST board=%s name=%s fw=%s %s\n", NG_BOARD_ID, K_DEVICE_NAME, __DATE__, __TIME__);
 
-void updateHardwareFeedback(bool isNewKey = false);
+    HIDManager::begin(K_DEVICE_NAME, K_MANUFACTURER);
 
-void drawUI() {
-    M5.Lcd.startWrite();
-    Theme theme = ThemeManager::getTheme();
-    M5.Lcd.fillScreen(theme.background);
-    
-    const GridLayer& current = LAYERS[currentLayerIndex];
-    int w = M5.Lcd.width() / current.cols;
-    int h = M5.Lcd.height() / current.rows;
-
-    for (int i = 0; i < (current.rows * current.cols); i++) {
-        int x = (i % current.cols) * w;
-        int y = (i / current.cols) * h;
-        const Binding& b = current.tiles[i];
-        
-        uint16_t bg = ThemeManager::getKeyColor(b, true);
-        uint16_t fg = ThemeManager::getKeyColor(b, false);
-
-        // Render Tile
-        M5.Lcd.fillRect(x + 2, y + 2, w - 4, h - 4, bg);
-        M5.Lcd.drawRect(x, y, w, h, theme.gridLines);
-        
-        // 1. Tiny Overlay (Original Request: identifier in corner)
-        if (b.usage.id != 0) {
-            M5.Lcd.setFont(&fonts::Font0);
-            M5.Lcd.setTextColor(theme.overlayText);
-            M5.Lcd.setTextDatum(top_left);
-            M5.Lcd.drawString(b.usage.identifier, x + 4, y + 4);
-        }
-
-        // 2. Main Label (Original Request: Friendly Label)
-        if (b.label != nullptr) {
-            M5.Lcd.setFont(&fonts::FreeSansBold12pt7b);
-            M5.Lcd.setTextColor(fg);
-            M5.Lcd.setTextDatum(middle_center);
-            M5.Lcd.drawString(b.label, x + (w / 2), y + (h / 2));
-        }
-    }
-
-    // 3. Grid Title Overlay (Tiny White letters on top)
-    M5.Lcd.setFont(&fonts::Font0);
-    M5.Lcd.setTextColor(WHITE);
-    M5.Lcd.setTextDatum(top_left);
-    M5.Lcd.drawString(current.title, 4, 4);
-
-    M5.Lcd.endWrite();
-    updateHardwareFeedback(false);
+    ui_begin();
 }
 
-// ... rest of setup() and loop() remain the same ...
+void loop() {
+    M5.update();
+    serialcmd_poll();
+
+    HIDManager::handleAsyncEvents();
+
+#if NG_HAS_BTNS
+    // Core2 capacitive buttons below the screen: A = previous page, B = Locks page <-> back, C = next page
+    if (M5.BtnA.wasPressed()) ui_set_layer(ui_layer() - 1);
+    if (M5.BtnB.wasPressed()) ui_toggle_locks();
+    if (M5.BtnC.wasPressed()) ui_set_layer(ui_layer() + 1);
+#endif
+    ui_loop();
+    yield();
+}

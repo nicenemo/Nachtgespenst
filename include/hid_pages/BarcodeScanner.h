@@ -2,7 +2,7 @@
 #include "../HID_Types.h"
 
 namespace HID::BarcodeScanner {
-    constexpr uint8_t PAGE_ID = 0x008C;
+    constexpr uint16_t PAGE_ID = 0x008C;
     namespace OTHER {
         constexpr Usage BARCODE_BADGE_READER = { 0x01, UsageKind::OTHER, "BARCODE_BADGE_READER" };
         constexpr Usage BARCODE_SCANNER = { 0x02, UsageKind::OTHER, "BARCODE_SCANNER" };
@@ -24,7 +24,7 @@ namespace HID::BarcodeScanner {
         constexpr Usage CODABAR_CONTROL_REPORT = { 0x1C, UsageKind::OTHER, "CODABAR_CONTROL_REPORT" };
         constexpr Usage CODE_128_CONTROL_REPORT = { 0x1D, UsageKind::OTHER, "CODE_128_CONTROL_REPORT" };
         constexpr Usage MISC_1D_CONTROL_REPORT = { 0x1E, UsageKind::OTHER, "MISC_1D_CONTROL_REPORT" };
-        constexpr Usage 2D_CONTROL_REPORT = { 0x1F, UsageKind::OTHER, "2D_CONTROL_REPORT" };
+        constexpr Usage ID_2D_CONTROL_REPORT = { 0x1F, UsageKind::OTHER, "ID_2D_CONTROL_REPORT" };
         constexpr Usage AIMING_POINTER_MODE = { 0x30, UsageKind::OTHER, "AIMING_POINTER_MODE" };
         constexpr Usage BAR_CODE_PRESENT_SENSOR = { 0x31, UsageKind::OTHER, "BAR_CODE_PRESENT_SENSOR" };
         constexpr Usage CLASS_1A_LASER = { 0x32, UsageKind::OTHER, "CLASS_1A_LASER" };

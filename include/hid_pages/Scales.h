@@ -2,7 +2,7 @@
 #include "../HID_Types.h"
 
 namespace HID::Scales {
-    constexpr uint8_t PAGE_ID = 0x008D;
+    constexpr uint16_t PAGE_ID = 0x008D;
     namespace OTHER {
         constexpr Usage SCALES = { 0x01, UsageKind::OTHER, "SCALES" };
         constexpr Usage SCALE_DEVICE = { 0x20, UsageKind::OTHER, "SCALE_DEVICE" };

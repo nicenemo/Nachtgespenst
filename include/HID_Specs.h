@@ -3,14 +3,6 @@
 #include <vector>
 #include <string>
 
-// Individuele pagina-definities (Usages uit de hid_pages map)
-#include "hid_pages/Page01_GenericDesktop.h"
-#include "hid_pages/Page07_Keyboard.h"
-#include "hid_pages/Page08_LEDs.h"
-#include "hid_pages/Page0C_Consumer.h"
-#include "hid_pages/Page0F_Haptics.h"
-#include "hid_pages/Page59_Lightning.h"
-
 namespace HID {
 
     // --- MODIFIERS (Byte 0 van het Keyboard Report) ---
@@ -78,11 +70,13 @@ namespace HID {
             0x95, 0x06,         //   Report Count (6)
             0x75, 0x08,         //   Report Size (8 bits per key)
             0x15, 0x00,         //   Logical Minimum (0)
-            0x25, 0x65,         //   Logical Maximum (101)
+            0x26, 0xFF, 0x00,   //   Logical Maximum (255)
             0x05, 0x07,         //   Usage Page (Keyboard)
             0x19, 0x00,         //   Usage Minimum (0)
-            0x29, 0x65,         //   Usage Maximum (101)
+            0x29, 0xDD,         //   Usage Maximum (221)
             0x81, 0x00,         //   Input (Data, Array, Absolute) -> Key Array (6KRO)
+            0x15, 0x00,         //   Logical Minimum (0)
+            0x25, 0x01,         //   Logical Maximum (1)
             0x05, 0x08,         //   Usage Page (LEDs)
             0x19, 0x01,         //   Usage Minimum (1 - Num Lock)
             0x29, 0x05,         //   Usage Maximum (5 - Kana)
@@ -102,9 +96,9 @@ namespace HID {
             0xA1, 0x01,         // Collection (Application)
             0x85, ID::CONSUMER, //   REPORT ID (2)
             0x19, 0x00,         //   Usage Minimum (0)
-            0x2A, 0x3C, 0x02,   //   Usage Maximum (572)
+            0x2A, 0xFF, 0x03,   //   Usage Maximum (1023)
             0x15, 0x00,         //   Logical Minimum (0)
-            0x26, 0x3C, 0x02,   //   Logical Maximum (572)
+            0x26, 0xFF, 0x03,   //   Logical Maximum (1023)
             0x95, 0x01,         //   Report Count (1)
             0x75, 0x10,         //   Report Size (16 bits)
             0x81, 0x00,         //   Input (Data, Array, Absolute)
@@ -168,9 +162,8 @@ namespace HID {
 
         add(Reports::KeyboardBlock, sizeof(Reports::KeyboardBlock));
         add(Reports::ConsumerBlock, sizeof(Reports::ConsumerBlock));
-        add(Reports::SystemBlock, sizeof(Reports::SystemBlock));
-        add(Reports::HapticsBlock, sizeof(Reports::HapticsBlock));
-        add(Reports::LightingBlock, sizeof(Reports::LightingBlock));
+        // System/Haptics/Lighting blocks are defined above but not advertised:
+        // the host would expect reports the firmware does not provide.
         
         return map;
     }

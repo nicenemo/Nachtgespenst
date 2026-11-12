@@ -5,15 +5,15 @@ namespace HID {
     struct PageInfo {
         uint16_t id;
         const char* name;
-        const char* macro; // Prefix used for Bindings (e.g., "kp")
+        const char* macro; 
     };
 
     namespace Page {
         constexpr PageInfo Arcade = { 0x0091, "Arcade", "ar" };
         constexpr PageInfo AuxiliaryDisplay = { 0x0014, "Auxiliary Display", "au" };
         constexpr PageInfo BarcodeScanner = { 0x008C, "Barcode Scanner", "ba" };
-        constexpr PageInfo BatterySystem = { 0x0085, "Battery System", "ba" };
-        constexpr PageInfo BrailleDisplay = { 0x0041, "Braille Display", "br" };
+        constexpr PageInfo BatterySystem = { 0x0085, "Battery System", "bat" };
+        constexpr PageInfo BrailleDisplay = { 0x0041, "Braille Display", "bra" };
         constexpr PageInfo Button = { 0x0009, "Button", "bu" };
         constexpr PageInfo CameraControl = { 0x0090, "Camera Control", "ca" };
         constexpr PageInfo Consumer = { 0x000C, "Consumer", "cp" };
@@ -30,8 +30,8 @@ namespace HID {
         constexpr PageInfo MagneticStripeReader = { 0x008E, "Magnetic Stripe Reader", "ma" };
         constexpr PageInfo MedicalInstrument = { 0x0040, "Medical Instrument", "me" };
         constexpr PageInfo Monitor = { 0x0080, "Monitor", "mo" };
-        constexpr PageInfo MonitorEnumerated = { 0x0081, "Monitor Enumerated", "mo" };
-        constexpr PageInfo Ordinal = { 0x000A, "Ordinal", "or" };
+        constexpr PageInfo MonitorEnumerated = { 0x0081, "Monitor Enumerated", "mon" };
+        constexpr PageInfo Ordinal = { 0x000A, "Ordinal", "ord" };
         constexpr PageInfo PhysicalInputDevice = { 0x000F, "Physical Input Device", "ph" };
         constexpr PageInfo Power = { 0x0084, "Power", "po" };
         constexpr PageInfo Scales = { 0x008D, "Scales", "sc" };

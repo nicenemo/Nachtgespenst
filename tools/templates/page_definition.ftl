@@ -2,7 +2,7 @@
 #include "../HID_Types.h"
 
 namespace HID::${page.namespace} {
-    constexpr uint8_t PAGE_ID = 0x${page.idHex};
+    constexpr uint16_t PAGE_ID = 0x${page.idHex};
 <#list page.groupedUsages as kind, items>
     namespace ${kind} {
     <#list items as usage>

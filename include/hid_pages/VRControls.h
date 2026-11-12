@@ -2,7 +2,7 @@
 #include "../HID_Types.h"
 
 namespace HID::VRControls {
-    constexpr uint8_t PAGE_ID = 0x0003;
+    constexpr uint16_t PAGE_ID = 0x0003;
     namespace OTHER {
         constexpr Usage BELT = { 0x01, UsageKind::OTHER, "BELT" };
         constexpr Usage BODY_SUIT = { 0x02, UsageKind::OTHER, "BODY_SUIT" };

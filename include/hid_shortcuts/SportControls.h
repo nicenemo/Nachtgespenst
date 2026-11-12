@@ -47,38 +47,38 @@
 #ifndef sp_PUTTER
 #define sp_PUTTER Binding(HID::Page::SPORT_CONTROLS, HID::SportControls::OTHER::PUTTER)
 #endif
-#ifndef sp_1_IRON
-#define sp_1_IRON Binding(HID::Page::SPORT_CONTROLS, HID::SportControls::OTHER::1_IRON)
+#ifndef sp_ID_1_IRON
+#define sp_ID_1_IRON Binding(HID::Page::SPORT_CONTROLS, HID::SportControls::OTHER::ID_1_IRON)
 #endif
-#ifndef sp_2_IRON
-#define sp_2_IRON Binding(HID::Page::SPORT_CONTROLS, HID::SportControls::OTHER::2_IRON)
+#ifndef sp_ID_2_IRON
+#define sp_ID_2_IRON Binding(HID::Page::SPORT_CONTROLS, HID::SportControls::OTHER::ID_2_IRON)
 #endif
-#ifndef sp_3_IRON
-#define sp_3_IRON Binding(HID::Page::SPORT_CONTROLS, HID::SportControls::OTHER::3_IRON)
+#ifndef sp_ID_3_IRON
+#define sp_ID_3_IRON Binding(HID::Page::SPORT_CONTROLS, HID::SportControls::OTHER::ID_3_IRON)
 #endif
-#ifndef sp_4_IRON
-#define sp_4_IRON Binding(HID::Page::SPORT_CONTROLS, HID::SportControls::OTHER::4_IRON)
+#ifndef sp_ID_4_IRON
+#define sp_ID_4_IRON Binding(HID::Page::SPORT_CONTROLS, HID::SportControls::OTHER::ID_4_IRON)
 #endif
-#ifndef sp_5_IRON
-#define sp_5_IRON Binding(HID::Page::SPORT_CONTROLS, HID::SportControls::OTHER::5_IRON)
+#ifndef sp_ID_5_IRON
+#define sp_ID_5_IRON Binding(HID::Page::SPORT_CONTROLS, HID::SportControls::OTHER::ID_5_IRON)
 #endif
-#ifndef sp_6_IRON
-#define sp_6_IRON Binding(HID::Page::SPORT_CONTROLS, HID::SportControls::OTHER::6_IRON)
+#ifndef sp_ID_6_IRON
+#define sp_ID_6_IRON Binding(HID::Page::SPORT_CONTROLS, HID::SportControls::OTHER::ID_6_IRON)
 #endif
-#ifndef sp_7_IRON
-#define sp_7_IRON Binding(HID::Page::SPORT_CONTROLS, HID::SportControls::OTHER::7_IRON)
+#ifndef sp_ID_7_IRON
+#define sp_ID_7_IRON Binding(HID::Page::SPORT_CONTROLS, HID::SportControls::OTHER::ID_7_IRON)
 #endif
-#ifndef sp_8_IRON
-#define sp_8_IRON Binding(HID::Page::SPORT_CONTROLS, HID::SportControls::OTHER::8_IRON)
+#ifndef sp_ID_8_IRON
+#define sp_ID_8_IRON Binding(HID::Page::SPORT_CONTROLS, HID::SportControls::OTHER::ID_8_IRON)
 #endif
-#ifndef sp_9_IRON
-#define sp_9_IRON Binding(HID::Page::SPORT_CONTROLS, HID::SportControls::OTHER::9_IRON)
+#ifndef sp_ID_9_IRON
+#define sp_ID_9_IRON Binding(HID::Page::SPORT_CONTROLS, HID::SportControls::OTHER::ID_9_IRON)
 #endif
-#ifndef sp_10_IRON
-#define sp_10_IRON Binding(HID::Page::SPORT_CONTROLS, HID::SportControls::OTHER::10_IRON)
+#ifndef sp_ID_10_IRON
+#define sp_ID_10_IRON Binding(HID::Page::SPORT_CONTROLS, HID::SportControls::OTHER::ID_10_IRON)
 #endif
-#ifndef sp_11_IRON
-#define sp_11_IRON Binding(HID::Page::SPORT_CONTROLS, HID::SportControls::OTHER::11_IRON)
+#ifndef sp_ID_11_IRON
+#define sp_ID_11_IRON Binding(HID::Page::SPORT_CONTROLS, HID::SportControls::OTHER::ID_11_IRON)
 #endif
 #ifndef sp_SAND_WEDGE
 #define sp_SAND_WEDGE Binding(HID::Page::SPORT_CONTROLS, HID::SportControls::OTHER::SAND_WEDGE)
@@ -89,18 +89,18 @@
 #ifndef sp_POWER_WEDGE
 #define sp_POWER_WEDGE Binding(HID::Page::SPORT_CONTROLS, HID::SportControls::OTHER::POWER_WEDGE)
 #endif
-#ifndef sp_1_WOOD
-#define sp_1_WOOD Binding(HID::Page::SPORT_CONTROLS, HID::SportControls::OTHER::1_WOOD)
+#ifndef sp_ID_1_WOOD
+#define sp_ID_1_WOOD Binding(HID::Page::SPORT_CONTROLS, HID::SportControls::OTHER::ID_1_WOOD)
 #endif
-#ifndef sp_3_WOOD
-#define sp_3_WOOD Binding(HID::Page::SPORT_CONTROLS, HID::SportControls::OTHER::3_WOOD)
+#ifndef sp_ID_3_WOOD
+#define sp_ID_3_WOOD Binding(HID::Page::SPORT_CONTROLS, HID::SportControls::OTHER::ID_3_WOOD)
 #endif
-#ifndef sp_5_WOOD
-#define sp_5_WOOD Binding(HID::Page::SPORT_CONTROLS, HID::SportControls::OTHER::5_WOOD)
+#ifndef sp_ID_5_WOOD
+#define sp_ID_5_WOOD Binding(HID::Page::SPORT_CONTROLS, HID::SportControls::OTHER::ID_5_WOOD)
 #endif
-#ifndef sp_7_WOOD
-#define sp_7_WOOD Binding(HID::Page::SPORT_CONTROLS, HID::SportControls::OTHER::7_WOOD)
+#ifndef sp_ID_7_WOOD
+#define sp_ID_7_WOOD Binding(HID::Page::SPORT_CONTROLS, HID::SportControls::OTHER::ID_7_WOOD)
 #endif
-#ifndef sp_9_WOOD
-#define sp_9_WOOD Binding(HID::Page::SPORT_CONTROLS, HID::SportControls::OTHER::9_WOOD)
+#ifndef sp_ID_9_WOOD
+#define sp_ID_9_WOOD Binding(HID::Page::SPORT_CONTROLS, HID::SportControls::OTHER::ID_9_WOOD)
 #endif

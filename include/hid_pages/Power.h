@@ -2,7 +2,7 @@
 #include "../HID_Types.h"
 
 namespace HID::Power {
-    constexpr uint8_t PAGE_ID = 0x0084;
+    constexpr uint16_t PAGE_ID = 0x0084;
     namespace OTHER {
         constexpr Usage INAME = { 0x01, UsageKind::OTHER, "INAME" };
         constexpr Usage PRESENT_STATUS = { 0x02, UsageKind::OTHER, "PRESENT_STATUS" };
@@ -19,9 +19,9 @@ namespace HID::Power {
         constexpr Usage POWER_CONVERTER_ID = { 0x17, UsageKind::OTHER, "POWER_CONVERTER_ID" };
         constexpr Usage OUTLET_SYSTEM = { 0x18, UsageKind::OTHER, "OUTLET_SYSTEM" };
         constexpr Usage OUTLET_SYS_ID = { 0x19, UsageKind::OTHER, "OUTLET_SYS_ID" };
-        constexpr Usage INPUT = { 0x1A, UsageKind::OTHER, "INPUT" };
+        constexpr Usage INPUT_ = { 0x1A, UsageKind::OTHER, "INPUT_" };
         constexpr Usage INPUT_ID = { 0x1B, UsageKind::OTHER, "INPUT_ID" };
-        constexpr Usage OUTPUT = { 0x1C, UsageKind::OTHER, "OUTPUT" };
+        constexpr Usage OUTPUT_ = { 0x1C, UsageKind::OTHER, "OUTPUT_" };
         constexpr Usage OUTPUT_ID = { 0x1D, UsageKind::OTHER, "OUTPUT_ID" };
         constexpr Usage FLOW = { 0x1E, UsageKind::OTHER, "FLOW" };
         constexpr Usage FLOW_ID = { 0x1F, UsageKind::OTHER, "FLOW_ID" };

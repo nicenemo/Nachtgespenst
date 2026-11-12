@@ -2,7 +2,7 @@
 #include "../HID_Types.h"
 
 namespace HID::AuxiliaryDisplay {
-    constexpr uint8_t PAGE_ID = 0x0014;
+    constexpr uint16_t PAGE_ID = 0x0014;
     namespace OTHER {
         constexpr Usage ALPHANUMERIC_DISPLAY = { 0x01, UsageKind::OTHER, "ALPHANUMERIC_DISPLAY" };
         constexpr Usage AUXILIARY_DISPLAY = { 0x02, UsageKind::OTHER, "AUXILIARY_DISPLAY" };
@@ -41,9 +41,9 @@ namespace HID::AuxiliaryDisplay {
         constexpr Usage CHARACTER_SPACING_VERTICAL = { 0x40, UsageKind::OTHER, "CHARACTER_SPACING_VERTICAL" };
         constexpr Usage UNICODE_CHARACTER_SET = { 0x41, UsageKind::OTHER, "UNICODE_CHARACTER_SET" };
         constexpr Usage FONT_7_SEGMENT = { 0x42, UsageKind::OTHER, "FONT_7_SEGMENT" };
-        constexpr Usage 7_SEGMENT_DIRECT_MAP = { 0x43, UsageKind::OTHER, "7_SEGMENT_DIRECT_MAP" };
+        constexpr Usage ID_7_SEGMENT_DIRECT_MAP = { 0x43, UsageKind::OTHER, "ID_7_SEGMENT_DIRECT_MAP" };
         constexpr Usage FONT_14_SEGMENT = { 0x44, UsageKind::OTHER, "FONT_14_SEGMENT" };
-        constexpr Usage 14_SEGMENT_DIRECT_MAP = { 0x45, UsageKind::OTHER, "14_SEGMENT_DIRECT_MAP" };
+        constexpr Usage ID_14_SEGMENT_DIRECT_MAP = { 0x45, UsageKind::OTHER, "ID_14_SEGMENT_DIRECT_MAP" };
         constexpr Usage DISPLAY_BRIGHTNESS = { 0x46, UsageKind::OTHER, "DISPLAY_BRIGHTNESS" };
         constexpr Usage DISPLAY_CONTRAST = { 0x47, UsageKind::OTHER, "DISPLAY_CONTRAST" };
         constexpr Usage CHARACTER_ATTRIBUTE = { 0x48, UsageKind::OTHER, "CHARACTER_ATTRIBUTE" };

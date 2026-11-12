@@ -2,7 +2,7 @@
 #include "../HID_Types.h"
 
 namespace HID::SimulationControls {
-    constexpr uint8_t PAGE_ID = 0x0002;
+    constexpr uint16_t PAGE_ID = 0x0002;
     namespace OTHER {
         constexpr Usage FLIGHT_SIMULATION_DEVICE = { 0x01, UsageKind::OTHER, "FLIGHT_SIMULATION_DEVICE" };
         constexpr Usage AUTOMOBILE_SIMULATION_DEVICE = { 0x02, UsageKind::OTHER, "AUTOMOBILE_SIMULATION_DEVICE" };

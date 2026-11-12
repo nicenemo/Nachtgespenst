@@ -2,7 +2,7 @@
 #include "../HID_Types.h"
 
 namespace HID::GenericDeviceControls {
-    constexpr uint8_t PAGE_ID = 0x0006;
+    constexpr uint16_t PAGE_ID = 0x0006;
     namespace OTHER {
         constexpr Usage BACKGROUND_NONUSER_CONTROLS = { 0x01, UsageKind::OTHER, "BACKGROUND_NONUSER_CONTROLS" };
         constexpr Usage BATTERY_STRENGTH = { 0x20, UsageKind::OTHER, "BATTERY_STRENGTH" };

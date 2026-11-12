@@ -2,7 +2,7 @@
 #include "../HID_Types.h"
 
 namespace HID::TelephonyDevice {
-    constexpr uint8_t PAGE_ID = 0x000B;
+    constexpr uint16_t PAGE_ID = 0x000B;
     namespace OTHER {
         constexpr Usage PHONE = { 0x01, UsageKind::OTHER, "PHONE" };
         constexpr Usage ANSWERING_MACHINE = { 0x02, UsageKind::OTHER, "ANSWERING_MACHINE" };

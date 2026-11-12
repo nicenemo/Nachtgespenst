@@ -89,35 +89,35 @@
 #ifndef kp_Z
 #define kp_Z Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::Z)
 #endif
-#ifndef kp_1_AND_BANG
-#define kp_1_AND_BANG Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::1_AND_BANG)
+#ifndef kp_ID_1_AND_BANG
+#define kp_ID_1_AND_BANG Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::ID_1_AND_BANG)
 #endif
-#ifndef kp_2_AND_AT
-#define kp_2_AND_AT Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::2_AND_AT)
+#ifndef kp_ID_2_AND_AT
+#define kp_ID_2_AND_AT Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::ID_2_AND_AT)
 #endif
-#ifndef kp_3_AND_HASH
-#define kp_3_AND_HASH Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::3_AND_HASH)
+#ifndef kp_ID_3_AND_HASH
+#define kp_ID_3_AND_HASH Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::ID_3_AND_HASH)
 #endif
-#ifndef kp_4_AND_DOLLAR
-#define kp_4_AND_DOLLAR Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::4_AND_DOLLAR)
+#ifndef kp_ID_4_AND_DOLLAR
+#define kp_ID_4_AND_DOLLAR Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::ID_4_AND_DOLLAR)
 #endif
-#ifndef kp_5_AND_PERCENT
-#define kp_5_AND_PERCENT Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::5_AND_PERCENT)
+#ifndef kp_ID_5_AND_PERCENT
+#define kp_ID_5_AND_PERCENT Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::ID_5_AND_PERCENT)
 #endif
-#ifndef kp_6_AND_CARET
-#define kp_6_AND_CARET Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::6_AND_CARET)
+#ifndef kp_ID_6_AND_CARET
+#define kp_ID_6_AND_CARET Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::ID_6_AND_CARET)
 #endif
-#ifndef kp_7_AND_AMPERSAND
-#define kp_7_AND_AMPERSAND Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::7_AND_AMPERSAND)
+#ifndef kp_ID_7_AND_AMPERSAND
+#define kp_ID_7_AND_AMPERSAND Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::ID_7_AND_AMPERSAND)
 #endif
-#ifndef kp_8_AND_STAR
-#define kp_8_AND_STAR Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::8_AND_STAR)
+#ifndef kp_ID_8_AND_STAR
+#define kp_ID_8_AND_STAR Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::ID_8_AND_STAR)
 #endif
-#ifndef kp_9_AND_LEFT_BRACKET
-#define kp_9_AND_LEFT_BRACKET Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::9_AND_LEFT_BRACKET)
+#ifndef kp_ID_9_AND_LEFT_BRACKET
+#define kp_ID_9_AND_LEFT_BRACKET Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::ID_9_AND_LEFT_BRACKET)
 #endif
-#ifndef kp_0_AND_RIGHT_BRACKET
-#define kp_0_AND_RIGHT_BRACKET Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::0_AND_RIGHT_BRACKET)
+#ifndef kp_ID_0_AND_RIGHT_BRACKET
+#define kp_ID_0_AND_RIGHT_BRACKET Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::ID_0_AND_RIGHT_BRACKET)
 #endif
 #ifndef kp_RETURN_ENTER
 #define kp_RETURN_ENTER Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::RETURN_ENTER)
@@ -248,56 +248,56 @@
 #ifndef kp_UPARROW
 #define kp_UPARROW Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::UPARROW)
 #endif
-#ifndef kp_NUM_LOCK_AND_CLEAR
-#define kp_NUM_LOCK_AND_CLEAR Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::NUM_LOCK_AND_CLEAR)
+#ifndef kp_KP_NUM_LOCK_AND_CLEAR
+#define kp_KP_NUM_LOCK_AND_CLEAR Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_NUM_LOCK_AND_CLEAR)
 #endif
-#ifndef kp_FORWARDSLASH
-#define kp_FORWARDSLASH Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::FORWARDSLASH)
+#ifndef kp_KP_FORWARDSLASH
+#define kp_KP_FORWARDSLASH Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_FORWARDSLASH)
 #endif
-#ifndef kp_STAR
-#define kp_STAR Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::STAR)
+#ifndef kp_KP_STAR
+#define kp_KP_STAR Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_STAR)
 #endif
-#ifndef kp_DASH
-#define kp_DASH Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::DASH)
+#ifndef kp_KP_DASH
+#define kp_KP_DASH Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_DASH)
 #endif
-#ifndef kp_PLUS
-#define kp_PLUS Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::PLUS)
+#ifndef kp_KP_PLUS
+#define kp_KP_PLUS Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_PLUS)
 #endif
-#ifndef kp_ENTER
-#define kp_ENTER Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::ENTER)
+#ifndef kp_KP_ENTER
+#define kp_KP_ENTER Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_ENTER)
 #endif
-#ifndef kp_1_AND_END
-#define kp_1_AND_END Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::1_AND_END)
+#ifndef kp_KP_1_AND_END
+#define kp_KP_1_AND_END Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_1_AND_END)
 #endif
-#ifndef kp_2_AND_DOWN_ARROW
-#define kp_2_AND_DOWN_ARROW Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::2_AND_DOWN_ARROW)
+#ifndef kp_KP_2_AND_DOWN_ARROW
+#define kp_KP_2_AND_DOWN_ARROW Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_2_AND_DOWN_ARROW)
 #endif
-#ifndef kp_3_AND_PAGEDN
-#define kp_3_AND_PAGEDN Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::3_AND_PAGEDN)
+#ifndef kp_KP_3_AND_PAGEDN
+#define kp_KP_3_AND_PAGEDN Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_3_AND_PAGEDN)
 #endif
-#ifndef kp_4_AND_LEFT_ARROW
-#define kp_4_AND_LEFT_ARROW Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::4_AND_LEFT_ARROW)
+#ifndef kp_KP_4_AND_LEFT_ARROW
+#define kp_KP_4_AND_LEFT_ARROW Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_4_AND_LEFT_ARROW)
 #endif
-#ifndef kp_5
-#define kp_5 Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::5)
+#ifndef kp_KP_5
+#define kp_KP_5 Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_5)
 #endif
-#ifndef kp_6_AND_RIGHT_ARROW
-#define kp_6_AND_RIGHT_ARROW Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::6_AND_RIGHT_ARROW)
+#ifndef kp_KP_6_AND_RIGHT_ARROW
+#define kp_KP_6_AND_RIGHT_ARROW Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_6_AND_RIGHT_ARROW)
 #endif
-#ifndef kp_7_AND_HOME
-#define kp_7_AND_HOME Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::7_AND_HOME)
+#ifndef kp_KP_7_AND_HOME
+#define kp_KP_7_AND_HOME Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_7_AND_HOME)
 #endif
-#ifndef kp_8_AND_UP_ARROW
-#define kp_8_AND_UP_ARROW Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::8_AND_UP_ARROW)
+#ifndef kp_KP_8_AND_UP_ARROW
+#define kp_KP_8_AND_UP_ARROW Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_8_AND_UP_ARROW)
 #endif
-#ifndef kp_9_AND_PAGEUP
-#define kp_9_AND_PAGEUP Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::9_AND_PAGEUP)
+#ifndef kp_KP_9_AND_PAGEUP
+#define kp_KP_9_AND_PAGEUP Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_9_AND_PAGEUP)
 #endif
-#ifndef kp_0_AND_INSERT
-#define kp_0_AND_INSERT Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::0_AND_INSERT)
+#ifndef kp_KP_0_AND_INSERT
+#define kp_KP_0_AND_INSERT Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_0_AND_INSERT)
 #endif
-#ifndef kp_PERIOD_AND_DELETE
-#define kp_PERIOD_AND_DELETE Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::PERIOD_AND_DELETE)
+#ifndef kp_KP_PERIOD_AND_DELETE
+#define kp_KP_PERIOD_AND_DELETE Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_PERIOD_AND_DELETE)
 #endif
 #ifndef kp_NON_US_BACKSLASH_AND_PIPE
 #define kp_NON_US_BACKSLASH_AND_PIPE Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::NON_US_BACKSLASH_AND_PIPE)
@@ -308,8 +308,8 @@
 #ifndef kp_POWER
 #define kp_POWER Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::POWER)
 #endif
-#ifndef kp_EQUALS
-#define kp_EQUALS Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::EQUALS)
+#ifndef kp_KP_EQUALS
+#define kp_KP_EQUALS Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_EQUALS)
 #endif
 #ifndef kp_F13
 #define kp_F13 Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::F13)
@@ -398,11 +398,11 @@
 #ifndef kp_LOCKING_SCROLL_LOCK
 #define kp_LOCKING_SCROLL_LOCK Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::LOCKING_SCROLL_LOCK)
 #endif
-#ifndef kp_COMMA
-#define kp_COMMA Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::COMMA)
+#ifndef kp_KP_COMMA
+#define kp_KP_COMMA Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_COMMA)
 #endif
-#ifndef kp_EQUAL_SIGN
-#define kp_EQUAL_SIGN Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::EQUAL_SIGN)
+#ifndef kp_KP_EQUAL_SIGN
+#define kp_KP_EQUAL_SIGN Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_EQUAL_SIGN)
 #endif
 #ifndef kp_INTERNATIONAL1
 #define kp_INTERNATIONAL1 Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::INTERNATIONAL1)
@@ -494,11 +494,11 @@
 #ifndef kp_EXSEL
 #define kp_EXSEL Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::EXSEL)
 #endif
-#ifndef kp_DOUBLE_0
-#define kp_DOUBLE_0 Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::DOUBLE_0)
+#ifndef kp_KP_DOUBLE_0
+#define kp_KP_DOUBLE_0 Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_DOUBLE_0)
 #endif
-#ifndef kp_TRIPLE_0
-#define kp_TRIPLE_0 Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::TRIPLE_0)
+#ifndef kp_KP_TRIPLE_0
+#define kp_KP_TRIPLE_0 Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_TRIPLE_0)
 #endif
 #ifndef kp_THOUSANDS_SEPARATOR
 #define kp_THOUSANDS_SEPARATOR Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::THOUSANDS_SEPARATOR)
@@ -512,125 +512,125 @@
 #ifndef kp_CURRENCY_SUB_UNIT
 #define kp_CURRENCY_SUB_UNIT Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::CURRENCY_SUB_UNIT)
 #endif
-#ifndef kp_LEFT_BRACKET
-#define kp_LEFT_BRACKET Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::LEFT_BRACKET)
+#ifndef kp_KP_LEFT_BRACKET
+#define kp_KP_LEFT_BRACKET Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_LEFT_BRACKET)
 #endif
-#ifndef kp_RIGHT_BRACKET
-#define kp_RIGHT_BRACKET Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::RIGHT_BRACKET)
+#ifndef kp_KP_RIGHT_BRACKET
+#define kp_KP_RIGHT_BRACKET Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_RIGHT_BRACKET)
 #endif
-#ifndef kp_LEFT_BRACE
-#define kp_LEFT_BRACE Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::LEFT_BRACE)
+#ifndef kp_KP_LEFT_BRACE
+#define kp_KP_LEFT_BRACE Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_LEFT_BRACE)
 #endif
-#ifndef kp_RIGHT_BRACE
-#define kp_RIGHT_BRACE Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::RIGHT_BRACE)
+#ifndef kp_KP_RIGHT_BRACE
+#define kp_KP_RIGHT_BRACE Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_RIGHT_BRACE)
 #endif
-#ifndef kp_TAB
-#define kp_TAB Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::TAB)
+#ifndef kp_KP_TAB
+#define kp_KP_TAB Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_TAB)
 #endif
-#ifndef kp_BACKSPACE
-#define kp_BACKSPACE Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::BACKSPACE)
+#ifndef kp_KP_BACKSPACE
+#define kp_KP_BACKSPACE Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_BACKSPACE)
 #endif
-#ifndef kp_A
-#define kp_A Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::A)
+#ifndef kp_KP_A
+#define kp_KP_A Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_A)
 #endif
-#ifndef kp_B
-#define kp_B Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::B)
+#ifndef kp_KP_B
+#define kp_KP_B Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_B)
 #endif
-#ifndef kp_C
-#define kp_C Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::C)
+#ifndef kp_KP_C
+#define kp_KP_C Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_C)
 #endif
-#ifndef kp_D
-#define kp_D Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::D)
+#ifndef kp_KP_D
+#define kp_KP_D Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_D)
 #endif
-#ifndef kp_E
-#define kp_E Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::E)
+#ifndef kp_KP_E
+#define kp_KP_E Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_E)
 #endif
-#ifndef kp_F
-#define kp_F Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::F)
+#ifndef kp_KP_F
+#define kp_KP_F Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_F)
 #endif
-#ifndef kp_XOR
-#define kp_XOR Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::XOR)
+#ifndef kp_KP_XOR
+#define kp_KP_XOR Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_XOR)
 #endif
-#ifndef kp_CARET
-#define kp_CARET Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::CARET)
+#ifndef kp_KP_CARET
+#define kp_KP_CARET Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_CARET)
 #endif
-#ifndef kp_PERCENTAGE
-#define kp_PERCENTAGE Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::PERCENTAGE)
+#ifndef kp_KP_PERCENTAGE
+#define kp_KP_PERCENTAGE Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_PERCENTAGE)
 #endif
-#ifndef kp_LESS
-#define kp_LESS Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::LESS)
+#ifndef kp_KP_LESS
+#define kp_KP_LESS Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_LESS)
 #endif
-#ifndef kp_GREATER
-#define kp_GREATER Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::GREATER)
+#ifndef kp_KP_GREATER
+#define kp_KP_GREATER Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_GREATER)
 #endif
-#ifndef kp_AMPERSAND
-#define kp_AMPERSAND Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::AMPERSAND)
+#ifndef kp_KP_AMPERSAND
+#define kp_KP_AMPERSAND Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_AMPERSAND)
 #endif
-#ifndef kp_DOUBLE_AMPERSAND
-#define kp_DOUBLE_AMPERSAND Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::DOUBLE_AMPERSAND)
+#ifndef kp_KP_DOUBLE_AMPERSAND
+#define kp_KP_DOUBLE_AMPERSAND Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_DOUBLE_AMPERSAND)
 #endif
-#ifndef kp_BAR
-#define kp_BAR Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::BAR)
+#ifndef kp_KP_BAR
+#define kp_KP_BAR Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_BAR)
 #endif
-#ifndef kp_DOUBLE_BAR
-#define kp_DOUBLE_BAR Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::DOUBLE_BAR)
+#ifndef kp_KP_DOUBLE_BAR
+#define kp_KP_DOUBLE_BAR Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_DOUBLE_BAR)
 #endif
-#ifndef kp_COLON
-#define kp_COLON Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::COLON)
+#ifndef kp_KP_COLON
+#define kp_KP_COLON Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_COLON)
 #endif
-#ifndef kp_HASH
-#define kp_HASH Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::HASH)
+#ifndef kp_KP_HASH
+#define kp_KP_HASH Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_HASH)
 #endif
-#ifndef kp_SPACE
-#define kp_SPACE Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::SPACE)
+#ifndef kp_KP_SPACE
+#define kp_KP_SPACE Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_SPACE)
 #endif
-#ifndef kp_AT
-#define kp_AT Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::AT)
+#ifndef kp_KP_AT
+#define kp_KP_AT Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_AT)
 #endif
-#ifndef kp_BANG
-#define kp_BANG Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::BANG)
+#ifndef kp_KP_BANG
+#define kp_KP_BANG Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_BANG)
 #endif
-#ifndef kp_MEMORY_STORE
-#define kp_MEMORY_STORE Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::MEMORY_STORE)
+#ifndef kp_KP_MEMORY_STORE
+#define kp_KP_MEMORY_STORE Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_MEMORY_STORE)
 #endif
-#ifndef kp_MEMORY_RECALL
-#define kp_MEMORY_RECALL Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::MEMORY_RECALL)
+#ifndef kp_KP_MEMORY_RECALL
+#define kp_KP_MEMORY_RECALL Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_MEMORY_RECALL)
 #endif
-#ifndef kp_MEMORY_CLEAR
-#define kp_MEMORY_CLEAR Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::MEMORY_CLEAR)
+#ifndef kp_KP_MEMORY_CLEAR
+#define kp_KP_MEMORY_CLEAR Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_MEMORY_CLEAR)
 #endif
-#ifndef kp_MEMORY_ADD
-#define kp_MEMORY_ADD Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::MEMORY_ADD)
+#ifndef kp_KP_MEMORY_ADD
+#define kp_KP_MEMORY_ADD Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_MEMORY_ADD)
 #endif
-#ifndef kp_MEMORY_SUBTRACT
-#define kp_MEMORY_SUBTRACT Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::MEMORY_SUBTRACT)
+#ifndef kp_KP_MEMORY_SUBTRACT
+#define kp_KP_MEMORY_SUBTRACT Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_MEMORY_SUBTRACT)
 #endif
-#ifndef kp_MEMORY_MULTIPLY
-#define kp_MEMORY_MULTIPLY Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::MEMORY_MULTIPLY)
+#ifndef kp_KP_MEMORY_MULTIPLY
+#define kp_KP_MEMORY_MULTIPLY Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_MEMORY_MULTIPLY)
 #endif
-#ifndef kp_MEMORY_DIVIDE
-#define kp_MEMORY_DIVIDE Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::MEMORY_DIVIDE)
+#ifndef kp_KP_MEMORY_DIVIDE
+#define kp_KP_MEMORY_DIVIDE Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_MEMORY_DIVIDE)
 #endif
-#ifndef kp_PLUS_MINUS
-#define kp_PLUS_MINUS Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::PLUS_MINUS)
+#ifndef kp_KP_PLUS_MINUS
+#define kp_KP_PLUS_MINUS Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_PLUS_MINUS)
 #endif
-#ifndef kp_CLEAR
-#define kp_CLEAR Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::CLEAR)
+#ifndef kp_KP_CLEAR
+#define kp_KP_CLEAR Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_CLEAR)
 #endif
-#ifndef kp_CLEAR_ENTRY
-#define kp_CLEAR_ENTRY Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::CLEAR_ENTRY)
+#ifndef kp_KP_CLEAR_ENTRY
+#define kp_KP_CLEAR_ENTRY Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_CLEAR_ENTRY)
 #endif
-#ifndef kp_BINARY
-#define kp_BINARY Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::BINARY)
+#ifndef kp_KP_BINARY
+#define kp_KP_BINARY Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_BINARY)
 #endif
-#ifndef kp_OCTAL
-#define kp_OCTAL Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::OCTAL)
+#ifndef kp_KP_OCTAL
+#define kp_KP_OCTAL Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_OCTAL)
 #endif
-#ifndef kp_DECIMAL
-#define kp_DECIMAL Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::DECIMAL)
+#ifndef kp_KP_DECIMAL
+#define kp_KP_DECIMAL Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_DECIMAL)
 #endif
-#ifndef kp_HEXADECIMAL
-#define kp_HEXADECIMAL Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::HEXADECIMAL)
+#ifndef kp_KP_HEXADECIMAL
+#define kp_KP_HEXADECIMAL Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::KP_HEXADECIMAL)
 #endif
 #ifndef kp_LEFTCONTROL
 #define kp_LEFTCONTROL Binding(HID::Page::KEYBOARD_KEYPAD, HID::KeyboardKeypad::OTHER::LEFTCONTROL)

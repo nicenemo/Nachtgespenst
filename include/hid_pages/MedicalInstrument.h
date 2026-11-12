@@ -2,7 +2,7 @@
 #include "../HID_Types.h"
 
 namespace HID::MedicalInstrument {
-    constexpr uint8_t PAGE_ID = 0x0040;
+    constexpr uint16_t PAGE_ID = 0x0040;
     namespace OTHER {
         constexpr Usage MEDICAL_ULTRASOUND = { 0x01, UsageKind::OTHER, "MEDICAL_ULTRASOUND" };
         constexpr Usage VCR_ACQUISITION = { 0x20, UsageKind::OTHER, "VCR_ACQUISITION" };
@@ -29,8 +29,8 @@ namespace HID::MedicalInstrument {
         constexpr Usage COLOR_DOPPLER_ADJUST = { 0x85, UsageKind::OTHER, "COLOR_DOPPLER_ADJUST" };
         constexpr Usage MOTION_MODE_SELECT = { 0x86, UsageKind::OTHER, "MOTION_MODE_SELECT" };
         constexpr Usage MOTION_MODE_ADJUST = { 0x87, UsageKind::OTHER, "MOTION_MODE_ADJUST" };
-        constexpr Usage 2_D_MODE_SELECT = { 0x88, UsageKind::OTHER, "2_D_MODE_SELECT" };
-        constexpr Usage 2_D_MODE_ADJUST = { 0x89, UsageKind::OTHER, "2_D_MODE_ADJUST" };
+        constexpr Usage ID_2_D_MODE_SELECT = { 0x88, UsageKind::OTHER, "ID_2_D_MODE_SELECT" };
+        constexpr Usage ID_2_D_MODE_ADJUST = { 0x89, UsageKind::OTHER, "ID_2_D_MODE_ADJUST" };
         constexpr Usage SOFT_CONTROL_SELECT = { 0xA0, UsageKind::OTHER, "SOFT_CONTROL_SELECT" };
         constexpr Usage SOFT_CONTROL_ADJUST = { 0xA1, UsageKind::OTHER, "SOFT_CONTROL_ADJUST" };
     }

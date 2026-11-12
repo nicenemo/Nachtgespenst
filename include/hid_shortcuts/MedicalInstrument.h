@@ -77,11 +77,11 @@
 #ifndef me_MOTION_MODE_ADJUST
 #define me_MOTION_MODE_ADJUST Binding(HID::Page::MEDICAL_INSTRUMENT, HID::MedicalInstrument::OTHER::MOTION_MODE_ADJUST)
 #endif
-#ifndef me_2_D_MODE_SELECT
-#define me_2_D_MODE_SELECT Binding(HID::Page::MEDICAL_INSTRUMENT, HID::MedicalInstrument::OTHER::2_D_MODE_SELECT)
+#ifndef me_ID_2_D_MODE_SELECT
+#define me_ID_2_D_MODE_SELECT Binding(HID::Page::MEDICAL_INSTRUMENT, HID::MedicalInstrument::OTHER::ID_2_D_MODE_SELECT)
 #endif
-#ifndef me_2_D_MODE_ADJUST
-#define me_2_D_MODE_ADJUST Binding(HID::Page::MEDICAL_INSTRUMENT, HID::MedicalInstrument::OTHER::2_D_MODE_ADJUST)
+#ifndef me_ID_2_D_MODE_ADJUST
+#define me_ID_2_D_MODE_ADJUST Binding(HID::Page::MEDICAL_INSTRUMENT, HID::MedicalInstrument::OTHER::ID_2_D_MODE_ADJUST)
 #endif
 #ifndef me_SOFT_CONTROL_SELECT
 #define me_SOFT_CONTROL_SELECT Binding(HID::Page::MEDICAL_INSTRUMENT, HID::MedicalInstrument::OTHER::SOFT_CONTROL_SELECT)
