@@ -80,3 +80,4 @@ Verify on resume: `ls /dev/ttyUSB* /dev/ttyACM*`, `id -nG | grep uucp`.
   `CRGB lockColor(LockId)`; `void ledBarLocks(uint8_t activeMask /*bit0 caps,1 num,2 scroll*/)` (renders segments + additive mix into g_leds); `CRGB mixColors(const CRGB* c, uint8_t n)` using `qadd8`.
 - Test flashed to Core2 (verified, hash OK) at 06:24; a later 'pio -e core2 upload' by another agent will overwrite it.
 - [x] 8. Update 2026-11-12 evening: see docs/TODO.md "Status". S3 now runs USB + BLE side by side (HIDManager, prefer-USB), Core2 flashes again (esptool 460800, `--chip esp32`, bootloader 0x1000; SerialTest C2 11/11 PASS, S3 12/12 PASS), backlight idle dimming added. The Core2 "flaky/BLOCKED/partial app" remarks above are obsolete.
+- [x] 9. 2026-11-13: embedded code review + fixes, see docs/TODO.md "Klaar" / "Open". Both boards flashed and tested (S3 12/12, C2 11/11, stress 50x/30x).

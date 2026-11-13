@@ -6,7 +6,7 @@
 // All functions are safe to call from loop() (single threaded, no LVGL locking).
 
 void ui_begin();                         // after M5.begin() and HIDManager::begin()
-void ui_loop();                          // call every loop(): LVGL tick + host LED sync
+uint32_t ui_loop();                      // call every loop(): LVGL tick + host LED sync; returns ms the caller may sleep
 uint8_t ui_page_count();                 // LAYER_COUNT + 1
 uint8_t ui_locks_page();                 // index of the Locks page
 int ui_layer();                          // current page

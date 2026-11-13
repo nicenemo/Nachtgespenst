@@ -2,6 +2,7 @@
 #include "HID_Specs.h"
 #include <M5Unified.h>
 #include <vector>
+#include <atomic>
 
 // Two transports can be compiled in side by side (S3: USB + BLE, Core2: BLE only).
 // send() goes to every connected transport, unless "prefer USB" is set and USB is
@@ -10,22 +11,23 @@
 #if NG_TRANSPORT_USB
 #include <USB.h>
 #include <USBHID.h>
+#include "tusb.h"
 #endif
 
 namespace HIDManager {
     // ---- shared state -------------------------------------------------------
-    static uint8_t _lastLedStatus = 0;
-    static QueueHandle_t ledQueue = nullptr;
-    static HIDEventListener _eventListener = nullptr;
-    static bool _preferUsb = true;
+    // Written by the NimBLE / TinyUSB tasks, read by the main loop: atomics.
+    static std::atomic<uint8_t> _ledStatus{0};
+    static std::atomic<bool> _preferUsb{true};
+    static HIDEventListener _eventListener = nullptr; // set once before traffic starts
     static std::vector<uint8_t> reportMap; // must outlive begin()
 
+    // Host LED bits (HID LED page): Num=0x01, Caps=0x02, Scroll=0x04
+    constexpr uint8_t LED_NUM = 0x01, LED_CAPS = 0x02, LED_SCROLL = 0x04;
+
     static void pushLed(uint8_t status) {
-        if (ledQueue && xQueueSend(ledQueue, &status, 0) == pdTRUE) {
-            if (_eventListener) _eventListener(HIDEvent::LED_UPDATED, status);
-        } else if (_eventListener) {
-            _eventListener(HIDEvent::QUEUE_FULL, status);
-        }
+        _ledStatus.store(status);
+        if (_eventListener) _eventListener(HIDEvent::LED_UPDATED, status);
     }
 
     // ---- USB transport ------------------------------------------------------
@@ -39,12 +41,10 @@ namespace HIDManager {
             return reportMap.size();
         }
         void _onOutput(uint8_t report_id, const uint8_t* buffer, uint16_t len) override {
-            // Keyboard LED output report (Num/Caps/Scroll bits)
-            if (len == 0) return;
-            uint8_t status = buffer[len - 1];
-            if (len >= 2) status = buffer[1]; // report id may be included
-            if (len == 1) status = buffer[0];
-            pushLed(status);
+            // Keyboard LED output report (Num/Caps/Scroll bits). TinyUSB hands the
+            // payload without the report id; tolerate a leading id byte anyway.
+            if (report_id != HID::Reports::KEYBOARD || len == 0) return;
+            pushLed((len >= 2 && buffer[0] == report_id) ? buffer[1] : buffer[0]);
         }
     };
     static NgUsbDevice usbDevice;
@@ -59,16 +59,19 @@ namespace HIDManager {
         }
     } usbRegistrar;
 
-    static bool usbReady() { return usbHid.ready(); }
+    // "Connected" = enumerated and not suspended. usbHid.ready() only says the
+    // endpoint is free right now, which flips while a report is in flight.
+    static bool usbReady() { return tud_mounted() && !tud_suspended(); }
     static void usbBegin() {
         usbHid.begin();
         // Product/serial strings come from USB_PRODUCT / USB_SERIAL build flags.
     }
-    static void usbReport(uint8_t id, const uint8_t* data, size_t len) { usbHid.SendReport(id, data, len); }
+    // Short timeout: a stalled host must not block the main loop for the default 100 ms.
+    static bool usbReport(uint8_t id, const uint8_t* data, size_t len) { return usbHid.SendReport(id, data, len, 1); }
 #else
     static bool usbReady() { return false; }
     static void usbBegin() {}
-    static void usbReport(uint8_t, const uint8_t*, size_t) {}
+    static bool usbReport(uint8_t, const uint8_t*, size_t) { return false; }
 #endif
 
     // ---- BLE transport ------------------------------------------------------
@@ -77,7 +80,7 @@ namespace HIDManager {
     static NimBLECharacteristic* inputKeyboard = nullptr;
     static NimBLECharacteristic* inputConsumer = nullptr;
     static NimBLECharacteristic* outputKeyboard = nullptr;
-    static bool _bleConnected = false;
+    static std::atomic<bool> _bleConnected{false};
 
     // NimBLE-Arduino 2.x callback signatures (they carry NimBLEConnInfo).
     class MyOutputCallbacks : public NimBLECharacteristicCallbacks {
@@ -90,7 +93,7 @@ namespace HIDManager {
     class MyServerCallbacks : public NimBLEServerCallbacks {
         void onConnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo) override {
             _bleConnected = true;
-            Serial.println("[HID] BLE verbonden!");
+            Serial.printf("[HID] BLE verbonden met %s\n", connInfo.getAddress().toString().c_str());
         }
         void onDisconnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo, int reason) override {
             _bleConnected = false;
@@ -102,7 +105,9 @@ namespace HIDManager {
     static void bleBegin(const char* deviceName, const char* manufacturer) {
         // 1. Device & security (before HID init)
         NimBLEDevice::init(deviceName);
-        NimBLEDevice::setSecurityAuth(true, true, true);
+        // Bonding + secure connections, no MITM: with NO_INPUT_OUTPUT a MITM request
+        // cannot be satisfied and strict hosts would refuse to pair.
+        NimBLEDevice::setSecurityAuth(true, false, true);
         NimBLEDevice::setSecurityIOCap(BLE_HS_IO_NO_INPUT_OUTPUT);
 
         // 2. Server & HID device
@@ -139,58 +144,79 @@ namespace HIDManager {
         NimBLEServer* server = NimBLEDevice::getServer();
         return _bleConnected && server && server->getConnectedCount() > 0;
     }
-    static void bleReport(uint8_t id, const uint8_t* data, size_t len) {
+    static bool bleReport(uint8_t id, const uint8_t* data, size_t len) {
         NimBLECharacteristic* c = (id == HID::Reports::KEYBOARD) ? inputKeyboard : inputConsumer;
-        if (!c) return;
+        if (!c) return false;
         c->setValue(data, len);
-        c->notify();
+        return c->notify();
     }
 #else
     static void bleBegin(const char*, const char*) {}
     static bool bleReady() { return false; }
-    static void bleReport(uint8_t, const uint8_t*, size_t) {}
+    static bool bleReport(uint8_t, const uint8_t*, size_t) { return false; }
 #endif
 
     // ---- common -------------------------------------------------------------
-    // Which transports got the last press (and so need the release report).
-    static bool _relPending = false;
+    // Press queue + release state machine. Nothing blocks: a report that the
+    // transport cannot take yet stays queued and is retried from the main loop.
+    // A press is only released after RELEASE_DELAY, and a release that cannot be
+    // delivered is retried (otherwise the host sees a stuck key).
+    struct Report { uint8_t id, len, data[8]; };
+    static constexpr uint8_t QCAP = 16;
+    static Report _q[QCAP];
+    static uint8_t _qHead = 0, _qCount = 0;
+    static bool _pressed = false;             // a press is out, release pending
     static bool _relUsb = false, _relBle = false;
     static uint8_t _relId = 0, _relLen = 0;
-    static uint32_t _relAt = 0;
+    static uint32_t _relAt = 0, _deadline = 0;
 
-    static void flushRelease(bool force) {
-        if (!_relPending || (!force && (int32_t)(millis() - _relAt) < 0)) return;
-        _relPending = false;
-        uint8_t rel[8] = {0};
-        if (_relUsb) usbReport(_relId, rel, _relLen);
-        if (_relBle) bleReport(_relId, rel, _relLen);
+    static void pump() {
+        uint32_t now = millis();
+        if (_pressed) {
+            if ((int32_t)(now - _relAt) < 0) return;
+            uint8_t rel[8] = {0};
+            if (_relUsb && (usbReport(_relId, rel, _relLen) || !usbReady())) _relUsb = false;
+            if (_relBle && (bleReport(_relId, rel, _relLen) || !bleReady())) _relBle = false;
+            if ((_relUsb || _relBle) && (int32_t)(now - _deadline) > 0) _relUsb = _relBle = false; // link is dead
+            if (!_relUsb && !_relBle) _pressed = false;
+            return;
+        }
+        if (_qCount == 0) return;
+        Report& r = _q[_qHead];
+        bool usb = usbReady();
+        bool ble = bleReady() && !(usb && _preferUsb);
+        bool sentUsb = usb && usbReport(r.id, r.data, r.len);
+        bool sentBle = ble && bleReport(r.id, r.data, r.len);
+        if (sentUsb || sentBle) {
+            _pressed = true; _relUsb = sentUsb; _relBle = sentBle; _relId = r.id; _relLen = r.len;
+            _relAt = now + RELEASE_DELAY; _deadline = _relAt + 1000;
+        } else if (usb || ble) {
+            if ((int32_t)(now - _deadline) <= 0) return; // transport busy: retry next loop
+        }
+        // sent, or no transport / gave up: drop from queue
+        _qHead = (_qHead + 1) % QCAP; _qCount--;
+        _deadline = now + 1000; // budget for the next head item
     }
 
     static void dispatch(uint8_t id, const uint8_t* data, uint8_t len) {
-        bool usb = usbReady();
-        bool ble = bleReady() && !(usb && _preferUsb);
-        if (!usb && !ble) return;
-        if (usb) usbReport(id, data, len);
-        if (ble) bleReport(id, data, len);
-        _relPending = true; _relUsb = usb; _relBle = ble;
-        _relId = id; _relLen = len; _relAt = millis() + RELEASE_DELAY;
+        if (_qCount >= QCAP) return; // overflow: drop the newest press
+        if (_qCount == 0 && !_pressed) _deadline = millis() + 1000;
+        Report& r = _q[(_qHead + _qCount) % QCAP];
+        r.id = id; r.len = len; memcpy(r.data, data, len);
+        _qCount++;
+        pump();
     }
 
     void begin(const char* deviceName, const char* manufacturer) {
-        ledQueue = xQueueCreate(QUEUE_LENGTH, sizeof(uint8_t));
         if (reportMap.empty()) reportMap = HID::GetReportMap();
         usbBegin();
         bleBegin(deviceName, manufacturer);
         Serial.printf("[HID] gestart usb=%d ble=%d (keyboard + consumer)\n", NG_TRANSPORT_USB, NG_TRANSPORT_BLE);
     }
 
-    uint8_t getLedStatus() {
-        uint8_t status;
-        if (ledQueue && xQueueReceive(ledQueue, &status, 0) == pdTRUE) _lastLedStatus = status;
-        return _lastLedStatus;
-    }
+    uint8_t getLedStatus() { return _ledStatus.load(); }
 
-    void handleAsyncEvents() { flushRelease(false); }
+    void handleAsyncEvents() { pump(); }
     void setEventListener(HIDEventListener l) { _eventListener = l; }
     bool isConnected() { return usbReady() || bleReady(); }
     bool isUsbConnected() { return usbReady(); }
@@ -207,10 +233,8 @@ namespace HIDManager {
 
         // BLE hosts do not always report the LED state back: toggle locally
         // so the tiles follow immediately (only when BLE is the sole path).
-        if ((id == 0x39 || id == 0x53) && !usbReady() && bleReady()) {
-            _lastLedStatus ^= (id == 0x39) ? 0x02 : 0x01;
-            if (_eventListener) _eventListener(HIDEvent::LED_UPDATED, _lastLedStatus);
-        }
+        if ((id == 0x39 || id == 0x53) && !usbReady() && bleReady())
+            pushLed(_ledStatus.load() ^ ((id == 0x39) ? LED_CAPS : LED_NUM));
         uint8_t report[8] = { mod, 0, key, 0, 0, 0, 0, 0 };
         dispatch(HID::Reports::KEYBOARD, report, sizeof(report));
     }
@@ -222,7 +246,6 @@ namespace HIDManager {
     }
 
     void send(const Binding& b) {
-        flushRelease(true);
         if (b.page == HID::Page::KEYBOARD_KEYPAD) sendKeyboard(b);
         else if (b.page == HID::Page::CONSUMER)   sendConsumer(b);
     }

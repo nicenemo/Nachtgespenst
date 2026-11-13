@@ -33,6 +33,5 @@ void loop() {
     if (M5.BtnB.wasPressed()) ui_toggle_locks();
     if (M5.BtnC.wasPressed()) ui_set_layer(ui_layer() + 1);
 #endif
-    ui_loop();
-    yield();
+    delay(ui_loop()); // sleep until LVGL's next job (1..10 ms) instead of spinning
 }

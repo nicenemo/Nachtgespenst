@@ -42,6 +42,7 @@ lv_obj_t* g_lockTiles[3] = {};
 lv_obj_t* g_lockState[3] = {};
 
 // injected touch
+bool g_swallowTouch = false; // touch that woke a dimmed screen must not press a tile
 int g_injX = 0, g_injY = 0;
 uint32_t g_injUntil = 0;
 
@@ -64,6 +65,10 @@ void flushCb(lv_display_t* disp, const lv_area_t* a, uint8_t* px) {
 void readCb(lv_indev_t*, lv_indev_data_t* d) {
     if ((int32_t)(g_injUntil - millis()) > 0) {
         d->state = LV_INDEV_STATE_PRESSED; d->point.x = g_injX; d->point.y = g_injY; return;
+    }
+    if (g_swallowTouch) {
+        if (M5.Touch.getCount() > 0) { d->state = LV_INDEV_STATE_RELEASED; return; }
+        g_swallowTouch = false; // finger lifted
     }
     if (M5.Touch.getCount() > 0) {
         auto t = M5.Touch.getDetail(0);
@@ -396,14 +401,16 @@ void ui_screenshot(Stream& out) {
 static void idleBacklight() {
     static uint32_t lastActive = 0;
     static uint8_t level = 255;
-    if (M5.Touch.getCount() > 0 || M5.BtnA.isPressed() || M5.BtnB.isPressed() || M5.BtnC.isPressed())
+    bool touched = M5.Touch.getCount() > 0;
+    if (touched && level < 128) g_swallowTouch = true;
+    if (touched || M5.BtnA.isPressed() || M5.BtnB.isPressed() || M5.BtnC.isPressed())
         lastActive = millis();
     uint32_t idle = millis() - lastActive;
     uint8_t want = idle < 60000 ? 128 : (idle < 300000 ? 16 : 0);
     if (want != level) { level = want; M5.Display.setBrightness(want); }
 }
 
-void ui_loop() {
+uint32_t ui_loop() {
     static uint32_t lastLedPoll = 0;
     idleBacklight();
     // Keep in sync with the HID layer (local toggles do not always fire the listener).
@@ -417,5 +424,6 @@ void ui_loop() {
         if (g_page == LAYER_COUNT) refreshLocks();
         updateLeds();
     }
-    lv_timer_handler();
+    uint32_t next = lv_timer_handler();
+    return next < 1 ? 1 : (next > 10 ? 10 : next);
 }

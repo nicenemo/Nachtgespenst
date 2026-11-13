@@ -13,7 +13,7 @@ void handle(char* line) {
     if (!*line) return;
     char* save = nullptr;
     char* cmd = strtok_r(line, " \t", &save);
-    for (char* p = cmd; *p; p++) *p = toupper(*p);
+    for (char* p = cmd; *p; p++) *p = toupper((unsigned char)*p);
     char* a = strtok_r(nullptr, " \t", &save);
     char* b = strtok_r(nullptr, " \t", &save);
     char* extra = strtok_r(nullptr, " \t", &save);
