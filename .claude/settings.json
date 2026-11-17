@@ -1,0 +1,48 @@
+{
+  "permissions": {
+    "additionalDirectories": ["/tmp"],
+    "blockReadsOutsideWorkingDirectories": true,
+    "blockWritesOutsideWorkingDirectories": true
+  },
+  "sandbox": {
+    "enabled": true,
+    "filesystem": {
+      "denyRead": ["~/"],
+      "allowRead": [
+        ".",
+        "~/.platformio",
+        "~/.jbang",
+        "~/.m2",
+        "~/.gitconfig",
+        "~/.config/git"
+      ],
+      "allowWrite": [
+        ".",
+        "/tmp",
+        "~/.platformio",
+        "~/.jbang",
+        "~/.m2"
+      ]
+    },
+    "network": {
+      "allowedDomains": [
+        "registry.platformio.org",
+        "api.registry.platformio.org",
+        "dl.platformio.org",
+        "github.com",
+        "*.githubusercontent.com",
+        "pypi.org",
+        "files.pythonhosted.org",
+        "repo.maven.apache.org",
+        "jitpack.io"
+      ]
+    },
+    "excludedCommands": [
+      "pio run -t upload*",
+      "pio run -e * -t upload*",
+      "pio device *",
+      "pio test *",
+      "esptool*"
+    ]
+  }
+}
