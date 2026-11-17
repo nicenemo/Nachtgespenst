@@ -1,3 +1,4 @@
 .pio/
 out.txt
 tools/include/
+publish-to-github.sh
