@@ -12,3 +12,4 @@ One file per decision, numbered `NNNN-title.md`, with Status, Context, Decision,
 | [0006](0006-ui-lvgl-or-classic.md) | LVGL or the classic direct-drawing UI | Proposed (leaning LVGL) |
 | [0007](0007-page-switching-speed-and-prerendering.md) | Page switching speed: coalesce, slim down, then pre-render neighbours | Proposed |
 | [0008](0008-jbang-for-project-tooling.md) | Write project tooling in JBang (Java), not in shell scripts | Accepted |
+| [0009](0009-unicode-pages-and-host-os-awareness.md) | Unicode pages, host OS awareness and a settings page | Proposed (decisions needed) |
