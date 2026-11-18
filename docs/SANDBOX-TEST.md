@@ -80,11 +80,11 @@ These need a device on USB. Skip if no board is connected. Confirm the exclusion
 
 - [ ] `ls -l /dev/ttyUSB0 /dev/ttyACM0` (Core2 is ttyUSB0, S3 is ttyACM0)
 - [ ] `.pio/venv/bin/pio device list`
-- [ ] Flash through the documented esptool command (see `docs/OVERNIGHT.md` step 2/3) or `pio run -e cores3 -t upload`
+- [ ] Flash through the documented esptool command (see `docs/archive/OVERNIGHT.md` step 2/3) or `pio run -e cores3 -t upload`
 - [ ] `jbang tools/SerialTest.java --board S3` (or `--board C2`)
 - [ ] `git fetch` (matches `git fetch*`)
 
-Known issue: Core2 flashing is flaky (see `docs/OVERNIGHT.md`). A failed Core2 flash is hardware, not a sandbox failure. Check S3 first.
+Known issue: Core2 flashing is flaky (see `docs/archive/OVERNIGHT.md`). A failed Core2 flash is hardware, not a sandbox failure. Check S3 first.
 
 If an excluded command still fails because of the sandbox, the call is not a single plain command: a pipe, `cd`, `&&`, `;`, a `VAR=x` prefix or a redirect keeps the whole call sandboxed. The patterns themselves (`*pio run*upload*`, `*jbang*SerialTest*`, `git push*`) were verified to match plain calls; see [claude-code-workflow](wiki/claude-code-workflow.md) and [ADR 0004](adr/0004-plain-commands-and-wrapper-scripts.md).
 

@@ -1,9 +1,9 @@
 # 0009 Unicode pages, host OS awareness and a settings page
 
-Status: Proposed. Nothing is implemented; the decisions at the end are the owner's.
+Status: Accepted by the owner on 2026-11-18; implementation is parked (nothing is built yet). Emoji pages are out of scope here and become a follow-up plan.
 
 ## Context
-What a macro pad adds to a physical keyboard is the screen: keycap colours and legends in software (see [zmk-comparison](../wiki/zmk-comparison.md)). The same screen can offer characters that are awkward to type: dashes of several lengths, the interrobang, typographic quotes, maths, arrows, currency. Wanted, in the owner's words: the interrobang and its relatives, the em dash family up to the three-em dash, a way to switch the Unicode method between macOS, Windows and Linux, automatic detection of the host if that is possible over USB and BLE (one of the two alone is acceptable) with an override in any case, and perhaps emoji (judged less useful).
+What a macro pad adds to a physical keyboard is the screen: keycap colours and legends in software (see [zmk-comparison](../wiki/zmk-comparison.md)). The same screen can offer characters that are awkward to type: dashes of several lengths, the interrobang, typographic quotes, maths, arrows, currency. Wanted, in the owner's words: the interrobang and its relatives, the em dash family up to the three-em dash, a way to switch the Unicode method between macOS, Windows and Linux, automatic detection of the host if that is possible over USB and BLE (one of the two alone is acceptable) with an override in any case, (emoji were considered and postponed to a follow-up plan).
 
 Inspiration: the owner's ZMK configuration (`franken-cornish-zen`: DISPLAY, APPL, MATH, LOGIC, Greek and punctuation layers, a Unicode leader system), the Unicode header generator `zmk_unicode_headers`, QMK (Unicode modes, OS detection), ZMK's Unicode extension, X11/Wayland Compose sequences, WinCompose and macOS's Option-key layers. The method per operating system and the detection signals are in [unicode-input-methods](../wiki/unicode-input-methods.md).
 
@@ -26,7 +26,6 @@ Grids follow the existing 3x3, 4x3, 5x3 and 6x4 sizes. Code points in brackets a
 | Device | Settings | host OS per transport (Auto, Windows, macOS, Linux), output routing (`PREFER` and `ONLY`), device brightness, LED bar on or off, theme dark or light, a "test character" tile |
 | Device | Hex entry | 0 to 9, A to F, Enter, Backspace: type any code point with the active method |
 | Host | Window management | OS-aware chords: snap and switch windows, show the desktop, lock the screen, mission control; the same tile sends the right chord for the detected OS |
-| Optional, last | Work emoji | check, cross, warning, thumbs up, folded hands, party, rocket, fire, eyes, light bulb; all but the first three need characters above U+FFFF |
 
 Two cross-cutting extensions follow from knowing the host: **OS-aware modifiers** (Ctrl on Windows and Linux becomes Cmd on macOS in the editing, browser and PowerPoint pages) and a small OS badge in the header ("LIN", "MAC", "WIN", with "auto" or "set").
 
@@ -46,15 +45,32 @@ Order of precedence: manual override, then the remembered value for this peer, t
 Detection, honest about what is known:
 - **USB (CoreS3).** QMK shows that Linux, Windows, macOS and iOS can be told apart from the USB setup behaviour, with caveats (best guess, KVM switches, late results on Apple Silicon). Here the callbacks for descriptor and HID class requests can be observed (override or link-time wrap), but not the packet's `wLength` that QMK uses, so the signals available are fewer: the Windows-only string descriptor 0xEE request, the BOS request, `SET_IDLE` and `SET_PROTOCOL`. Whether that separates Linux from macOS must be measured.
 - **BLE.** Android: documented and reliable on Android 14 and newer (read the Android Information Service from the host with `NimBLEServer::getClient`). Apple: the Device Information Service says "Apple Inc.", reported by others, to be verified; macOS versus iOS may not be separable, and iOS has no Unicode method anyway. Windows versus Linux: no known signal; the negotiated MTU, connection parameters and GATT read order are candidates.
-- **Experiment first.** A `HOST?` command that prints every signal seen per connection, then connecting each available host (Linux, Windows, macOS, Android, iOS and iPadOS, all available) tells which signals are usable. For Apple hosts the complete Device Information Service (manufacturer, model, software revision) should be read: it might separate iPhone, iPad and Mac. Only then is a classifier written. Until then BLE hosts other than Android are "unsure" and use the remembered or default OS.
+- **Experiment first.** A `HOST?` command that prints every signal seen per connection, then connecting each available host (Linux, Windows, Android and the iPhone) tells which signals are usable. For the iPhone the complete Device Information Service (manufacturer, model, software revision) should be read; whether it separates an iPhone from an iPad or a Mac cannot be tested without those devices, so Apple hosts other than the iPhone are covered by the override only. Only then is a classifier written. Until then BLE hosts other than Android are "unsure" and use the remembered or default OS.
+
+### Experiment set-up
+Control and observation depend on how the board is connected:
+
+| Host | Over BLE (the board stays on USB to this computer: serial control and logs work) | Over USB (the board is plugged into that host: serial control from this computer is lost) |
+|---|---|---|
+| Linux laptop | yes | yes, it is the control host |
+| Windows | yes (CoreS3 and Core2) | CoreS3 only; observe through the channels below |
+| Android | yes (Android Information Service) | CoreS3 only, through USB OTG |
+| iPhone SE (iOS) | yes | CoreS3 only, with a Lightning-to-USB camera adapter (the SE has Lightning, no USB-C); untested |
+| macOS, iPadOS | not available | not available |
+
+The Core2 is BLE only, so for it every experiment keeps the serial connection. For USB experiments the CoreS3 needs an observation channel that does not depend on the USB serial port:
+1. **The screen:** a diagnostics view of the last connection record (transport, signals seen, detected OS), readable on the spot.
+2. **Persistence in flash (NVS):** a ring buffer of the last 16 connection records (transport, peer, MTU, connection parameters, the GATT reads or USB requests seen); `HOST?` dumps it over serial afterwards, after the board is plugged back into this computer. Survives power cycles; needs no new hardware.
+3. **Optional, only if live control during a USB test is wanted:** an SD-card log (both boards have a microSD slot; a custom firmware variant that appends to a file), or a remote console over BLE (a UART-style GATT service) or Wi-Fi (a small TCP or HTTP endpoint). More code and more radio stack; not needed for the first round.
+
+Recommendation: start with 1 and 2. BLE experiments with the Core2 and the CoreS3 can run first, with full serial logging.
 
 ## Phasing
 1. Foundation: sequence engine, Unicode and action bindings, OS state with override (serial and Settings page), `GenerateUnicode.java`, bitmap font with the first glyphs, menu page. Tests per OS mode.
 2. Typography pages (dashes and spaces, quotes and marks, rare punctuation): the wanted set.
 3. Symbols pages (maths, Greek, arrows, currency and units, marks, sub- and superscripts, European letters) and the hex entry pad.
 4. Display and Settings pages; OS-aware modifiers and the window-management page.
-5. Detection experiments (`HOST?`), then a classifier for the signals that prove usable.
-6. Optional: work emoji.
+5. Detection experiments: `HOST?`, the connection record on screen and in flash, BLE first (serial intact), then USB with the CoreS3 on each host; then a classifier for the signals that prove usable.
 
 ## Risks and open questions
 - Every method needs host set-up (WinCompose or the registry value on Windows, "Unicode Hex Input" on macOS, IBus on Linux); the macro pad cannot do it and must document it. Some applications ignore the methods (terminals, games, remote desktops).
@@ -62,17 +78,17 @@ Detection, honest about what is known:
 - Windows has several incompatible methods (HexNumpad stops at U+FFFF, WinCompose is a third-party tool, Alt codes cover Windows-1252 only); they are selectable (decision 2).
 - Flash and RAM for the glyph font; the speed work in 0007 should come first or together, because more pages make slow page building more noticeable.
 - Detection can be wrong; that is why override and persistence come first.
+- USB experiments on other computers lose the serial connection; the record in flash and on screen is the workaround, and the iPhone SE needs a Lightning-to-USB camera adapter for a USB test.
 
 ## Decisions
 Answered by the owner on 2026-11-18:
-1. **Hosts available for experiments:** Linux, Windows, Android, iOS, macOS and iPadOS.
+1. **Hosts to support:** Linux, Windows, Android, iOS, macOS and iPadOS. **Hosts available for experiments:** Linux, Windows, Android and an iPhone SE (iOS; the generation and the iOS version are to be recorded at the first experiment), which can be reached over BLE; USB is possible too, but then the serial connection to this computer is lost (see "Experiment set-up"). Of the Apple devices there is **only an iPhone**: no Mac and no iPad. macOS and iPadOS stay in the choice list, but everything about them (Option combinations, Unicode Hex Input, the detection signals) is based on documentation and is **untested**; the override is what makes them usable.
 2. **Unicode mode is selectable**, as in the owner's ZMK configuration, which has the tiles `UC_SET_MACOS`, `UC_SET_WIN_ALT`, `UC_SET_WIN_COMPOSE`, `UC_SET_LINUX`, `UC_SET_LINUX_ALT` and `UC_SET_EMACS` on its CONFIG layer (plus the plain chords `LUC` = Ctrl+Shift+U and `WUC` = Alt+X for Word). The same modes, with the same names, become tiles on the Settings page. What `LINUX_ALT` does exactly is not visible in the keymap (it comes from the unicode extension); it is to be taken over from there.
 3. **Default when detection is unsure: Linux**, overruled by the user. The interface shows what was detected and what was chosen (see "UX for detection and choice").
-
-Still open:
-4. Navigation: a menu page of groups as proposed, or keep next and previous paging? (Suggestion: the menu page.)
-5. Font: a static bitmap font with the glyph set, and a text fallback in the classic UI? (Suggestion: yes, together with the speed work of 0007.)
-6. Order of the phases and whether the emoji page is wanted at all. (Suggestion: the order above, emoji last and optional.)
+4. **Navigation:** a menu page of groups.
+5. **Font:** a static bitmap font with the glyph set, built together with the speed work of [0007](0007-page-switching-speed-and-prerendering.md), and a text fallback in the classic UI.
+6. **Order:** the phases below; the emoji page is not part of this plan (follow-up plan, see the TODO).
+7. **Pages:** as proposed in the table above.
 
 ## More hosts, and what "host" means
 Beyond the six hosts the owner has, the families that matter for the choice list:

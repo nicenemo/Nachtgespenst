@@ -1,3 +1,5 @@
+> **Archived.** The overnight plan and status log of 2026-11-12 to 2026-11-13, kept as history. It is out of date in places (for example the CoreS3 flashing notes and the LED bar status). Current information: [TODO](../TODO.md), [wiki](../wiki/README.md) and the [decision records](../adr/README.md).
+
 # Overnight plan (parked 2026-11-12, resume after reboot)
 
 Resume trigger: user says "continue the overnight plan". Update the Status section as work proceeds. Keep reports short (A2 summary, B2 detail at most). Keep token use low: subagents work in sequence, each reports <= 15 lines.

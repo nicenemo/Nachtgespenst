@@ -22,7 +22,7 @@ Project tools are JBang single-file Java programs in `tools/`:
 - The first run of a tool compiles it (a few seconds, cached afterwards) and needs a JDK (JBang downloads it); `jbang` must be on the PATH (it is: `~/jbinst/jbang/bin`).
 - The owner has to replace the two bash entries in `sandbox.excludedCommands` by `*jbang*Flash.java*` and `*jbang*Serial.java*` (see [claude-code-workflow](../wiki/claude-code-workflow.md)); until then these tools are refused inside the sandbox with exit code 3 and a clear message.
 - esptool stays an external program (it is part of the PlatformIO packages).
-- Alternatives rejected: keeping bash (reasons above); Python (the only Python in the project is the PlatformIO venv, and a serial library would be a new dependency); Make or just (no serial support, awkward quoting); Kotlin scripts (not used anywhere else).
+- Alternatives rejected: keeping bash (reasons above); Python (the only Python in the project is the PlatformIO venv and `tools/icons/gen_icons.py`, which needs fontTools and has no Java equivalent; a serial library would be a new dependency); Make or just (no serial support, awkward quoting); Kotlin scripts (not used anywhere else).
 
 ## Verification (2026-11-18, on the real boards)
 - Compile, usage errors (exit 2), missing image (exit 1), `--dry-run` on both boards, stale-image warning, refusal inside the sandbox (exit 3).
