@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <title>Nachtgespenst: a crescent moon and a screaming ghost</title>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0b0e1c"/><stop offset="1" stop-color="#241020"/>
+    </linearGradient>
+    <mask id="bite"><rect width="128" height="128" fill="#fff"/><circle cx="106" cy="25" r="13" fill="#000"/></mask>
+  </defs>
+  <rect width="128" height="128" rx="24" fill="url(#sky)"/>
+  <!-- swirling night sky, after the famous painting: dark red and orange waves -->
+  <g fill="none" stroke-linecap="round" opacity=".55">
+    <path d="M0 96 C20 84 32 108 52 96 S88 84 128 98" stroke="#7a2a1c" stroke-width="7"/>
+    <path d="M0 112 C22 102 34 122 56 112 S92 102 128 114" stroke="#b5481f" stroke-width="5"/>
+    <path d="M0 80 C18 70 34 90 54 80 S92 68 128 82" stroke="#3a1a34" stroke-width="6"/>
+  </g>
+  <!-- crescent moon -->
+  <circle cx="98" cy="30" r="17" fill="#f6e7a6" mask="url(#bite)"/>
+  <!-- ghost: pale hooded body with a wavy hem -->
+  <path d="M60 20 C80 20 90 38 88 60 C87 74 92 90 95 108 Q88 100 82 109 Q76 118 70 109 Q64 100 58 109 Q52 118 46 109 Q40 100 33 108 C36 90 40 74 36 60 C34 38 42 20 60 20 Z" fill="#ece8f6" stroke="#1a1626" stroke-width="2.2" stroke-linejoin="round"/>
+  <!-- the scream: hollow eyes, slit nose, long open mouth -->
+  <ellipse cx="51" cy="49" rx="5.4" ry="10" fill="#1a1626"/>
+  <ellipse cx="69" cy="49" rx="5.4" ry="10" fill="#1a1626"/>
+  <path d="M59 63 q1 3.5 2 0 M63 63 q1 3.5 2 0" stroke="#1a1626" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+  <ellipse cx="60" cy="81" rx="6" ry="15" fill="#1a1626"/>
+  <!-- hands pressed to the cheeks -->
+  <g fill="#d9d3ee" stroke="#1a1626" stroke-width="2">
+    <ellipse cx="38" cy="66" rx="7.5" ry="12" transform="rotate(12 38 66)"/>
+    <ellipse cx="82" cy="66" rx="7.5" ry="12" transform="rotate(-12 82 66)"/>
+  </g>
+</svg>
