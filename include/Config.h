@@ -9,11 +9,11 @@
 #define K_MODEL "NG-81-V12"
 #define LED_COUNT       10
 #define TYPING_ANIM_MS  300
-// WS2812 data pin: Core2 side LED bar = GPIO25; CoreS3 has no bar (GPIO25 does not exist), use Port B pin
+// WS2812 data pin: Core2 side LED bar = GPIO25, CoreS3 M5GO base bar = GPIO5 (both M-Bus pin 8)
 #ifndef LED_PIN
 #define LED_PIN 9
 #endif
-// 1 when a verified WS2812 LED bar is present (Core2 side bar on GPIO25). CoreS3: none.
+// 1 when a WS2812 LED bar is present (Core2: GPIO25, CoreS3: GPIO5).
 #ifndef NG_HAS_LEDBAR
 #define NG_HAS_LEDBAR 0
 #endif

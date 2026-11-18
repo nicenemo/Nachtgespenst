@@ -14,38 +14,44 @@
 #include "Bindings.h"
 
 namespace HIDManager {
-    // Event types om aan de luisteraar te laten weten wat er gebeurt
+    // Event types that tell the listener what is happening
     enum class HIDEvent { 
-        LED_UPDATED,  // Er is nieuwe LED status data van de PC
-        QUEUE_FULL    // De buffer is vol, data wordt overgeslagen
+        LED_UPDATED,  // New LED state data from the host
+        QUEUE_FULL    // The buffer is full, data is dropped
     };
     
-    // De signature van de callback functie
+    // Signature of the callback function
     typedef void (*HIDEventListener)(HIDEvent event, uint8_t ledStatus);
 
-    // --- Publieke Constanten ---
+    // --- Public constants ---
     const uint8_t QUEUE_LENGTH = 10;
     const unsigned long RELEASE_DELAY = 15; // ms
 
-    // Initialiseer Bluetooth en HID
+    // Initialise Bluetooth and HID
     void begin(const char* deviceName, const char* manufacturer);
     
-    // Status check
+    // Status checks
     bool isConnected();      // USB or BLE
     bool isUsbConnected();
     bool isBleConnected();
 
-    // Prevent double keystrokes: while USB is connected, skip BLE (default on).
-    void setPreferUsb(bool prefer);
+    // Prevent double keystrokes when both transports are connected:
+    //   USB  = skip BLE while USB is mounted (default), BLE = skip USB while BLE is connected,
+    //   BOTH = send to every connected transport,
+    //   USB_ONLY / BLE_ONLY = never use the other transport, even when the chosen one is down.
+    enum class Prefer : uint8_t { USB, BLE, BOTH, USB_ONLY, BLE_ONLY };
+    void setPrefer(Prefer p);
+    Prefer prefer();
+    void setPreferUsb(bool prefer); // true = Prefer::USB, false = Prefer::BOTH
     bool preferUsb();
 
-    // De centrale verzendmethode (beslist welke report gestuurd wordt)
+    // The central send method (decides which report is sent)
     void send(const Binding& b);
     
-    // Event-driven functionaliteit
+    // Event-driven functionality
     void setEventListener(HIDEventListener listener);
     uint8_t getLedStatus(); 
     
-    // Non-blocking afhandeling (aanroepen in de main loop van main.cpp)
+    // Non-blocking handling (call from the main loop in main.cpp)
     void handleAsyncEvents();
 }

@@ -92,15 +92,18 @@ public class SerialTest {
     }
 
     /** Find /dev/input/eventN whose name matches (from /proc/bus/input/devices). */
-    static String findEvent(String devName) {
+    /** Find the evdev node of a host input device; usb=true picks the USB one, false the Bluetooth (non-usb Phys) one. */
+    static String findEvent(String devName, boolean usb) {
         try {
-            String cur = null;
+            String cur = null; boolean match = false;
             for (String l : Files.readAllLines(Path.of("/proc/bus/input/devices"))) {
-                if (l.startsWith("N: Name=")) cur = l;
-                if (l.startsWith("H: Handlers=") && cur != null && cur.contains(devName)) {
+                if (l.startsWith("N: Name=")) { cur = l; match = false; }
+                if (l.startsWith("P: Phys=") && cur != null && cur.contains(devName))
+                    match = usb == l.substring(8).startsWith("usb-");
+                if (l.startsWith("H: Handlers=") && match) {
                     for (String t : l.split("\\s+")) if (t.startsWith("event")) return "/dev/input/" + t;
                 }
-                if (l.isBlank()) cur = null;
+                if (l.isBlank()) { cur = null; match = false; }
             }
         } catch (IOException e) { }
         return null;
@@ -164,7 +167,7 @@ public class SerialTest {
         }
 
         // KEY on Locks page: Scroll Lock (idx 2) -> host LED must toggle
-        String ev = "S3".equals(tag) ? findEvent(info.get("name") + " Keyboard") : null;
+        String ev = "S3".equals(tag) ? findEvent(info.get("name") + " Keyboard", true) : null;
         Map<String, String> s0 = kv(l.cmd("STATE?", 1500));
         int scroll0 = Integer.parseInt(s0.get("scroll")), presses0 = Integer.parseInt(s0.get("presses"));
         final Link lk = l;
@@ -200,7 +203,55 @@ public class SerialTest {
         check(tag, "TAP on Scroll tile counted", Integer.parseInt(s2.get("presses")) == p0 + 1 && "Scroll".equalsIgnoreCase(s2.get("last").replace("_", " ").split(" ")[0]) ,
               "presses " + p0 + "->" + s2.get("presses") + " last=" + s2.get("last"));
         l.cmd("KEY " + locks + " 2", 1500); // restore state again
+        if ("S3".equals(tag)) testBle(tag, l, info, locks);
         l.cmd("LAYER 0", 2000);
+    }
+
+    /** Down+up of Scroll Lock (KEY_SCROLLLOCK=70) seen in an evdev capture. */
+    static boolean scrollDownUp(List<int[]> keys) {
+        boolean down = false, up = false;
+        if (keys != null) for (int[] k : keys) if (k[0] == 70) { if (k[1] == 1) down = true; if (k[1] == 0) up = true; }
+        return down && up;
+    }
+
+    /** Press Scroll Lock on the Locks page and capture the events on one host evdev node. */
+    static List<int[]> pressAndCapture(Link l, String ev, int locks) throws Exception {
+        try { return captureKeys(ev, () -> { try { l.cmd("KEY " + locks + " 2", 1500); } catch (Exception e) { } }, 800); }
+        catch (IOException e) { report.add("INFO cannot read " + ev + ": " + e.getMessage()); return null; }
+    }
+
+    /** Send one mode command, press Scroll Lock, and check which of the two host devices saw it (expUsb / expBle). */
+    static void routeCheck(String tag, Link l, String modeCmd, String okReply, String usbEv, String bleEv, int locks,
+                           boolean expUsb, boolean expBle) throws Exception {
+        String r = l.cmd(modeCmd, 1500);
+        check(tag, modeCmd, okReply.equals(r), String.valueOf(r));
+        List<int[]> usb = pressAndCapture(l, usbEv, locks), ble = pressAndCapture(l, bleEv, locks);
+        // pressAndCapture presses once per device, so the host scroll LED is toggled twice per mode = balanced
+        check(tag, modeCmd + ": USB device " + (expUsb ? "sees" : "stays silent"),
+              usb != null && (expUsb ? scrollDownUp(usb) : usb.isEmpty()), usbEv + " events=" + (usb == null ? -1 : usb.size()));
+        check(tag, modeCmd + ": BLE device " + (expBle ? "sees" : "stays silent"),
+              ble != null && (expBle ? scrollDownUp(ble) : ble.isEmpty()), bleEv + " events=" + (ble == null ? -1 : ble.size()));
+    }
+
+    /**
+     * S3 keeps USB preferred by default. With both links up: PREFER BLE / ONLY BLE route over BLE only, ONLY USB over
+     * USB only, PREFER BOTH over both; each mode is checked against the USB and BLE host input devices.
+     */
+    static void testBle(String tag, Link l, Map<String, String> info, int locks) throws Exception {
+        String st = l.cmd("PREFER?", 1500);
+        Map<String, String> m = st != null && st.startsWith("OK") ? kv(st) : Map.of();
+        check(tag, "BLE connected (board reports ble=1)", "1".equals(m.get("ble")), String.valueOf(st));
+        String bleEv = findEvent(info.get("name") + " Keyboard", false), usbEv = findEvent(info.get("name") + " Keyboard", true);
+        if (bleEv == null || usbEv == null || !"1".equals(m.get("ble")) || !"1".equals(m.get("usb"))) {
+            report.add("SKIP [" + tag + "] BLE/USB routing checks (need both host devices and both links up)"); return;
+        }
+        routeCheck(tag, l, "PREFER USB",  "OK PREFER USB",  usbEv, bleEv, locks, true,  false);
+        routeCheck(tag, l, "PREFER BLE",  "OK PREFER BLE",  usbEv, bleEv, locks, false, true);
+        routeCheck(tag, l, "ONLY USB",    "OK ONLY USB",    usbEv, bleEv, locks, true,  false);
+        routeCheck(tag, l, "ONLY BLE",    "OK ONLY BLE",    usbEv, bleEv, locks, false, true);
+        routeCheck(tag, l, "PREFER BOTH", "OK PREFER BOTH", usbEv, bleEv, locks, true,  true);
+        String r = l.cmd("PREFER USB", 1500);
+        check(tag, "PREFER USB restored", "OK PREFER USB".equals(r), String.valueOf(r));
     }
 
     static void saveShot(String tag, Link l, Path dir) throws Exception {

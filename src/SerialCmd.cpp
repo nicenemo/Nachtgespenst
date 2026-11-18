@@ -2,6 +2,7 @@
 #include "Config.h"
 #include "SerialCmd.h"
 #include "ui.h"
+#include "HIDManager.h"
 
 namespace {
 char g_buf[64];
@@ -31,6 +32,28 @@ void handle(char* line) {
                       __DATE__, __TIME__, (int)M5.Display.width(), (int)M5.Display.height(),
                       (int)ui_page_count(), (int)ui_locks_page());
     else if (!strcmp(cmd, "STATE?") && !a) Serial.printf("OK %s\n", ui_state().c_str());
+    // PREFER USB: while USB is mounted, keys go over USB only (default).
+    // PREFER BLE: while BLE is connected, keys go over BLE only (lets tests exercise BLE with USB attached).
+    // PREFER BOTH: keys go to every connected transport.
+    // ONLY USB / ONLY BLE: never use the other transport, even if the chosen one is not connected.
+    else if (!strcmp(cmd, "PREFER") && a && !b) {
+        for (char* p = a; *p; p++) *p = toupper((unsigned char)*p);
+        if (!strcmp(a, "USB")) { HIDManager::setPreferUsb(true); Serial.println("OK PREFER USB"); }
+        else if (!strcmp(a, "BLE")) { HIDManager::setPrefer(HIDManager::Prefer::BLE); Serial.println("OK PREFER BLE"); }
+        else if (!strcmp(a, "BOTH")) { HIDManager::setPrefer(HIDManager::Prefer::BOTH); Serial.println("OK PREFER BOTH"); }
+        else Serial.println("ERR prefer");
+    }
+    else if (!strcmp(cmd, "ONLY") && a && !b) {
+        for (char* p = a; *p; p++) *p = toupper((unsigned char)*p);
+        if (!strcmp(a, "USB")) { HIDManager::setPrefer(HIDManager::Prefer::USB_ONLY); Serial.println("OK ONLY USB"); }
+        else if (!strcmp(a, "BLE")) { HIDManager::setPrefer(HIDManager::Prefer::BLE_ONLY); Serial.println("OK ONLY BLE"); }
+        else Serial.println("ERR only");
+    }
+    else if (!strcmp(cmd, "PREFER?") && !a) {
+        static const char* const names[] = {"USB", "BLE", "BOTH", "USB_ONLY", "BLE_ONLY"};
+        Serial.printf("OK PREFER %s usb=%d ble=%d\n", names[(int)HIDManager::prefer()],
+                      (int)HIDManager::isUsbConnected(), (int)HIDManager::isBleConnected());
+    }
     else if (!strcmp(cmd, "SHOT") && !a) { Serial.print("OK "); ui_screenshot(Serial); }
     else if (!strcmp(cmd, "LAYER") && num(a, x) && !b) {
         if (x < 0 || x >= (int)ui_page_count()) Serial.println("ERR range");

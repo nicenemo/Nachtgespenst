@@ -1,6 +1,6 @@
 #pragma once
 
-// Basis Kleuren (RGB565)
+// Basic colours (RGB565)
 #define BLACK       0x0000
 #define WHITE       0xFFFF
 #define RED         0xF800
@@ -14,7 +14,7 @@
 #define LIGHTGREY   0xC618
 #define PURPLE      0x780F
 
-// --- Aliassen gebruikt in Keymap.h ---
+// --- Aliases used in Keymap.h ---
 #define C_SYS       DARKGREY
 #define C_SEC       RED
 #define C_FOLD      BLUE

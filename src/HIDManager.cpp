@@ -18,7 +18,7 @@ namespace HIDManager {
     // ---- shared state -------------------------------------------------------
     // Written by the NimBLE / TinyUSB tasks, read by the main loop: atomics.
     static std::atomic<uint8_t> _ledStatus{0};
-    static std::atomic<bool> _preferUsb{true};
+    static std::atomic<uint8_t> _prefer{(uint8_t)HIDManager::Prefer::USB};
     static HIDEventListener _eventListener = nullptr; // set once before traffic starts
     static std::vector<uint8_t> reportMap; // must outlive begin()
 
@@ -93,11 +93,11 @@ namespace HIDManager {
     class MyServerCallbacks : public NimBLEServerCallbacks {
         void onConnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo) override {
             _bleConnected = true;
-            Serial.printf("[HID] BLE verbonden met %s\n", connInfo.getAddress().toString().c_str());
+            Serial.printf("[HID] BLE connected to %s\n", connInfo.getAddress().toString().c_str());
         }
         void onDisconnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo, int reason) override {
             _bleConnected = false;
-            Serial.println("[HID] BLE verbroken, start advertising...");
+            Serial.println("[HID] BLE disconnected, restarting advertising...");
             NimBLEDevice::startAdvertising();
         }
     };
@@ -183,8 +183,14 @@ namespace HIDManager {
         }
         if (_qCount == 0) return;
         Report& r = _q[_qHead];
-        bool usb = usbReady();
-        bool ble = bleReady() && !(usb && _preferUsb);
+        bool usb = usbReady(), ble = bleReady();
+        switch ((Prefer)_prefer.load()) {
+            case Prefer::USB:  ble = ble && !usb; break; // USB wins while mounted
+            case Prefer::BLE:  usb = usb && !ble; break; // BLE wins while connected
+            case Prefer::BOTH: break;
+            case Prefer::USB_ONLY: ble = false; break;
+            case Prefer::BLE_ONLY: usb = false; break;
+        }
         bool sentUsb = usb && usbReport(r.id, r.data, r.len);
         bool sentBle = ble && bleReport(r.id, r.data, r.len);
         if (sentUsb || sentBle) {
@@ -211,7 +217,7 @@ namespace HIDManager {
         if (reportMap.empty()) reportMap = HID::GetReportMap();
         usbBegin();
         bleBegin(deviceName, manufacturer);
-        Serial.printf("[HID] gestart usb=%d ble=%d (keyboard + consumer)\n", NG_TRANSPORT_USB, NG_TRANSPORT_BLE);
+        Serial.printf("[HID] started usb=%d ble=%d (keyboard + consumer)\n", NG_TRANSPORT_USB, NG_TRANSPORT_BLE);
     }
 
     uint8_t getLedStatus() { return _ledStatus.load(); }
@@ -221,8 +227,10 @@ namespace HIDManager {
     bool isConnected() { return usbReady() || bleReady(); }
     bool isUsbConnected() { return usbReady(); }
     bool isBleConnected() { return bleReady(); }
-    void setPreferUsb(bool prefer) { _preferUsb = prefer; }
-    bool preferUsb() { return _preferUsb; }
+    void setPrefer(Prefer p) { _prefer = (uint8_t)p; }
+    Prefer prefer() { return (Prefer)_prefer.load(); }
+    void setPreferUsb(bool prefer) { setPrefer(prefer ? Prefer::USB : Prefer::BOTH); }
+    bool preferUsb() { return prefer() == Prefer::USB; }
 
     static void sendKeyboard(const Binding& b) {
         uint8_t mod = b.modifier, key = 0;

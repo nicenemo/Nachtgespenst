@@ -5,37 +5,37 @@
 
 namespace HID {
 
-    // --- MODIFIERS (Byte 0 van het Keyboard Report) ---
+    // --- MODIFIERS (byte 0 of the keyboard report) ---
     namespace Modifiers {
-        // Individuele Bits (USB HID Spec Page 07)
-        constexpr uint8_t L_CTRL   = 0x01; // Links Control
-        constexpr uint8_t L_SHIFT  = 0x02; // Links Shift
-        constexpr uint8_t L_ALT    = 0x04; // Links Alt
-        constexpr uint8_t L_GUI    = 0x08; // Links Win / Cmd
+        // Individual bits (USB HID spec, page 07)
+        constexpr uint8_t L_CTRL   = 0x01; // Left Control
+        constexpr uint8_t L_SHIFT  = 0x02; // Left Shift
+        constexpr uint8_t L_ALT    = 0x04; // Left Alt
+        constexpr uint8_t L_GUI    = 0x08; // Left Win / Cmd
         
-        constexpr uint8_t R_CTRL   = 0x10; // Rechts Control
-        constexpr uint8_t R_SHIFT  = 0x20; // Rechts Shift
-        constexpr uint8_t R_ALT    = 0x40; // Rechts Alt (AltGr)
-        constexpr uint8_t R_GUI    = 0x80; // Rechts Win / Cmd
+        constexpr uint8_t R_CTRL   = 0x10; // Right Control
+        constexpr uint8_t R_SHIFT  = 0x20; // Right Shift
+        constexpr uint8_t R_ALT    = 0x40; // Right Alt (AltGr)
+        constexpr uint8_t R_GUI    = 0x80; // Right Win / Cmd
 
-        // --- Geavanceerde Combinaties ---
+        // --- Combinations ---
         constexpr uint8_t NONE      = 0x00;
         
-        // Linker & Rechter paren
+        // Left and right pairs
         constexpr uint8_t L_CTL_SFT = L_CTRL | L_SHIFT;
         constexpr uint8_t L_ALT_SFT = L_ALT  | L_SHIFT;
         constexpr uint8_t R_CTL_SFT = R_CTRL | R_SHIFT;
         constexpr uint8_t R_ALT_SFT = R_ALT  | R_SHIFT;
 
-        // De "Uber" Modifiers (Links)
+        // The "über" modifiers (left)
         constexpr uint8_t L_MEH     = L_CTRL | L_SHIFT | L_ALT;
         constexpr uint8_t L_HYPER   = L_CTRL | L_SHIFT | L_ALT | L_GUI;
 
-        // De "Uber" Modifiers (Rechts)
+        // The "über" modifiers (right)
         constexpr uint8_t R_MEH     = R_CTRL | R_SHIFT | R_ALT;
         constexpr uint8_t R_HYPER   = R_CTRL | R_SHIFT | R_ALT | R_GUI;
 
-        // Standaard aliassen (wijzen naar Links)
+        // Default aliases (point to the left-hand set)
         constexpr uint8_t MEH       = L_MEH;
         constexpr uint8_t HYPER     = L_HYPER;
     }
@@ -155,7 +155,7 @@ namespace HID {
         };
     }
 
-    // --- De Mapper Engine (Bouwt de uiteindelijke vector) ---
+    // --- The mapper engine (builds the final vector) ---
     inline std::vector<uint8_t> GetReportMap() {
         std::vector<uint8_t> map;
         auto add = [&](const uint8_t* b, size_t s) { map.insert(map.end(), b, b + s); };
