@@ -40,9 +40,9 @@ jbang tools/SerialTest.java                 # both boards
 Wait 6 to 8 seconds after a flash before starting (`jbang tools/Flash.java` already does). The test reads the host input device of the board (USB and Bluetooth separately, matched on `Phys`), so the board must be paired and connected.
 
 - Screenshots of every page: `jbang tools/SerialTest.java --shot DIR` writes `DIR/<board>/pageNN.png`. The Core2 takes about 10 minutes because its UART is slow (about 20 s per page); the CoreS3 takes seconds.
-- Page-switch timing: `jbang tools/SerialTest.java --latency`. It reports PING, the `SHOT` read-out, the `LAYER` acknowledgement and "page on screen" = (`LAYER` + `SHOT`) minus a plain `SHOT`. A page is only really on screen after a render, which LVGL does after answering `LAYER`, hence the subtraction. The sample is one sparse page, two dense 6x4 pages and the Locks page, so it leans towards the slow pages.
+- Page-switch timing: `jbang tools/SerialTest.java --latency`. It also reads `PERF?` from the firmware (build, render and flush time of the last page; LVGL builds only) and runs a burst of ten page changes 150 ms apart, reporting when the last page is really on screen. It reports PING, the `SHOT` read-out, the `LAYER` acknowledgement and "page on screen" = (`LAYER` + `SHOT`) minus a plain `SHOT`. A page is only really on screen after a render, which LVGL does after answering `LAYER`, hence the subtraction. The sample is one sparse page, two dense 6x4 pages and the Locks page, so it leans towards the slow pages.
 
-Reference values, 2026-11-18: classic UI about 92 ms (CoreS3) and 100 ms (Core2); LVGL about 360 ms on mixed pages and about 700 ms on the dense pages (CoreS3), 450 to 630 ms (Core2).
+Reference values, 2026-11-18: classic UI about 92 ms (CoreS3) and 100 ms (Core2). LVGL: about 695 ms (CoreS3) and 838 ms (Core2) per page with the standard sample, split into build 221/280 ms, render 315/413 ms and flush 55/73 ms; a burst of ten changes at 150 ms intervals ends 509 ms (CoreS3) and 595 ms (Core2) after the last press.
 
 ## 5. Bluetooth state from the host
 

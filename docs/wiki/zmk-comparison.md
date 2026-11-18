@@ -32,6 +32,7 @@ Method and caveat: read on 2026-11-18 from the public GitHub pages (`layers.md`,
 
 ## Differences in kind
 
+- **Colours and legends are software.** This is what the macro pad adds. On a physical keyboard the colour of the keycap and the printed legend (the letters, symbols and icons on the key) are fixed in the hardware and cannot change with the layer; at best a backlight changes colour. On the macro pad both are drawn per tile, so the same key position looks different on every page, and the legend can be an icon, a caption or text with a modifier badge (`Ctrl+Shift`, `Hyper`). Today the colours follow rules in `src/Theme.cpp`, not a setting per key: the keycap (tile) colour comes from the kind of usage (application control blue, media red, logic green, otherwise dark grey) and is overridden by modifiers (Ctrl olive, Alt purple, Win teal, so Hyper chords are teal and Meh chords purple); the legend is white, or yellow for shifted keys; empty tiles are dimmed. The layer colour also drives the LED bar. A light theme is defined but nothing switches to it yet. `Binding` has no colour field, and the `C_SYS`, `C_NAV` and similar aliases in `DisplayColors.h` are left over from an earlier version and not used by `Keymap.h`.
 - **Typing keyboard vs macro pad.** The ZMK configuration is built for typing: home-row mods (hold-taps with prior-idle and tapping terms), layer-taps on the thumbs, 10 combos that toggle special layers. Nachtgespenst has no timing-dependent behaviours; a tile is a key press, a chord, or a launcher.
 - **Navigating layers.** ZMK uses `&lt`, `&tog` and combos; Nachtgespenst uses the three Core2 buttons or the CoreS3 bottom bar, plus the Locks page.
 - **Feedback.** Nachtgespenst shows the layer colour on the LED bar, the host lock state on the Locks page, and screenshots/tests are scriptable over serial; the ZMK keymap has none of that.
@@ -39,6 +40,7 @@ Method and caveat: read on 2026-11-18 from the public GitHub pages (`layers.md`,
 
 ## Ideas this suggests (not planned)
 
+- Optional per-key (or per-layer) keycap and legend colours in the keymap, overriding the rules in `Theme.cpp`, and a switch for the light theme.
 - A brightness page from the `DISPLAY` layer idea (the usages are already generated).
 - Unicode input on Linux (Ctrl+Shift+U) as a page of typed symbols, if ever wanted; it would need an input-mode setting per host OS, like the `unicode.dtsi` behaviours in ZMK.
 - Reusing `zmk_unicode_headers` ideas for naming if Unicode pages are added.

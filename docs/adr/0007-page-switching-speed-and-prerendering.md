@@ -11,6 +11,21 @@ Where the time goes (read from `src/ui.cpp` and `include/lv_conf.h`; the split b
 3. **Heavy styling per tile.** Rounded corners, borders, partial opacity, shadows disabled but pressed-state transforms set on each of up to 24 buttons.
 4. **Rendering is partial, software, in 24-row strips** (`LV_DISPLAY_RENDER_MODE_PARTIAL`, two buffers of 15 kB), flushed synchronously with `pushImage`.
 
+## Measured (2026-11-18)
+Firmware timers (`PERF?`, medians over a sparse page, two dense 6x4 pages and the Locks page) and a burst of ten page changes 150 ms apart (`SerialTest --latency`, LVGL):
+
+| | CoreS3 | Core2 |
+|---|---|---|
+| Build of a page (`buildPage`) | 221 ms | 280 ms |
+| Render | 315 ms | 413 ms |
+| of which flush to the panel (SPI) | 55 ms | 73 ms |
+| so LVGL's own drawing | about 260 ms | about 340 ms |
+| Page on screen (`LAYER` + `SHOT` minus read-out) | 695 ms | 838 ms |
+| Burst: last page on screen after the first press | 2009 ms | 2095 ms |
+| Burst: lag after the last press | 509 ms | 595 ms |
+
+Reading: the panel transfer is only about a tenth of a page; building and LVGL's software drawing are the cost, in roughly equal measure. A cached page costs about one flush, 55 to 75 ms, which confirms the estimate for option 3. The burst shows that light pages keep up (10 pages in about 2 s) but the last page still arrives half a second after the last press; dense pages are worse.
+
 ## Options
 | Option | What it does | Expected effect on a page | Cost and risks |
 |---|---|---|---|
@@ -36,10 +51,11 @@ Stage it and measure after each stage (`SerialTest --latency`, plus a quick-pagi
 3. **Pre-render only if still needed**: plus or minus one page in PSRAM (option 3), widened when step 2 made renders cheap; touch by geometry; Locks live.
 4. **Slide** only as an optional, adaptive extra; default off.
 
-## Measurements to add before deciding
-- A `PERF?` serial command (or counters in `STATE?`) with the last build, render and flush times per page, so the build/render split is measured instead of inferred.
-- The time to push a 153,600-byte PSRAM buffer to the panel on each board (confirms the 30 to 40 ms estimate).
-- Free PSRAM on each board at run time (`heap_caps_get_free_size(MALLOC_CAP_SPIRAM)`).
+## Measurements
+- Done: `PERF?` (build, render and flush times of the last page) and the burst test, see "Measured".
+- The flush of a full page is 55 ms (CoreS3) and 73 ms (Core2), taken from the strips LVGL pushes; a single 153,600-byte `pushImage` from PSRAM has not been timed separately yet.
+- Still to measure: free PSRAM on each board at run time (`heap_caps_get_free_size(MALLOC_CAP_SPIRAM)`).
+- One more observation to investigate: a touch or button press that arrives while a page is being built (about 220 to 280 ms) or rendered is only seen if it is still held when the main loop polls again; a short tap can be missed. This has not been measured (the serial `TAP` command is injected and cannot lose a tap).
 
 ## Consequences
 - Until implemented, fast paging remains sluggish on LVGL; the classic branch does not have the problem.
