@@ -17,3 +17,6 @@ The project needs one `index.html` that explains it, with screenshots, camera te
 - Images add about 1 MB to the repository and to `gh-pages`.
 - The page was generated once by a throw-away script that is not kept; later edits are made in the HTML directly, screenshots are refreshed with `SerialTest --shot` (skill `publish-site`).
 - Alternatives considered: `docs/` on `main` (mixes the site with the markdown documentation, Jekyll rendering); the official "deploy-pages" action (needs the Pages source set to "GitHub Actions" in the settings, which cannot be done from here); a separate repository (more places to keep in sync).
+
+## Update 2026-11-18
+The repository was renamed to lowercase `nachtgespenst`, so the site is now served at **https://hanskruse.eu/nachtgespenst/** (still case-sensitive). The old capitalised path no longer exists: GitHub redirects the repository and git remotes, but not Pages paths, so links to the old site address must be changed. The statements above about `/Nachtgespenst/` are historic.

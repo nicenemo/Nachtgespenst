@@ -56,6 +56,6 @@ Symptom, cause, fix. Every row happened at least once. Background: [claude-code-
 | `bad substitution` in zsh | `"$c:path"` | `"${c}:path"` |
 | `no matches found: --include=*.cpp` | unquoted glob | quote it |
 | `git push` rejected, `fetch first` on `gh-pages` | the publish workflow pushed first | `git fetch origin gh-pages`, compare, do not force |
-| `hanskruse.eu/nachtgespenst/` is 404 | Pages paths are case-sensitive; the repository is `Nachtgespenst` | use `/Nachtgespenst/`, or rename the repository |
+| `hanskruse.eu/Nachtgespenst/` is 404 | Pages paths are case-sensitive; the repository is `nachtgespenst` since 2026-11-18 | use `/nachtgespenst/` |
 | screenshot of the page shows alt text on black | `loading="lazy"` images are not loaded by a one-shot headless screenshot | strip the attribute in a temporary copy |
 | `could not lock config file .git/config` | sandbox protects `.git/config` | operations that write the config (upstream tracking) need an unsandboxed call |
