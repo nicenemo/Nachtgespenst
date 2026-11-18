@@ -75,6 +75,7 @@ footer { margin-top: 48px; padding: 24px 0 40px; border-top: 1px solid var(--lin
 <li><b>Keys, chords and media.</b> Keyboard and consumer-control bindings, including Ctrl/Shift/Alt/Win chords and the Meh and Hyper modifier sets.</li>
 <li><b>Bluetooth LE and USB.</b> Both boards speak BLE HID (NimBLE). The CoreS3 also enumerates as a USB keyboard and can route keys over USB, BLE, or both.</li>
 <li><b>Host feedback.</b> The Locks page shows Caps, Num and Scroll Lock as the host reports them, and the LED bar mirrors them.</li>
+<li><b>Colour-coded keys.</b> Keycap colour and legend are drawn in software, so they can differ on every page: tiles are coloured by kind of key and by modifier (Ctrl olive, Alt purple, Win teal), shifted legends are yellow, and each key can show an icon, a caption or a modifier badge. Physical keycaps and their printed legends cannot do that.</li>
 <li><b>LED bar.</b> Ten LEDs in the M5GO base show the colour of the current layer.</li>
 <li><b>Keymaps as code.</b> Layers are written in C++ in the style of ZMK, using HID shortcut macros generated from the USB HID Usage Tables (<code>kp_A</code>, <code>cp_MUTE</code>, <code>lcs(...)</code>, <code>lhyp(...)</code>).</li>
 <li><b>Scriptable.</b> A line-based serial protocol lets a test tool switch pages, tap and press tiles, read the state and take screenshots. Every screenshot on this page came from it.</li>
@@ -286,6 +287,7 @@ cp -r include/. ../include/</pre>
 <tr><td>Plain, Hyper (<code>LH</code>) and Meh (<code>LM</code>) function layers</td><td>The same three families as pages (<code>... HYP</code>, <code>... MEH</code>), written with <code>lhyp()</code> and <code>lmeh()</code></td></tr>
 <tr><td>KEYPAD, SYM1/SYM2, NAV, VOLUME/CONSUMER, APPL</td><td><code>Numpad Full</code>, <code>Symbol Pad</code>, <code>Edit/Nav</code>, <code>Media</code>, <code>App Launch</code></td></tr>
 <tr><td>Home-row mods, combos, mouse, APL, logic, Greek and punctuation layers (Unicode)</td><td>Not carried over: a touch macro pad has no typing layer and HID has no Unicode</td></tr>
+<tr><td>Fixed keycap colours and printed legends</td><td>The macro pad draws keycap colour and legend per tile and per page: colour by kind of key and by modifier, icons, captions and modifier badges</td></tr>
 <tr><td>No application layers</td><td>New: Maven, Office, Teams, Outlook, PowerPoint, browser and debugger pages, and the Locks page</td></tr>
 </table>
 <p>The full comparison is in the <a href="https://github.com/nicenemo/Nachtgespenst/blob/develop/docs/wiki/zmk-comparison.md">wiki</a>.</p>
