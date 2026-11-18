@@ -61,7 +61,7 @@ footer { margin-top: 48px; padding: 24px 0 40px; border-top: 1px solid var(--lin
 <header class="hero"><div class="wrap">
 <h1>Nachtgespenst</h1>
 <p class="tag">A night ghost for your keyboard: a Bluetooth LE and USB macro pad built on the M5Stack Core2 and CoreS3. Tap a tile on the touchscreen and the matching key, chord or media command arrives on your computer.</p>
-<p class="btns"><a href="https://github.com/nicenemo/Nachtgespenst">Source on GitHub</a><a class="alt" href="https://github.com/nicenemo/Nachtgespenst/blob/develop/CHANGELOG.md">Changelog</a><a class="alt" href="#setup">Set it up</a></p>
+<p class="btns"><a href="https://github.com/nicenemo/nachtgespenst">Source on GitHub</a><a class="alt" href="https://github.com/nicenemo/nachtgespenst/blob/develop/CHANGELOG.md">Changelog</a><a class="alt" href="#setup">Set it up</a></p>
 <img src="img/camera/both-boards.jpg" width="1280" height="720" alt="The Core2 on the left and the CoreS3 on the right in a dark room, both with their LED bars lit blue">
 </div></header>
 <nav class="toc"><div class="wrap">
@@ -247,7 +247,7 @@ footer { margin-top: 48px; padding: 24px 0 40px; border-top: 1px solid var(--lin
 <li><a href="https://www.jbang.dev/">JBang</a> for the Java tools (header generator, serial tests, camera tool); it downloads the right JDK itself.</li>
 </ul>
 <h3>Build and flash</h3>
-<pre>git clone https://github.com/nicenemo/Nachtgespenst.git
+<pre>git clone https://github.com/nicenemo/nachtgespenst.git
 cd Nachtgespenst
 pio run -e core2                   # about 12 minutes
 pio run -e core2 -t upload         # Core2: resets itself into the bootloader
@@ -267,7 +267,7 @@ jbang tools/LedCam.java colours --port /dev/ttyUSB0 --out cam --crop x0,y0,x1,y1
 jbang FetchHut.jsh          # only when updating to a newer USB HID Usage Tables PDF
 jbang GenerateHeaders.jsh
 cp -r include/. ../include/</pre>
-<p>Full instructions, the sandbox set-up used for Claude Code and the decision records are in the <a href="https://github.com/nicenemo/Nachtgespenst/tree/develop/docs">docs folder</a>.</p>
+<p>Full instructions, the sandbox set-up used for Claude Code and the decision records are in the <a href="https://github.com/nicenemo/nachtgespenst/tree/develop/docs">docs folder</a>.</p>
 </section>
 
 <section id="code"><h2>How it works</h2>
@@ -290,7 +290,7 @@ cp -r include/. ../include/</pre>
 <tr><td>Fixed keycap colours and printed legends</td><td>The macro pad draws keycap colour and legend per tile and per page: colour by kind of key and by modifier, icons, captions and modifier badges</td></tr>
 <tr><td>No application layers</td><td>New: Maven, Office, Teams, Outlook, PowerPoint, browser and debugger pages, and the Locks page</td></tr>
 </table>
-<p>The full comparison is in the <a href="https://github.com/nicenemo/Nachtgespenst/blob/develop/docs/wiki/zmk-comparison.md">wiki</a>.</p>
+<p>The full comparison is in the <a href="https://github.com/nicenemo/nachtgespenst/blob/develop/docs/wiki/zmk-comparison.md">wiki</a>.</p>
 </section>
 
 <section id="history"><h2>Since Claude joined</h2>
@@ -302,13 +302,13 @@ cp -r include/. ../include/</pre>
 <li><b>17 November: project hygiene</b>README, licence and third-party notices; decision records for the Claude Code sandbox, a project-local PlatformIO and pinned JDKs; the HUT download split into its own script.</li>
 <li><b>17 and 18 November: routing, LED bars and camera tests</b>Selectable USB/BLE routing with tests for every mode; the CoreS3 LED bar found and verified with a webcam; <code>LedCam</code> and the pin finder; documentation and code comments in British English; this page, a changelog, and the classic interface branch.</li>
 </ul>
-<p>The complete list is in the <a href="https://github.com/nicenemo/Nachtgespenst/blob/develop/CHANGELOG.md">changelog</a>.</p>
+<p>The complete list is in the <a href="https://github.com/nicenemo/nachtgespenst/blob/develop/CHANGELOG.md">changelog</a>.</p>
 </section>
 
 </main>
 <footer><div class="wrap">
 <p><b>The name.</b> Nachtgespenst is inspired by Ben Aaronovitch's <em>Rivers of London</em> series, in particular the novella <em>The October Man</em>, which is set in Germany. The German word for a night ghost suits a small device that sits quietly beside the keyboard and does its work on command.</p>
-<p>MIT licence. Third-party components are listed in the <a href="https://github.com/nicenemo/Nachtgespenst/blob/develop/THIRD-PARTY-NOTICES.md">third-party notices</a>.</p>
+<p>MIT licence. Third-party components are listed in the <a href="https://github.com/nicenemo/nachtgespenst/blob/develop/THIRD-PARTY-NOTICES.md">third-party notices</a>.</p>
 </div></footer>
 </body>
 </html>
