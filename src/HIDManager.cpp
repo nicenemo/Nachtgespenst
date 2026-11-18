@@ -1,5 +1,6 @@
 #include "HIDManager.h"
 #include "HID_Specs.h"
+#include "Lamps.h"
 #include <M5Unified.h>
 #include <vector>
 #include <atomic>
@@ -41,10 +42,21 @@ namespace HIDManager {
             return reportMap.size();
         }
         void _onOutput(uint8_t report_id, const uint8_t* buffer, uint16_t len) override {
+            if (report_id >= HID::Reports::LAMP_MULTI && report_id <= HID::Reports::LAMP_CTRL) { Lamps::onOutput(report_id, buffer, len); return; }
             // Keyboard LED output report (Num/Caps/Scroll bits). TinyUSB hands the
             // payload without the report id; tolerate a leading id byte anyway.
             if (report_id != HID::Reports::KEYBOARD || len == 0) return;
             pushLed((len >= 2 && buffer[0] == report_id) ? buffer[1] : buffer[0]);
+        }
+        // A SET_REPORT on the control pipe (Windows HidD_SetOutputReport, Linux without an OUT endpoint) carries its report ID
+        // in the request, so the Arduino USB layer calls this instead of _onOutput.
+        void _onSetFeature(uint8_t report_id, const uint8_t* buffer, uint16_t len) override {
+            if (report_id == HID::Reports::LAMP_REQ) Lamps::onSetFeature(report_id, buffer, len);
+            else if (report_id >= HID::Reports::LAMP_MULTI && report_id <= HID::Reports::LAMP_CTRL) Lamps::onOutput(report_id, buffer, len);
+            else _onOutput(report_id, buffer, len);
+        }
+        uint16_t _onGetFeature(uint8_t report_id, uint8_t* buffer, uint16_t len) override {
+            return Lamps::onGetFeature(report_id, buffer, len);
         }
     };
     static NgUsbDevice usbDevice;
@@ -90,10 +102,36 @@ namespace HIDManager {
         }
     };
 
+    // LampArray characteristics (feature reports 5 to 7, output reports 8 to 10). The attributes are built when the host reads.
+    static NimBLECharacteristic* lampChar[HID::Reports::LAMP_CTRL + 1] = {};
+    class LampCallbacks : public NimBLECharacteristicCallbacks {
+        void onWrite(NimBLECharacteristic* c, NimBLEConnInfo&) override {
+            NimBLEAttValue v = c->getValue();
+            for (uint8_t id = HID::Reports::LAMP_REQ; id <= HID::Reports::LAMP_CTRL; id++) {
+                if (lampChar[id] != c) continue;
+                if (id == HID::Reports::LAMP_REQ) Lamps::onSetFeature(id, v.data(), v.size());
+                else if (id >= HID::Reports::LAMP_MULTI) Lamps::onOutput(id, v.data(), v.size());
+                return;
+            }
+        }
+        void onRead(NimBLECharacteristic* c, NimBLEConnInfo&) override {
+            for (uint8_t id = HID::Reports::LAMP_ATTR; id <= HID::Reports::LAMP_RESP; id++) {
+                if (lampChar[id] != c || id == HID::Reports::LAMP_REQ) continue;
+                uint8_t buf[40];
+                uint16_t n = Lamps::onGetFeature(id, buf, sizeof(buf));
+                if (n) c->setValue(buf, n);
+                return;
+            }
+        }
+    };
+
     class MyServerCallbacks : public NimBLEServerCallbacks {
         void onConnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo) override {
             _bleConnected = true;
             Serial.printf("[HID] BLE connected to %s\n", connInfo.getAddress().toString().c_str());
+            // Short connection interval and long data packets: the LampArray test streams reports.
+            pServer->updateConnParams(connInfo.getConnHandle(), 6, 12, 0, 400);
+            pServer->setDataLen(connInfo.getConnHandle(), 251);
         }
         void onDisconnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo, int reason) override {
             _bleConnected = false;
@@ -105,6 +143,7 @@ namespace HIDManager {
     static void bleBegin(const char* deviceName, const char* manufacturer) {
         // 1. Device & security (before HID init)
         NimBLEDevice::init(deviceName);
+        NimBLEDevice::setMTU(247);      // a LampArray multi update is 51 bytes
         // Bonding + secure connections, no MITM: with NO_INPUT_OUTPUT a MITM request
         // cannot be satisfied and strict hosts would refuse to pair.
         NimBLEDevice::setSecurityAuth(true, false, true);
@@ -120,6 +159,14 @@ namespace HIDManager {
         inputConsumer  = hid->getInputReport(HID::Reports::CONSUMER);
         outputKeyboard = hid->getOutputReport(HID::Reports::KEYBOARD);
         if (outputKeyboard) outputKeyboard->setCallbacks(new MyOutputCallbacks());
+        // LampArray reports (see HID_Specs.h): feature 5 to 7 and output 8 to 10.
+        {
+            auto* lcb = new LampCallbacks();
+            for (uint8_t id = HID::Reports::LAMP_ATTR; id <= HID::Reports::LAMP_CTRL; id++) {
+                lampChar[id] = id <= HID::Reports::LAMP_RESP ? hid->getFeatureReport(id) : hid->getOutputReport(id);
+                if (lampChar[id]) lampChar[id]->setCallbacks(lcb);
+            }
+        }
 
         // 4. Device info
         hid->setManufacturer(manufacturer);

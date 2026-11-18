@@ -313,8 +313,8 @@ public class SerialTest {
      * Core2 UART (a SHOT takes about 20 s there), three on the S3.
      */
     static void latency(String tag, Link l, Map<String, String> info) throws Exception {
-        int pages = Integer.parseInt(info.get("pages")), reps = "C2".equals(tag) ? 1 : 3;
-        int[] sample = {1, 13, 14, pages - 1};
+        int locks = Integer.parseInt(info.get("locks")), reps = "C2".equals(tag) ? 1 : 3;
+        int[] sample = {1, 13, 14, locks};
         List<Double> ping = new ArrayList<>(), readout = new ArrayList<>(), ack = new ArrayList<>(), total = new ArrayList<>();
         List<Double> build = new ArrayList<>(), render = new ArrayList<>(), flush = new ArrayList<>();
         l.cmd("LAYER 0", 3000); Thread.sleep(600);

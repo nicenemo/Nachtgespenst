@@ -47,7 +47,13 @@ namespace HID {
             CONSUMER = 0x02,
             SYSTEM   = 0x03,
             HAPTICS  = 0x04,
-            LIGHTING = 0x05
+            // Lighting and Illumination page (0x59), LampArray: IDs 5..10
+            LAMP_ATTR  = 0x05, // feature: LampArrayAttributesReport (read)
+            LAMP_REQ   = 0x06, // feature: LampAttributesRequestReport (write the lamp id)
+            LAMP_RESP  = 0x07, // feature: LampAttributesResponseReport (read the attributes of that lamp)
+            LAMP_MULTI = 0x08, // output: LampMultiUpdateReport (up to 8 lamps)
+            LAMP_RANGE = 0x09, // output: LampRangeUpdateReport (one colour for a range of lamps)
+            LAMP_CTRL  = 0x0A  // output: LampArrayControlReport (autonomous mode)
         };
 
         // --- PAGE 0x07 & 0x08: Keyboard + LEDs ---
@@ -139,20 +145,62 @@ namespace HID {
             0xC0                // End Collection
         };
 
-        // --- PAGE 0x59: Lighting (RGB) ---
-        inline constexpr uint8_t LightingBlock[] = {
-            0x05, 0x59,         // Usage Page (Lighting)
-            0x09, 0x01,         // Usage (Lamp Array)
-            0xA1, 0x01,         // Collection (Application)
-            0x85, ID::LIGHTING, //   REPORT ID (5)
-            0x09, 0x05,         //   Usage (Lamp Multi Update)
-            0x15, 0x00,         //   Logical Minimum (0)
-            0x25, 0xFF,         //   Logical Maximum (255)
-            0x75, 0x08,         //   Report Size (8 bits)
-            0x95, 0x04,         //   Report Count (4: ID, R, G, B)
-            0x91, 0x02,         //   Output (Data, Variable, Absolute)
-            0xC0                // End Collection
-        };
+        // --- PAGE 0x59: Lighting and Illumination, LampArray (HID Usage Tables 1.4, section 26) ---
+        // Payload sizes (without the report ID byte), shared with Lamps.cpp:
+        constexpr uint8_t LAMP_ATTR_LEN = 22;  // u16 count, u32 width, height, depth (um), u32 kind, u32 min update interval (us)
+        constexpr uint8_t LAMP_RESP_LEN = 28;  // u16 id, u32 x, y, z (um), u32 purposes, u32 latency (us), u8 R,G,B,I level counts, u8 programmable, u8 input binding
+        constexpr uint8_t LAMP_MULTI_LEN = 50; // u8 count, u8 flags, u16 ids[8], 8 x (u8 R, G, B, I)
+        constexpr uint8_t LAMP_RANGE_LEN = 9;  // u8 flags, u16 first, u16 last, u8 R, G, B, I
+        constexpr uint8_t LAMP_MULTI_MAX = 8;
+
+        inline void AddLampArray(std::vector<uint8_t>& m) {
+            auto b = [&](std::initializer_list<uint8_t> l) { m.insert(m.end(), l); };
+            // Logical Maximum for 8, 16 and 31 bit fields, and the matching sizes
+            auto u8  = [&]() { b({0x15, 0x00, 0x26, 0xFF, 0x00, 0x75, 0x08}); };
+            auto u16 = [&]() { b({0x15, 0x00, 0x27, 0xFF, 0xFF, 0x00, 0x00, 0x75, 0x10}); };
+            auto u32 = [&]() { b({0x15, 0x00, 0x27, 0xFF, 0xFF, 0xFF, 0x7F, 0x75, 0x20}); };
+            const uint8_t FEATURE_CONST = 0xB1, ITEM_OUTPUT = 0x91;
+
+            b({0x05, 0x59, 0x09, 0x01, 0xA1, 0x01});                  // Usage Page (Lighting), Usage (LampArray), Collection (Application)
+
+            b({0x85, ID::LAMP_ATTR, 0x09, 0x02, 0xA1, 0x02});         // LampArrayAttributesReport
+            b({0x09, 0x03}); u16(); b({0x95, 0x01, FEATURE_CONST, 0x03});          // LampCount
+            b({0x09, 0x04, 0x09, 0x05, 0x09, 0x06, 0x09, 0x07, 0x09, 0x08});       // width, height, depth, kind, min update interval
+            u32(); b({0x95, 0x05, FEATURE_CONST, 0x03});
+            b({0xC0});
+
+            b({0x85, ID::LAMP_REQ, 0x09, 0x20, 0xA1, 0x02});          // LampAttributesRequestReport
+            b({0x09, 0x21}); u16(); b({0x95, 0x01, 0xB1, 0x02});      // LampId (Feature, Data, Variable, Absolute)
+            b({0xC0});
+
+            b({0x85, ID::LAMP_RESP, 0x09, 0x22, 0xA1, 0x02});         // LampAttributesResponseReport
+            b({0x09, 0x21}); u16(); b({0x95, 0x01, FEATURE_CONST, 0x03});          // LampId
+            b({0x09, 0x23, 0x09, 0x24, 0x09, 0x25, 0x09, 0x26, 0x09, 0x27});       // position x, y, z, purposes, update latency
+            u32(); b({0x95, 0x05, FEATURE_CONST, 0x03});
+            b({0x09, 0x28, 0x09, 0x29, 0x09, 0x2A, 0x09, 0x2B, 0x09, 0x2C, 0x09, 0x2D}); // R, G, B, intensity level counts, programmable, input binding
+            u8(); b({0x95, 0x06, FEATURE_CONST, 0x03});
+            b({0xC0});
+
+            b({0x85, ID::LAMP_MULTI, 0x09, 0x50, 0xA1, 0x02});        // LampMultiUpdateReport
+            b({0x09, 0x03, 0x15, 0x00, 0x25, LAMP_MULTI_MAX, 0x75, 0x08, 0x95, 0x01, ITEM_OUTPUT, 0x02}); // LampCount 0..8
+            b({0x09, 0x55}); u8(); b({0x95, 0x01, ITEM_OUTPUT, 0x02});     // LampUpdateFlags
+            b({0x09, 0x21}); u16(); b({0x95, LAMP_MULTI_MAX, ITEM_OUTPUT, 0x02});        // LampId x 8
+            for (int i = 0; i < LAMP_MULTI_MAX; i++) b({0x09, 0x51, 0x09, 0x52, 0x09, 0x53, 0x09, 0x54}); // R, G, B, I per lamp
+            u8(); b({0x95, (uint8_t)(LAMP_MULTI_MAX * 4), ITEM_OUTPUT, 0x02});
+            b({0xC0});
+
+            b({0x85, ID::LAMP_RANGE, 0x09, 0x60, 0xA1, 0x02});        // LampRangeUpdateReport
+            b({0x09, 0x55}); u8(); b({0x95, 0x01, ITEM_OUTPUT, 0x02});     // LampUpdateFlags
+            b({0x09, 0x61, 0x09, 0x62}); u16(); b({0x95, 0x02, ITEM_OUTPUT, 0x02});      // LampIdStart, LampIdEnd
+            b({0x09, 0x51, 0x09, 0x52, 0x09, 0x53, 0x09, 0x54}); u8(); b({0x95, 0x04, ITEM_OUTPUT, 0x02}); // R, G, B, I
+            b({0xC0});
+
+            b({0x85, ID::LAMP_CTRL, 0x09, 0x70, 0xA1, 0x02});         // LampArrayControlReport
+            b({0x09, 0x71, 0x15, 0x00, 0x25, 0x01, 0x75, 0x08, 0x95, 0x01, ITEM_OUTPUT, 0x02}); // AutonomousMode
+            b({0xC0});
+
+            b({0xC0});                                                 // End Collection (LampArray)
+        }
     }
 
     // --- The mapper engine (builds the final vector) ---
@@ -162,9 +210,10 @@ namespace HID {
 
         add(Reports::KeyboardBlock, sizeof(Reports::KeyboardBlock));
         add(Reports::ConsumerBlock, sizeof(Reports::ConsumerBlock));
-        // System/Haptics/Lighting blocks are defined above but not advertised:
+        Reports::AddLampArray(map);
+        // System and Haptics blocks are defined above but not advertised:
         // the host would expect reports the firmware does not provide.
-        
+
         return map;
     }
 }

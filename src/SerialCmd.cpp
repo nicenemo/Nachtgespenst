@@ -3,6 +3,7 @@
 #include "SerialCmd.h"
 #include "ui.h"
 #include "HIDManager.h"
+#include "Lamps.h"
 
 namespace {
 char g_buf[64];
@@ -54,6 +55,22 @@ void handle(char* line) {
         static const char* const names[] = {"USB", "BLE", "BOTH", "USB_ONLY", "BLE_ONLY"};
         Serial.printf("OK PREFER %s usb=%d ble=%d\n", names[(int)HIDManager::prefer()],
                       (int)HIDManager::isUsbConnected(), (int)HIDManager::isBleConnected());
+    }
+    // LampArray test bench (ADR 0010): LAMPS? | LAMPS RESET | LAMPS GRID c r | LAMPS GET id | LAMPS BRIGHT n
+    else if (!strcmp(cmd, "LAMPS?") && !a) Serial.printf("OK %s\n", Lamps::status().c_str());
+    else if (!strcmp(cmd, "LAMPS") && a) {
+        for (char* p = a; *p; p++) *p = toupper((unsigned char)*p);
+        if (!strcmp(a, "RESET") && !b) { Lamps::resetCounters(); ui_leds_refresh(); Serial.println("OK LAMPS RESET"); }
+        else if (!strcmp(a, "GRID") && num(b, x) && num(extra, y)) {
+            if (x > 0 && y > 0 && Lamps::setGrid(x, y)) Serial.printf("OK LAMPS GRID %d %d lamps=%u max=%u\n", x, y, (unsigned)Lamps::count(), (unsigned)Lamps::maxGridLamps());
+            else Serial.println("ERR grid");
+        }
+        else if (!strcmp(a, "GET") && num(b, x) && !extra) {
+            uint8_t v[4]; Lamps::getLamp(x < 0 ? 65535 : x, v);
+            Serial.printf("OK LAMP %d %u %u %u %u\n", x, v[0], v[1], v[2], v[3]);
+        }
+        else if (!strcmp(a, "BRIGHT") && num(b, x) && !extra) { Lamps::setBarBrightness(x < 1 ? 1 : x > 255 ? 255 : x); ui_leds_refresh(); Serial.printf("OK LAMPS BRIGHT %u\n", (unsigned)Lamps::barBrightness()); }
+        else Serial.println("ERR lamps");
     }
     else if (!strcmp(cmd, "SHOT") && !a) { Serial.print("OK "); ui_screenshot(Serial); }
     else if (!strcmp(cmd, "LAYER") && num(a, x) && !b) {

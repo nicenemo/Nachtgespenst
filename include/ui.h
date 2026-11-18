@@ -15,5 +15,6 @@ void ui_set_layer(int n);                // switch page (wraps around)
 bool ui_press(int layer, int idx);       // activate tile idx of page (sends HID), no touch needed
 void ui_tap(int x, int y);               // inject a ~120 ms touch at screen coords
 String ui_state();                       // one-line "key=value" state summary
+void ui_leds_refresh();                  // recompute the LED bar (after a lamp reset or a brightness change)
 String ui_perf();                        // "PERF build_ms=.. render_ms=.. flush_ms=.. strips=.. page=..": timing of the last page
 void ui_screenshot(Stream& out);         // "SHOT w h\n" + RGB888 rows + "\nEND\n"

@@ -236,11 +236,11 @@ public class LedCam {
 
     static void colours(Link l) throws Exception {
         l.send("INFO");
-        int pages = 0;
-        for (String line : l.readUntil("OK INFO", 3000)) { Matcher m = Pattern.compile("pages=(\\d+)").matcher(line); if (m.find()) pages = Integer.parseInt(m.group(1)); }
-        if (pages == 0) throw new IllegalStateException("board did not answer INFO");
+        int locks = -1;
+        for (String line : l.readUntil("OK INFO", 3000)) { Matcher m = Pattern.compile("locks=(\\d+)").matcher(line); if (m.find()) locks = Integer.parseInt(m.group(1)); }
+        if (locks < 0) throw new IllegalStateException("board did not answer INFO");
         List<Expect> exp = expectations();
-        layer(l, pages - 1);                                      // Locks page, nothing active = faint white = dark baseline
+        layer(l, locks);                                          // Locks page, nothing active = faint white = dark baseline
         Frame base = frame("base.jpg");
         int w = base.planes.w, h = base.planes.h;
         int[][] rois = {{w / 5, h * 3 / 5, w * 3 / 5, h}, {w * 3 / 5, h * 3 / 5, w, h}};   // table glow below the left and right device

@@ -4,6 +4,7 @@
 #include "Config.h"
 #include "Keymap.h"
 #include "HIDManager.h"
+#include "Lamps.h"
 #include "Theme.h"
 #include "Icons.h"
 #include "IconCodes.h"
@@ -25,6 +26,11 @@ const LockDef LOCKS[3] = {
     {"NUM",    0x01, LOCK_COLORS[1]},
     {"SCROLL", 0x04, LOCK_COLORS[2]},
 };
+
+// Two LampArray test pages follow the Locks page (see Lamps.h): the screen lamps and the LED bar lamps.
+constexpr int PAGE_LAMP_SCREEN = LAYER_COUNT + 1;
+constexpr int PAGE_LAMP_BAR = LAYER_COUNT + 2;
+bool g_lampEnter = false; // a lamp page was just built: draw it once LVGL has painted the empty body
 
 int g_page = 0;
 int g_prevPage = 0; // page to return to when leaving Locks via toggle
@@ -87,7 +93,10 @@ void readCb(lv_indev_t*, lv_indev_data_t* d) {
 // ---------- LED bar ----------
 void updateLeds() {
 #if NG_HAS_LEDBAR
-    if (g_page == LAYER_COUNT) {
+    FastLED.setBrightness(Lamps::barBrightness());
+    if (g_page > LAYER_COUNT) {
+        for (int i = 0; i < LED_COUNT; i++) g_leds[i] = Lamps::barColor(i); // lamps 0..9 of the LampArray
+    } else if (g_page == LAYER_COUNT) {
         uint8_t mask = 0; // host LED bits: num=1 caps=2 scroll=4 -> bar mask caps=1 num=2 scroll=4
         for (int i = 0; i < 3; i++) if (g_hostLed & LOCKS[i].ledBit) mask |= 1u << i;
         ledBarLocks(g_leds, LED_COUNT, mask);
@@ -202,8 +211,12 @@ void buildPage() {
     for (int i = 0; i < 3; i++) { g_lockTiles[i] = nullptr; g_lockState[i] = nullptr; }
     int W = M5.Display.width(), H = M5.Display.height() - HEADER_H;
     char buf[48];
+    Lamps::leavePage();
 
-    if (g_page == LAYER_COUNT) {
+    if (g_page > LAYER_COUNT) {
+        lv_label_set_text(g_title, g_page == PAGE_LAMP_SCREEN ? "Lamps: screen" : "Lamps: bar");
+        g_lampEnter = true;                     // the body stays empty; Lamps draws on the panel in ui_loop()
+    } else if (g_page == LAYER_COUNT) {
         lv_label_set_text(g_title, "Locks");
         int w = (W - 4 * GAP) / 3, h = H - 2 * GAP;
         static const char* const LOCK_ICONS[3] = {IC_KEYBOARD_CAPSLOCK, IC_DIALPAD, IC_LOCK};
@@ -240,7 +253,7 @@ void buildPage() {
             addTileContent(t, L.title, b, cw, ch);
         }
     }
-    snprintf(buf, sizeof(buf), NG_HAS_BTNS ? "%d/%d" : "%d/%d", g_page + 1, (int)LAYER_COUNT + 1);
+    snprintf(buf, sizeof(buf), NG_HAS_BTNS ? "%d/%d" : "%d/%d", g_page + 1, (int)ui_page_count());
     lv_label_set_text(g_pageLbl, buf);
 #if !NG_HAS_BTNS
     // single readable line in the bottom bar: "Title  n/27"
@@ -270,7 +283,7 @@ lv_obj_t* navBtn(const char* txt, int dir, lv_align_t al) {
 } // namespace
 
 // ---------- public API ----------
-uint8_t ui_page_count() { return LAYER_COUNT + 1; }
+uint8_t ui_page_count() { return LAYER_COUNT + 3; }
 int ui_layer() { return g_page; }
 uint8_t ui_locks_page() { return LAYER_COUNT; }
 void ui_toggle_locks() { ui_set_layer(g_page == LAYER_COUNT ? g_prevPage : LAYER_COUNT); }
@@ -356,7 +369,7 @@ void ui_set_layer(int n) {
 }
 
 bool ui_press(int layer, int idx) {
-    if (layer < 0 || layer >= (int)ui_page_count()) return false;
+    if (layer < 0 || layer >= (int)ui_page_count() || layer > LAYER_COUNT) return false; // lamp pages have no keys
     if (layer == LAYER_COUNT) {
         if (idx < 0 || idx > 2) return false;
         g_lastLock = idx;
@@ -381,13 +394,16 @@ bool ui_press(int layer, int idx) {
     return true;
 }
 
+void ui_leds_refresh() { g_ledDirty = true; }
+
 void ui_tap(int x, int y) { g_injX = x; g_injY = y; g_injUntil = millis() + 120; }
 
 String ui_state() {
     uint8_t led = HIDManager::getLedStatus();
     char b[200];
     snprintf(b, sizeof(b), "STATE page=%d/%d title=%s caps=%d num=%d scroll=%d last=%s presses=%lu conn=%d",
-             g_page, (int)ui_page_count(), g_page == LAYER_COUNT ? "Locks" : LAYERS[g_page].title,
+             g_page, (int)ui_page_count(),
+             g_page == PAGE_LAMP_SCREEN ? "Lamps-screen" : g_page == PAGE_LAMP_BAR ? "Lamps-bar" : g_page == LAYER_COUNT ? "Locks" : LAYERS[g_page].title,
              !!(led & 0x02), !!(led & 0x01), !!(led & 0x04),
              g_lastKey, (unsigned long)g_pressCount, HIDManager::isConnected());
     return String(b);
@@ -438,6 +454,7 @@ uint32_t ui_loop() {
         uint8_t l = HIDManager::getLedStatus();
         if (l != g_hostLed) { g_hostLed = l; g_ledDirty = true; }
     }
+    if (g_page > LAYER_COUNT && Lamps::barChanged()) g_ledDirty = true; // a LampArray frame touched lamps 0..9
     if (g_ledDirty) {
         g_ledDirty = false;
         if (g_page == LAYER_COUNT) refreshLocks();
@@ -446,5 +463,12 @@ uint32_t ui_loop() {
     uint32_t perfT0 = micros(), perfStrips0 = g_perfStrips;
     uint32_t next = lv_timer_handler();
     if (g_perfStrips != perfStrips0) g_perfRenderUs += micros() - perfT0;
+    if (g_lampEnter) {
+        g_lampEnter = false;
+        lv_refr_now(nullptr); // let LVGL paint the empty body first, the lamps are drawn on top of it
+        Lamps::enterPage(g_page == PAGE_LAMP_SCREEN ? Lamps::Page::Screen : Lamps::Page::Bar, 0, NG_HAS_BTNS ? HEADER_H : 0,
+                         M5.Display.width(), M5.Display.height() - HEADER_H);
+    }
+    Lamps::tick();
     return next < 1 ? 1 : (next > 10 ? 10 : next);
 }
