@@ -1,18 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
   <title>Nachtgespenst: a crescent moon and a screaming ghost</title>
   <defs>
-    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#0b0e1c"/><stop offset="1" stop-color="#241020"/>
-    </linearGradient>
     <mask id="bite"><rect width="128" height="128" fill="#fff"/><circle cx="106" cy="25" r="13" fill="#000"/></mask>
   </defs>
-  <rect width="128" height="128" rx="24" fill="url(#sky)"/>
-  <!-- swirling night sky, after the famous painting: dark red and orange waves -->
-  <g fill="none" stroke-linecap="round" opacity=".55">
-    <path d="M0 96 C20 84 32 108 52 96 S88 84 128 98" stroke="#7a2a1c" stroke-width="7"/>
-    <path d="M0 112 C22 102 34 122 56 112 S92 102 128 114" stroke="#b5481f" stroke-width="5"/>
-    <path d="M0 80 C18 70 34 90 54 80 S92 68 128 82" stroke="#3a1a34" stroke-width="6"/>
-  </g>
+  <rect width="128" height="128" rx="24" fill="#0b0e1c"/>
   <!-- crescent moon -->
   <circle cx="98" cy="30" r="17" fill="#f6e7a6" mask="url(#bite)"/>
   <!-- ghost: pale hooded body with a wavy hem -->
