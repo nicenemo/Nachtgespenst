@@ -63,8 +63,7 @@ Always use the project-local install, never plain `pio`:
 
 ```sh
 cd /home/kruse/Projects/Nachtgespenst
-export PLATFORMIO_CORE_DIR=$PWD/.pio/core
-.pio/venv/bin/pio --version
+.pio/venv/bin/pio --version        # core dir comes from core_dir in platformio.ini
 .pio/venv/bin/pio run -e core2     # ~12 min, run in the background
 .pio/venv/bin/pio run -e cores3    # ~12 min, never run two builds at once in the same .pio
 ```
@@ -87,7 +86,7 @@ These need a device on USB. Skip if no board is connected. Confirm the exclusion
 
 Known issue: Core2 flashing is flaky (see `docs/OVERNIGHT.md`). A failed Core2 flash is hardware, not a sandbox failure. Check S3 first.
 
-If an excluded command still fails because of the sandbox, the pattern does not match. The leading `*` wildcards were never verified. Fall back to an exact prefix, for example `PLATFORMIO_CORE_DIR=* .pio/venv/bin/pio*`.
+If an excluded command still fails because of the sandbox, the call is not a single plain command: a pipe, `cd`, `&&`, `;`, a `VAR=x` prefix or a redirect keeps the whole call sandboxed. The patterns themselves (`*pio run*upload*`, `*jbang*SerialTest*`, `git push*`) were verified to match plain calls; see [claude-code-workflow](wiki/claude-code-workflow.md) and [ADR 0004](adr/0004-plain-commands-and-wrapper-scripts.md).
 
 ## 6. Wrap-up
 

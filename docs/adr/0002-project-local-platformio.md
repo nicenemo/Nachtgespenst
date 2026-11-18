@@ -1,6 +1,6 @@
 # 0002 Keep PlatformIO inside the project
 
-Status: Accepted
+Status: Accepted. The `PLATFORMIO_CORE_DIR` environment variable is replaced by `core_dir` in `platformio.ini` (see [0004](0004-plain-commands-and-wrapper-scripts.md)).
 
 ## Context
 PlatformIO is not installed system-wide. A home-directory install (`~/.platformio`) would need sandbox exemptions, and `/tmp` is a small tmpfs.

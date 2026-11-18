@@ -12,8 +12,11 @@ All notable changes to Nachtgespenst. The project has no tagged releases yet, so
 - **Project site** (`site/index.html`, published with GitHub Pages) with screenshots of every page on both boards, the camera test results and the project setup.
 - Architecture decision records for the Claude Code sandbox, the project-local PlatformIO and the pinned JDK; a tooling wiki; the sandbox test plan; `tools/FetchHut.jsh` to download the USB HID Usage Tables.
 - This changelog.
+- **Wrapper scripts** `tools/flash.sh` (find the board by USB ID, CoreS3 1200-baud touch, flash, wait) and `tools/serial.sh`, with the shared `tools/lib-ports.sh`; `SerialTest --latency` measures how long a page takes to reach the display.
+- **Knowledge for Claude Code:** `.claude/rules`, `.claude/skills` (`flash-and-test`, `camera-led-test`, `publish-site`), `.claude/agents` (`hardware-tester`, `firmware-builder`), wiki pages (`claude-code-workflow`, `hardware-testing`, `troubleshooting`) and ADRs 0004 to 0007.
 
 ### Changed
+- `platformio.ini` sets `core_dir` to the project-local `.pio/core`, so `pio` no longer needs a `PLATFORMIO_CORE_DIR` prefix (an env prefix kept commands inside the sandbox).
 - `SerialTest` finds the USB and the Bluetooth input device of a board separately (by `Phys`, not by name) and checks every routing mode against both.
 - All documentation is in British English; the Dutch code comments and serial log strings were translated to English.
 - `GenerateHeaders.jsh` runs on Java 27 and no longer downloads the specification itself (that moved to `FetchHut.jsh`).

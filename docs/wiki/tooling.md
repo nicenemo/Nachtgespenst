@@ -9,7 +9,7 @@
 
 ## PlatformIO
 - Project-local, see [ADR 0002](../adr/0002-project-local-platformio.md). Recreate with `python3 -m venv .pio/venv && .pio/venv/bin/pip install platformio`.
-- Invoke as `PLATFORMIO_CORE_DIR=$PWD/.pio/core .pio/venv/bin/pio ...`.
+- Invoke as `.pio/venv/bin/pio ...`. The core directory is set by `core_dir` in `platformio.ini` (an environment prefix such as `PLATFORMIO_CORE_DIR=...` would keep the command inside the Claude Code sandbox, see [claude-code-workflow](claude-code-workflow.md)).
 
 ## Sandbox
 - Reasoning in [ADR 0001](../adr/0001-sandbox-claude-code.md); actual lists in `.claude/settings.json`; test plan in [SANDBOX-TEST](../SANDBOX-TEST.md).
