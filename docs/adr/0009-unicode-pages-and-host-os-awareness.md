@@ -46,7 +46,7 @@ Order of precedence: manual override, then the remembered value for this peer, t
 Detection, honest about what is known:
 - **USB (CoreS3).** QMK shows that Linux, Windows, macOS and iOS can be told apart from the USB setup behaviour, with caveats (best guess, KVM switches, late results on Apple Silicon). Here the callbacks for descriptor and HID class requests can be observed (override or link-time wrap), but not the packet's `wLength` that QMK uses, so the signals available are fewer: the Windows-only string descriptor 0xEE request, the BOS request, `SET_IDLE` and `SET_PROTOCOL`. Whether that separates Linux from macOS must be measured.
 - **BLE.** Android: documented and reliable on Android 14 and newer (read the Android Information Service from the host with `NimBLEServer::getClient`). Apple: the Device Information Service says "Apple Inc.", reported by others, to be verified; macOS versus iOS may not be separable, and iOS has no Unicode method anyway. Windows versus Linux: no known signal; the negotiated MTU, connection parameters and GATT read order are candidates.
-- **Experiment first.** A `HOST?` command that prints every signal seen per connection, then connecting each available host (the Linux laptop first; Windows, macOS and Android machines if the owner has them) tells which signals are usable. Only then is a classifier written. Until then BLE hosts other than Android are "unsure" and use the remembered or default OS.
+- **Experiment first.** A `HOST?` command that prints every signal seen per connection, then connecting each available host (Linux, Windows, macOS, Android, iOS and iPadOS, all available) tells which signals are usable. For Apple hosts the complete Device Information Service (manufacturer, model, software revision) should be read: it might separate iPhone, iPad and Mac. Only then is a classifier written. Until then BLE hosts other than Android are "unsure" and use the remembered or default OS.
 
 ## Phasing
 1. Foundation: sequence engine, Unicode and action bindings, OS state with override (serial and Settings page), `GenerateUnicode.java`, bitmap font with the first glyphs, menu page. Tests per OS mode.
@@ -59,14 +59,47 @@ Detection, honest about what is known:
 ## Risks and open questions
 - Every method needs host set-up (WinCompose or the registry value on Windows, "Unicode Hex Input" on macOS, IBus on Linux); the macro pad cannot do it and must document it. Some applications ignore the methods (terminals, games, remote desktops).
 - The letters A to F in the hex digits assume a QWERTY-like layout on the host.
-- Windows has two incompatible methods; HexNumpad stops at U+FFFF, WinCompose is a third-party tool. A choice (or a setting) is needed.
+- Windows has several incompatible methods (HexNumpad stops at U+FFFF, WinCompose is a third-party tool, Alt codes cover Windows-1252 only); they are selectable (decision 2).
 - Flash and RAM for the glyph font; the speed work in 0007 should come first or together, because more pages make slow page building more noticeable.
 - Detection can be wrong; that is why override and persistence come first.
 
-## Decisions needed
-1. Which hosts exist for the experiments (Windows? macOS? which phone: Android or iOS)?
-2. Windows method: WinCompose, HexNumpad, or selectable?
-3. Default OS when detection is unsure (suggested: Linux)?
-4. Navigation: a menu page of groups as proposed, or keep next/previous paging?
-5. Font: a static bitmap font with the glyph set, and a text fallback in the classic UI?
-6. Order of the phases, and whether the emoji page is wanted at all.
+## Decisions
+Answered by the owner on 2026-11-18:
+1. **Hosts available for experiments:** Linux, Windows, Android, iOS, macOS and iPadOS.
+2. **Unicode mode is selectable**, as in the owner's ZMK configuration, which has the tiles `UC_SET_MACOS`, `UC_SET_WIN_ALT`, `UC_SET_WIN_COMPOSE`, `UC_SET_LINUX`, `UC_SET_LINUX_ALT` and `UC_SET_EMACS` on its CONFIG layer (plus the plain chords `LUC` = Ctrl+Shift+U and `WUC` = Alt+X for Word). The same modes, with the same names, become tiles on the Settings page. What `LINUX_ALT` does exactly is not visible in the keymap (it comes from the unicode extension); it is to be taken over from there.
+3. **Default when detection is unsure: Linux**, overruled by the user. The interface shows what was detected and what was chosen (see "UX for detection and choice").
+
+Still open:
+4. Navigation: a menu page of groups as proposed, or keep next and previous paging? (Suggestion: the menu page.)
+5. Font: a static bitmap font with the glyph set, and a text fallback in the classic UI? (Suggestion: yes, together with the speed work of 0007.)
+6. Order of the phases and whether the emoji page is wanted at all. (Suggestion: the order above, emoji last and optional.)
+
+## More hosts, and what "host" means
+Beyond the six hosts the owner has, the families that matter for the choice list:
+
+| Family | Members | Unicode method |
+|---|---|---|
+| Linux-like | Linux (X11 and Wayland, GNOME, KDE), Steam Deck, Raspberry Pi OS, ChromeOS (believed to accept Ctrl+Shift+U, to verify), BSDs with IBus | Ctrl+Shift+U; the Linux console and some terminals have none |
+| Windows | Windows 10 and 11, also inside a VM or a remote desktop session | WinCompose, HexNumpad, Alt codes (Windows-1252 only), Alt+X in Word |
+| Apple desktop | macOS | Unicode Hex Input, or Option combinations for a subset |
+| Apple mobile | iOS, iPadOS (visionOS and tvOS probably alike, unverified) | no hex input; Option combinations on the US layout (to verify) |
+| Android-like | Android, Fire OS, Android TV, Samsung DeX | none |
+| Other | smart TVs, game consoles, BIOS/UEFI and KVM menus | basic keys only |
+
+The choice list is therefore: Auto, Linux, Windows, macOS, iPadOS, iOS, Android, ChromeOS, Other. "Other" means no Unicode and no OS-specific chords.
+
+**Guest versus host.** The operating system that interprets the keys may be a guest the keyboard cannot see: Windows in a virtual machine or a remote desktop session opened from a Linux or Mac computer, a Linux VM on a Mac, a Citrix session. Detection sees only the machine the keyboard is physically attached to. The override must therefore be one tap away, not buried in a settings page.
+
+## Fast paths per OS
+Besides the generic hex method, some hosts have direct key combinations for common characters that need no host set-up. These matter because iOS and iPadOS have no hex input at all.
+- **Apple (macOS, iOS, iPadOS, US/ABC layout):** Option and Option+Shift combinations type many of the wanted characters directly (en dash, em dash, ellipsis, curly quotes, plus-minus, not equal, at most, at least, divide, degree, euro, pound, copyright, trademark). Believed from the Mac layout and to be verified on the owner's iPad and iPhone.
+- **Windows:** Alt codes on the numeric keypad for the Windows-1252 range (en dash Alt+0150, em dash Alt+0151, ellipsis Alt+0133, curly quotes Alt+0147, 0148, 0145 and 0146, euro Alt+0128): no registry change, but the keypad keys only work with NumLock on, which the keyboard knows from the host's LED report (and could correct).
+- **Linux:** Compose sequences, only if the user has configured a Compose key; not a default.
+
+Binding model: a Unicode tile carries the code point plus an optional per-OS fast path. A tile whose character has no method for the effective OS is shown dimmed (for example the interrobang on iPadOS or Android) and says why on the Settings page, instead of sending nothing silently.
+
+## UX for detection and choice
+- **Settings page, per transport (USB and BLE):** a line "Detected: Linux (USB, string request seen)" or "Detected: not sure", a row of tiles "Chosen: Auto, Linux, Windows, macOS, iPadOS, iOS, Android, ChromeOS, Other", and the Unicode mode tiles of decision 2.
+- **Effective OS:** the manual choice if there is one, else the value remembered for this BLE peer, else a confident detection, else Linux (decision 3).
+- **Header badge on every page:** the effective OS in three styles: detected (auto), chosen (set) and default (unsure). Tapping the badge opens the OS tile row, so a wrong guess, or a guest OS, is corrected in one tap on any page.
+- Serial: `OS?` reports detected, chosen and effective OS per transport; `OS USB|BLE AUTO|LINUX|WINDOWS|MACOS|IPADOS|IOS|ANDROID|CHROMEOS|OTHER` sets the choice.
