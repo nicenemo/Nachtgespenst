@@ -1,6 +1,6 @@
 # Publishes site/ to the gh-pages branch, which GitHub Pages serves
 # (Settings -> Pages -> Source: "Deploy from a branch", branch gh-pages, folder / (root)).
-# With the account's custom domain the site appears at https://hanskruse.eu/Nachtgespenst/.
+# With the account's custom domain the site appears at https://hanskruse.eu/nachtgespenst/.
 name: Publish project site
 
 on:
