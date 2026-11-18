@@ -30,7 +30,7 @@ Only the repository owner can edit `.claude/settings.json` (it is write-protecte
 "bluetoothctl list*", "bluetoothctl show*", "bluetoothctl devices*", "bluetoothctl paired-devices*", "bluetoothctl info*"
 ```
 
-Until `*jbang*Flash.java*`, `*jbang*Serial.java*` and `*jbang*LedCam*` are added, run those three with the sandbox disabled for that single call (the call then goes through the normal permission prompt).
+These entries are in `.claude/settings.json` since 2026-11-18 and were verified: `Serial.java`, `Flash.java` and `LedCam.java` run as plain commands. A new hardware tool needs its own `*jbang*<Name>*` entry; until the owner adds it, run it with the sandbox disabled for that single call (the call then goes through the normal permission prompt).
 
 ## Use the board tools, not hand-made commands
 
