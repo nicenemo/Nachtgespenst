@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nachtgespenst</title>
+<meta name="description" content="Nachtgespenst: a Bluetooth LE and USB HID macro pad for the M5Stack Core2 and CoreS3, with screenshots of every page, camera tests of the LED bars and the project history.">
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: #f6f7fb; --panel: #ffffff; --text: #1b2030; --muted: #5a6478; --line: #d9deea;
+  --accent: #3a56d4; --accent-text: #ffffff; --code: #eef1f8;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #0b0e14; --panel: #151a26; --text: #e6e9f0; --muted: #9aa4ba; --line: #2a3142;
+          --accent: #8ea2ff; --accent-text: #0b0e14; --code: #1d2434; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text);
+       font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+a { color: var(--accent); }
+.wrap { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
+header.hero { padding: 48px 0 32px; border-bottom: 1px solid var(--line); }
+h1 { font-size: clamp(2rem, 5vw, 3.2rem); margin: 0 0 8px; letter-spacing: -0.02em; }
+.tag { font-size: 1.2rem; color: var(--muted); max-width: 46rem; margin: 0 0 20px; }
+.btns a { display: inline-block; margin: 0 8px 8px 0; padding: 8px 16px; border-radius: 8px; text-decoration: none;
+          background: var(--accent); color: var(--accent-text); font-weight: 600; }
+.btns a.alt { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+.hero img { width: 100%; max-height: 380px; object-fit: cover; border-radius: 12px; margin-top: 20px; display: block; border: 1px solid var(--line); }
+nav.toc { padding: 12px 0; border-bottom: 1px solid var(--line); font-size: .95rem; }
+nav.toc a { margin-right: 14px; white-space: nowrap; }
+section { padding: 36px 0 8px; }
+h2 { font-size: 1.7rem; margin: 0 0 12px; }
+h3 { font-size: 1.15rem; margin: 0 0 6px; }
+h3 small { color: var(--muted); font-weight: 400; margin-left: 6px; }
+.num { display: inline-block; min-width: 1.8em; padding: 0 6px; border-radius: 6px; background: var(--accent); color: var(--accent-text); text-align: center; font-size: .9rem; }
+p, li { max-width: 52rem; }
+code, pre { font: .9em/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--code); border-radius: 6px; }
+code { padding: 1px 5px; }
+pre { padding: 12px 14px; overflow-x: auto; max-width: 52rem; }
+table { border-collapse: collapse; width: 100%; max-width: 52rem; background: var(--panel); }
+th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: var(--code); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 4px 18px 14px; }
+article.page { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px 18px; margin: 0 0 18px; }
+.shots { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; margin-top: 10px; }
+figure { margin: 0; }
+figure img { width: 100%; height: auto; display: block; border-radius: 6px; border: 1px solid var(--line); background: #000; }
+figcaption { font-size: .85rem; color: var(--muted); margin-top: 4px; }
+img.wide { width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); display: block; }
+.note { color: var(--muted); font-style: italic; }
+.cols + h3 { margin-top: 28px; }
+ul.timeline { list-style: none; padding: 0; border-left: 3px solid var(--accent); margin-left: 6px; }
+ul.timeline li { margin: 0 0 14px; padding-left: 16px; }
+ul.timeline b { display: block; }
+footer { margin-top: 48px; padding: 24px 0 40px; border-top: 1px solid var(--line); color: var(--muted); font-size: .95rem; }
+</style>
+</head>
+<body>
+<header class="hero"><div class="wrap">
+<h1>Nachtgespenst</h1>
+<p class="tag">A night ghost for your keyboard: a Bluetooth LE and USB macro pad built on the M5Stack Core2 and CoreS3. Tap a tile on the touchscreen and the matching key, chord or media command arrives on your computer.</p>
+<p class="btns"><a href="https://github.com/nicenemo/Nachtgespenst">Source on GitHub</a><a class="alt" href="https://github.com/nicenemo/Nachtgespenst/blob/develop/CHANGELOG.md">Changelog</a><a class="alt" href="#setup">Set it up</a></p>
+<img src="img/camera/both-boards.jpg" width="1280" height="720" alt="The Core2 on the left and the CoreS3 on the right in a dark room, both with their LED bars lit blue">
+</div></header>
+<nav class="toc"><div class="wrap">
+<a href="#what">What it does</a><a href="#devices">The devices</a><a href="#pages">Every page</a><a href="#ui">Two interfaces</a><a href="#camera">Camera tests</a><a href="#setup">Set-up</a><a href="#code">How it works</a><a href="#history">Since Claude joined</a>
+</div></nav>
+<main class="wrap">
+
+<section id="what"><h2>What it does</h2>
+<p>Nachtgespenst turns an M5Stack touchscreen into a programmable HID device. The screen shows one grid of tiles per <em>layer</em>; tapping a tile sends the matching HID report to the host computer. There are 26 layers and a Locks page, shown on both devices.</p>
+<ul>
+<li><b>Keys, chords and media.</b> Keyboard and consumer-control bindings, including Ctrl/Shift/Alt/Win chords and the Meh and Hyper modifier sets.</li>
+<li><b>Bluetooth LE and USB.</b> Both boards speak BLE HID (NimBLE). The CoreS3 also enumerates as a USB keyboard and can route keys over USB, BLE, or both.</li>
+<li><b>Host feedback.</b> The Locks page shows Caps, Num and Scroll Lock as the host reports them, and the LED bar mirrors them.</li>
+<li><b>LED bar.</b> Ten LEDs in the M5GO base show the colour of the current layer.</li>
+<li><b>Keymaps as code.</b> Layers are written in C++ in the style of ZMK, using HID shortcut macros generated from the USB HID Usage Tables (<code>kp_A</code>, <code>cp_MUTE</code>, <code>lcs(...)</code>, <code>lhyp(...)</code>).</li>
+<li><b>Scriptable.</b> A line-based serial protocol lets a test tool switch pages, tap and press tiles, read the state and take screenshots. Every screenshot on this page came from it.</li>
+</ul></section>
+
+<section id="devices"><h2>The two devices</h2>
+<table>
+<tr><th></th><th>Core2</th><th>CoreS3</th></tr>
+<tr><th>PlatformIO environment</th><td><code>core2</code></td><td><code>cores3</code></td></tr>
+<tr><th>Host transports</th><td>BLE</td><td>BLE and USB (TinyUSB)</td></tr>
+<tr><th>Paging</th><td>Three capacitive buttons under the screen: A previous, B Locks page, C next</td><td>On-screen bottom bar: previous, Locks (tap the title), next</td></tr>
+<tr><th>LED bar</th><td>M5GO base, ten LEDs on GPIO25</td><td>M5GO base, ten LEDs on GPIO5 (found with the camera test below)</td></tr>
+<tr><th>Flashing</th><td>CP2104 serial bridge, resets automatically</td><td>Native USB; needs a 1200-baud touch to enter the ROM bootloader</td></tr>
+<tr><th>Screen</th><td colspan="2">320 × 240, touch</td></tr>
+</table></section>
+
+<section id="pages"><h2>Every page, on both devices</h2>
+<p>The same keymap runs on both boards, so each card below shows the page as the Core2 and the CoreS3 draw it, in the current LVGL interface and in the classic interface described further down. All screenshots were captured from the devices themselves over the serial <code>SHOT</code> command.</p>
+
+<article class="page" id="page-1">
+<h3><span class="num">1</span> Maven Tools <small>3×3</small></h3>
+<p>Ctrl+Shift chords for a Maven/IDE set-up (B, U, I, Q, E and a Shift+Redo tile). The middle row is deliberately empty; empty tiles are drawn dim and send nothing.</p>
+<div class="shots"><figure><img src="img/lvgl/c2-00.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the Maven Tools page, LVGL interface"><figcaption>Core2 · LVGL</figcaption></figure><figure><img src="img/lvgl/s3-00.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the Maven Tools page, LVGL interface"><figcaption>CoreS3 · LVGL</figcaption></figure><figure><img src="img/classic/c2-00.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the Maven Tools page, classic interface"><figcaption>Core2 · classic</figcaption></figure><figure><img src="img/classic/s3-00.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the Maven Tools page, classic interface"><figcaption>CoreS3 · classic</figcaption></figure></div>
+</article><article class="page" id="page-2">
+<h3><span class="num">2</span> Office/Prod <small>4×3</small></h3>
+<p>Hyper-key chords (Ctrl+Shift+Alt+Win) with W, X, P, O, T, N, B, E, Y and L. On Windows these open the Microsoft 365 apps; the tiles show app icons (Word, Excel, PowerPoint, Outlook, Teams, OneNote, browser, Explorer, lock).</p>
+<div class="shots"><figure><img src="img/lvgl/c2-01.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the Office/Prod page, LVGL interface"><figcaption>Core2 · LVGL</figcaption></figure><figure><img src="img/lvgl/s3-01.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the Office/Prod page, LVGL interface"><figcaption>CoreS3 · LVGL</figcaption></figure><figure><img src="img/classic/c2-01.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the Office/Prod page, classic interface"><figcaption>Core2 · classic</figcaption></figure><figure><img src="img/classic/s3-01.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the Office/Prod page, classic interface"><figcaption>CoreS3 · classic</figcaption></figure></div>
+</article><article class="page" id="page-3">
+<h3><span class="num">3</span> Edit/Nav <small>5×3</small></h3>
+<p>Editing and navigation: Insert, Delete, Home, End, Page Up and Down, the four arrows, plus copy, paste, cut, undo and select-all. Tiles tagged +Shift send the shifted variant.</p>
+<div class="shots"><figure><img src="img/lvgl/c2-02.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the Edit/Nav page, LVGL interface"><figcaption>Core2 · LVGL</figcaption></figure><figure><img src="img/lvgl/s3-02.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the Edit/Nav page, LVGL interface"><figcaption>CoreS3 · LVGL</figcaption></figure><figure><img src="img/classic/c2-02.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the Edit/Nav page, classic interface"><figcaption>Core2 · classic</figcaption></figure><figure><img src="img/classic/s3-02.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the Edit/Nav page, classic interface"><figcaption>CoreS3 · classic</figcaption></figure></div>
+</article><article class="page" id="page-4">
+<h3><span class="num">4</span> System <small>4×3</small></h3>
+<p>System keys: Esc, Menu, Print Screen, Pause, Scroll Lock and Num Lock, the Ctrl+Z/X/C/V clipboard set and Ctrl+F. The power key is drawn but not sent yet (the System report is still on the to-do list).</p>
+<div class="shots"><figure><img src="img/lvgl/c2-03.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the System page, LVGL interface"><figcaption>Core2 · LVGL</figcaption></figure><figure><img src="img/lvgl/s3-03.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the System page, LVGL interface"><figcaption>CoreS3 · LVGL</figcaption></figure><figure><img src="img/classic/c2-03.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the System page, classic interface"><figcaption>Core2 · classic</figcaption></figure><figure><img src="img/classic/s3-03.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the System page, classic interface"><figcaption>CoreS3 · classic</figcaption></figure></div>
+</article><article class="page" id="page-5">
+<h3><span class="num">5</span> F1-F10 <small>4×3</small></h3>
+<p>The plain function keys F1 to F10, with Esc and Enter in the bottom row. The numeric layout mirrors a keypad: 7-8-9 on top, 1-2-3 at the bottom.</p>
+<div class="shots"><figure><img src="img/lvgl/c2-04.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the F1-F10 page, LVGL interface"><figcaption>Core2 · LVGL</figcaption></figure><figure><img src="img/lvgl/s3-04.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the F1-F10 page, LVGL interface"><figcaption>CoreS3 · LVGL</figcaption></figure><figure><img src="img/classic/c2-04.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the F1-F10 page, classic interface"><figcaption>Core2 · classic</figcaption></figure><figure><img src="img/classic/s3-04.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the F1-F10 page, classic interface"><figcaption>CoreS3 · classic</figcaption></figure></div>
+</article><article class="page" id="page-6">
+<h3><span class="num">6</span> F1-F10 MEH <small>4×3</small></h3>
+<p>F1 to F10 with the Meh modifier (Ctrl+Shift+Alt) so they can be bound to global shortcuts without clashing with applications.</p>
+<div class="shots"><figure><img src="img/lvgl/c2-05.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the F1-F10 MEH page, LVGL interface"><figcaption>Core2 · LVGL</figcaption></figure><figure><img src="img/lvgl/s3-05.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the F1-F10 MEH page, LVGL interface"><figcaption>CoreS3 · LVGL</figcaption></figure><figure><img src="img/classic/c2-05.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the F1-F10 MEH page, classic interface"><figcaption>Core2 · classic</figcaption></figure><figure><img src="img/classic/s3-05.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the F1-F10 MEH page, classic interface"><figcaption>CoreS3 · classic</figcaption></figure></div>
+</article><article class="page" id="page-7">
+<h3><span class="num">7</span> F1-F10 HYP <small>4×3</small></h3>
+<p>F1 to F10 with the Hyper modifier (Ctrl+Shift+Alt+Win), the other family of global-shortcut chords.</p>
+<div class="shots"><figure><img src="img/lvgl/c2-06.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the F1-F10 HYP page, LVGL interface"><figcaption>Core2 · LVGL</figcaption></figure><figure><img src="img/lvgl/s3-06.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the F1-F10 HYP page, LVGL interface"><figcaption>CoreS3 · LVGL</figcaption></figure><figure><img src="img/classic/c2-06.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the F1-F10 HYP page, classic interface"><figcaption>Core2 · classic</figcaption></figure><figure><img src="img/classic/s3-06.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the F1-F10 HYP page, classic interface"><figcaption>CoreS3 · classic</figcaption></figure></div>
+</article><article class="page" id="page-8">
+<h3><span class="num">8</span> F11-F20 <small>4×3</small></h3>
+<p>Function keys F11 to F20, laid out like the F1 to F10 page.</p>
+<div class="shots"><figure><img src="img/lvgl/c2-07.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the F11-F20 page, LVGL interface"><figcaption>Core2 · LVGL</figcaption></figure><figure><img src="img/lvgl/s3-07.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the F11-F20 page, LVGL interface"><figcaption>CoreS3 · LVGL</figcaption></figure><figure><img src="img/classic/c2-07.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the F11-F20 page, classic interface"><figcaption>Core2 · classic</figcaption></figure><figure><img src="img/classic/s3-07.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the F11-F20 page, classic interface"><figcaption>CoreS3 · classic</figcaption></figure></div>
+</article><article class="page" id="page-9">
+<h3><span class="num">9</span> F11-F20 MEH <small>4×3</small></h3>
+<p>F11 to F20 with the Meh modifier.</p>
+<div class="shots"><figure><img src="img/lvgl/c2-08.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the F11-F20 MEH page, LVGL interface"><figcaption>Core2 · LVGL</figcaption></figure><figure><img src="img/lvgl/s3-08.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the F11-F20 MEH page, LVGL interface"><figcaption>CoreS3 · LVGL</figcaption></figure><figure><img src="img/classic/c2-08.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the F11-F20 MEH page, classic interface"><figcaption>Core2 · classic</figcaption></figure><figure><img src="img/classic/s3-08.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the F11-F20 MEH page, classic interface"><figcaption>CoreS3 · classic</figcaption></figure></div>
+</article><article class="page" id="page-10">
+<h3><span class="num">10</span> F11-F20 HYP <small>4×3</small></h3>
+<p>F11 to F20 with the Hyper modifier.</p>
+<div class="shots"><figure><img src="img/lvgl/c2-09.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the F11-F20 HYP page, LVGL interface"><figcaption>Core2 · LVGL</figcaption></figure><figure><img src="img/lvgl/s3-09.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the F11-F20 HYP page, LVGL interface"><figcaption>CoreS3 · LVGL</figcaption></figure><figure><img src="img/classic/c2-09.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the F11-F20 HYP page, classic interface"><figcaption>Core2 · classic</figcaption></figure><figure><img src="img/classic/s3-09.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the F11-F20 HYP page, classic interface"><figcaption>CoreS3 · classic</figcaption></figure></div>
+</article><article class="page" id="page-11">
+<h3><span class="num">11</span> F21-F24 <small>2×2</small></h3>
+<p>The rarely used F21 to F24 as four large tiles.</p>
+<div class="shots"><figure><img src="img/lvgl/c2-10.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the F21-F24 page, LVGL interface"><figcaption>Core2 · LVGL</figcaption></figure><figure><img src="img/lvgl/s3-10.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the F21-F24 page, LVGL interface"><figcaption>CoreS3 · LVGL</figcaption></figure><figure><img src="img/classic/c2-10.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the F21-F24 page, classic interface"><figcaption>Core2 · classic</figcaption></figure><figure><img src="img/classic/s3-10.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the F21-F24 page, classic interface"><figcaption>CoreS3 · classic</figcaption></figure></div>
+</article><article class="page" id="page-12">
+<h3><span class="num">12</span> F21-F24 MEH <small>2×2</small></h3>
+<p>F21 to F24 with Meh.</p>
+<div class="shots"><figure><img src="img/lvgl/c2-11.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the F21-F24 MEH page, LVGL interface"><figcaption>Core2 · LVGL</figcaption></figure><figure><img src="img/lvgl/s3-11.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the F21-F24 MEH page, LVGL interface"><figcaption>CoreS3 · LVGL</figcaption></figure><figure><img src="img/classic/c2-11.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the F21-F24 MEH page, classic interface"><figcaption>Core2 · classic</figcaption></figure><figure><img src="img/classic/s3-11.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the F21-F24 MEH page, classic interface"><figcaption>CoreS3 · classic</figcaption></figure></div>
+</article><article class="page" id="page-13">
+<h3><span class="num">13</span> F21-F24 HYP <small>2×2</small></h3>
+<p>F21 to F24 with Hyper.</p>
+<div class="shots"><figure><img src="img/lvgl/c2-12.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the F21-F24 HYP page, LVGL interface"><figcaption>Core2 · LVGL</figcaption></figure><figure><img src="img/lvgl/s3-12.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the F21-F24 HYP page, LVGL interface"><figcaption>CoreS3 · LVGL</figcaption></figure><figure><img src="img/classic/c2-12.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the F21-F24 HYP page, classic interface"><figcaption>Core2 · classic</figcaption></figure><figure><img src="img/classic/s3-12.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the F21-F24 HYP page, classic interface"><figcaption>CoreS3 · classic</figcaption></figure></div>
+</article><article class="page" id="page-14">
+<h3><span class="num">14</span> Symbol Pad <small>6×4</small></h3>
+<p>A symbol pad: digits 0 to 9, punctuation and the shifted symbols (! @ # $ and brackets), plus Esc, Tab, Backspace and Enter.</p>
+<div class="shots"><figure><img src="img/lvgl/c2-13.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the Symbol Pad page, LVGL interface"><figcaption>Core2 · LVGL</figcaption></figure><figure><img src="img/lvgl/s3-13.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the Symbol Pad page, LVGL interface"><figcaption>CoreS3 · LVGL</figcaption></figure><figure><img src="img/classic/c2-13.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the Symbol Pad page, classic interface"><figcaption>Core2 · classic</figcaption></figure><figure><img src="img/classic/s3-13.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the Symbol Pad page, classic interface"><figcaption>CoreS3 · classic</figcaption></figure></div>
+</article><article class="page" id="page-15">
+<h3><span class="num">15</span> Numpad Full <small>6×4</small></h3>
+<p>A complete numeric keypad: Num Lock, the four operators, digits, decimal point and keypad Enter, with Esc, Tab and Backspace underneath.</p>
+<div class="shots"><figure><img src="img/lvgl/c2-14.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the Numpad Full page, LVGL interface"><figcaption>Core2 · LVGL</figcaption></figure><figure><img src="img/lvgl/s3-14.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the Numpad Full page, LVGL interface"><figcaption>CoreS3 · LVGL</figcaption></figure><figure><img src="img/classic/c2-14.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the Numpad Full page, classic interface"><figcaption>Core2 · classic</figcaption></figure><figure><img src="img/classic/s3-14.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the Numpad Full page, classic interface"><figcaption>CoreS3 · classic</figcaption></figure></div>
+</article><article class="page" id="page-16">
+<h3><span class="num">16</span> International <small>3×3</small></h3>
+<p>The International 1 to 9 keys that Japanese and some European layouts use. Their generated names are long, so the tiles are truncated; this is a known cosmetic issue.</p>
+<div class="shots"><figure><img src="img/lvgl/c2-15.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the International page, LVGL interface"><figcaption>Core2 · LVGL</figcaption></figure><figure><img src="img/lvgl/s3-15.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the International page, LVGL interface"><figcaption>CoreS3 · LVGL</figcaption></figure><figure><img src="img/classic/c2-15.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the International page, classic interface"><figcaption>Core2 · classic</figcaption></figure><figure><img src="img/classic/s3-15.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the International page, classic interface"><figcaption>CoreS3 · classic</figcaption></figure></div>
+</article><article class="page" id="page-17">
+<h3><span class="num">17</span> Language <small>4×3</small></h3>
+<p>Language and input keys: LANG1 to LANG5, Execute, Menu, the three lock keys and Enter.</p>
+<div class="shots"><figure><img src="img/lvgl/c2-16.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the Language page, LVGL interface"><figcaption>Core2 · LVGL</figcaption></figure><figure><img src="img/lvgl/s3-16.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the Language page, LVGL interface"><figcaption>CoreS3 · LVGL</figcaption></figure><figure><img src="img/classic/c2-16.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the Language page, classic interface"><figcaption>Core2 · classic</figcaption></figure><figure><img src="img/classic/s3-16.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the Language page, classic interface"><figcaption>CoreS3 · classic</figcaption></figure></div>
+</article><article class="page" id="page-18">
+<h3><span class="num">18</span> Hard Locks <small>1×3</small></h3>
+<p>The three lock keys (Caps, Num, Scroll) as big tiles that send the plain key press. The Locks page at the end shows their state instead.</p>
+<div class="shots"><figure><img src="img/lvgl/c2-17.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the Hard Locks page, LVGL interface"><figcaption>Core2 · LVGL</figcaption></figure><figure><img src="img/lvgl/s3-17.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the Hard Locks page, LVGL interface"><figcaption>CoreS3 · LVGL</figcaption></figure><figure><img src="img/classic/c2-17.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the Hard Locks page, classic interface"><figcaption>Core2 · classic</figcaption></figure><figure><img src="img/classic/s3-17.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the Hard Locks page, classic interface"><figcaption>CoreS3 · classic</figcaption></figure></div>
+</article><article class="page" id="page-19">
+<h3><span class="num">19</span> Media <small>4×3</small></h3>
+<p>Media control: previous, play/pause, next, volume down, mute, volume up, stop, mail, file browser, and the system power, sleep and wake keys.</p>
+<div class="shots"><figure><img src="img/lvgl/c2-18.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the Media page, LVGL interface"><figcaption>Core2 · LVGL</figcaption></figure><figure><img src="img/lvgl/s3-18.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the Media page, LVGL interface"><figcaption>CoreS3 · LVGL</figcaption></figure><figure><img src="img/classic/c2-18.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the Media page, classic interface"><figcaption>Core2 · classic</figcaption></figure><figure><img src="img/classic/s3-18.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the Media page, classic interface"><figcaption>CoreS3 · classic</figcaption></figure></div>
+</article><article class="page" id="page-20">
+<h3><span class="num">20</span> MS Teams <small>4×3</small></h3>
+<p>Microsoft Teams: mute, camera and hang up (Ctrl+Shift chords), arrows, Esc, Enter and Backspace.</p>
+<div class="shots"><figure><img src="img/lvgl/c2-19.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the MS Teams page, LVGL interface"><figcaption>Core2 · LVGL</figcaption></figure><figure><img src="img/lvgl/s3-19.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the MS Teams page, LVGL interface"><figcaption>CoreS3 · LVGL</figcaption></figure><figure><img src="img/classic/c2-19.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the MS Teams page, classic interface"><figcaption>Core2 · classic</figcaption></figure><figure><img src="img/classic/s3-19.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the MS Teams page, classic interface"><figcaption>CoreS3 · classic</figcaption></figure></div>
+</article><article class="page" id="page-21">
+<h3><span class="num">21</span> MS Outlook <small>4×3</small></h3>
+<p>Microsoft Outlook: new mail, reply all and find, arrows, Delete, Enter and Backspace.</p>
+<div class="shots"><figure><img src="img/lvgl/c2-20.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the MS Outlook page, LVGL interface"><figcaption>Core2 · LVGL</figcaption></figure><figure><img src="img/lvgl/s3-20.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the MS Outlook page, LVGL interface"><figcaption>CoreS3 · LVGL</figcaption></figure><figure><img src="img/classic/c2-20.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the MS Outlook page, classic interface"><figcaption>Core2 · classic</figcaption></figure><figure><img src="img/classic/s3-20.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the MS Outlook page, classic interface"><figcaption>CoreS3 · classic</figcaption></figure></div>
+</article><article class="page" id="page-22">
+<h3><span class="num">22</span> PowerPoint <small>4×3</small></h3>
+<p>PowerPoint: start the slideshow (F5), start from this slide (Shift+F5), Esc, arrows, Page Up/Down, Home and End.</p>
+<div class="shots"><figure><img src="img/lvgl/c2-21.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the PowerPoint page, LVGL interface"><figcaption>Core2 · LVGL</figcaption></figure><figure><img src="img/lvgl/s3-21.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the PowerPoint page, LVGL interface"><figcaption>CoreS3 · LVGL</figcaption></figure><figure><img src="img/classic/c2-21.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the PowerPoint page, classic interface"><figcaption>Core2 · classic</figcaption></figure><figure><img src="img/classic/s3-21.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the PowerPoint page, classic interface"><figcaption>CoreS3 · classic</figcaption></figure></div>
+</article><article class="page" id="page-23">
+<h3><span class="num">23</span> Browser Ctrl <small>4×3</small></h3>
+<p>Browser control: reload (F5), hard reload, reopen tab, F7, close tab, arrows, Home, End and full screen.</p>
+<div class="shots"><figure><img src="img/lvgl/c2-22.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the Browser Ctrl page, LVGL interface"><figcaption>Core2 · LVGL</figcaption></figure><figure><img src="img/lvgl/s3-22.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the Browser Ctrl page, LVGL interface"><figcaption>CoreS3 · LVGL</figcaption></figure><figure><img src="img/classic/c2-22.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the Browser Ctrl page, classic interface"><figcaption>Core2 · classic</figcaption></figure><figure><img src="img/classic/s3-22.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the Browser Ctrl page, classic interface"><figcaption>CoreS3 · classic</figcaption></figure></div>
+</article><article class="page" id="page-24">
+<h3><span class="num">24</span> Debug IDE <small>4×3</small></h3>
+<p>Debugger keys for an IDE: run/continue (F5), breakpoint (F9), step over (F10), step into (F11), step out (Shift+F11), restart, and the arrows.</p>
+<div class="shots"><figure><img src="img/lvgl/c2-23.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the Debug IDE page, LVGL interface"><figcaption>Core2 · LVGL</figcaption></figure><figure><img src="img/lvgl/s3-23.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the Debug IDE page, LVGL interface"><figcaption>CoreS3 · LVGL</figcaption></figure><figure><img src="img/classic/c2-23.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the Debug IDE page, classic interface"><figcaption>Core2 · classic</figcaption></figure><figure><img src="img/classic/s3-23.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the Debug IDE page, classic interface"><figcaption>CoreS3 · classic</figcaption></figure></div>
+</article><article class="page" id="page-25">
+<h3><span class="num">25</span> App Launch <small>4×3</small></h3>
+<p>Application launchers from the consumer-control page: browser, file manager, mail, calendar, task manager and calculator.</p>
+<div class="shots"><figure><img src="img/lvgl/c2-24.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the App Launch page, LVGL interface"><figcaption>Core2 · LVGL</figcaption></figure><figure><img src="img/lvgl/s3-24.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the App Launch page, LVGL interface"><figcaption>CoreS3 · LVGL</figcaption></figure><figure><img src="img/classic/c2-24.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the App Launch page, classic interface"><figcaption>Core2 · classic</figcaption></figure><figure><img src="img/classic/s3-24.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the App Launch page, classic interface"><figcaption>CoreS3 · classic</figcaption></figure></div>
+</article><article class="page" id="page-26">
+<h3><span class="num">26</span> Edit Keys <small>3×3</small></h3>
+<p>Clipboard and editing: find, undo, cut, copy and paste with captions, plus Esc, Enter and Backspace.</p>
+<div class="shots"><figure><img src="img/lvgl/c2-25.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the Edit Keys page, LVGL interface"><figcaption>Core2 · LVGL</figcaption></figure><figure><img src="img/lvgl/s3-25.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the Edit Keys page, LVGL interface"><figcaption>CoreS3 · LVGL</figcaption></figure><figure><img src="img/classic/c2-25.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the Edit Keys page, classic interface"><figcaption>Core2 · classic</figcaption></figure><figure><img src="img/classic/s3-25.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the Edit Keys page, classic interface"><figcaption>CoreS3 · classic</figcaption></figure></div>
+</article><article class="page" id="page-27">
+<h3><span class="num">27</span> Locks <small>3 tiles</small></h3>
+<p>The Locks page: three large tiles for Caps, Num and Scroll Lock. Tapping one sends the key; the tile then shows ON or OFF as reported back by the host, and the LED bar lights a segment for each lock that is on (Caps orange, Num green, Scroll blue). On the Core2 the B button toggles this page; on the CoreS3 tap the title in the bottom bar.</p>
+<div class="shots"><figure><img src="img/lvgl/c2-26.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the Locks page, LVGL interface"><figcaption>Core2 · LVGL</figcaption></figure><figure><img src="img/lvgl/s3-26.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the Locks page, LVGL interface"><figcaption>CoreS3 · LVGL</figcaption></figure><figure><img src="img/classic/c2-26.png" width="320" height="240" loading="lazy" alt="Core2 screenshot of the Locks page, classic interface"><figcaption>Core2 · classic</figcaption></figure><figure><img src="img/classic/s3-26.png" width="320" height="240" loading="lazy" alt="CoreS3 screenshot of the Locks page, classic interface"><figcaption>CoreS3 · classic</figcaption></figure></div>
+</article>
+</section>
+
+<section id="ui"><h2>Two interfaces</h2>
+<div class="cols">
+<div class="card"><h3>LVGL (the main branches)</h3>
+<p>The interface introduced on 12 November 2026: LVGL 9 with a Material icon subset, rounded tiles, captions under icons, modifier badges (<code>Ctrl+Shift</code>, <code>Hyper</code>) and a themed header. It redraws only what changes.</p></div>
+<div class="card"><h3>Classic (branch <code>feature/classic-ui</code>)</h3>
+<p>The current firmware with LVGL removed: every feature of both boards is kept (BLE, USB, LED bars, serial protocol, tests), but the screen is drawn straight onto the display with plain tiles, text labels and arrow shapes, in the spirit of the very first version of the project (a Core2-only flat grid, May 2026). Because the CoreS3 has no hardware buttons, it gets a bottom bar for previous, Locks and next.</p></div>
+</div>
+<h3>How they compare</h3>
+<p>Both interfaces were built from the same keymap and tested with the same serial test suite, then measured on the boards. A page is "drawn" when it is on the display: LVGL answers <code>LAYER</code> before it renders, so the time is <code>LAYER</code> plus <code>SHOT</code> minus the plain <code>SHOT</code> read-out.</p>
+<table>
+<tr><th></th><th>LVGL</th><th>Classic</th></tr>
+<tr><th>Flash used (CoreS3)</th><td>2.33 MB (35.5 %)</td><td>1.65 MB (25.2 %)</td></tr>
+<tr><th>RAM used (CoreS3)</th><td>105 kB (32.0 %)</td><td>73 kB (22.4 %)</td></tr>
+<tr><th>Time to draw a page, CoreS3</th><td>about 360 ms (260 to 480 ms)</td><td>about 92 ms</td></tr>
+<tr><th>Time to draw a page, Core2</th><td>about 450 to 630 ms</td><td>about 100 ms</td></tr>
+<tr><th>Source</th><td>429-line <code>ui.cpp</code>, icon table, 40 kB icon font, LVGL configuration</td><td>378-line <code>ui.cpp</code>, no icon font</td></tr>
+<tr><th>Look</th><td>Icons, anti-aliased text, rounded tiles, pressed-state animation</td><td>Text labels, arrow shapes, flat tiles</td></tr>
+<tr><th>Tests</th><td colspan="2">Both pass the serial test suite on both boards; the classic interface needed no change to the protocol or the tests.</td></tr>
+</table>
+<p>The classic interface is clearly faster to switch pages and uses about a third less memory; LVGL looks richer and leaves room for more widgets. The slow part of LVGL is building a page (creating up to 24 buttons and rasterising icon glyphs at run time), which can be improved with pre-rendered bitmap fonts and reusable tile widgets; that work is on the to-do list.</p>
+</section>
+
+<section id="camera"><h2>Testing the LED bars with a webcam</h2>
+<p>The LED bars are hard to test from software, so the laptop webcam does it. A small JBang tool, <code>tools/LedCam.java</code>, talks to a board over serial and films the result with ffmpeg. Frame differencing uses the Java Vector API; the camera, not the arithmetic, sets the speed.</p>
+<h3>Finding the CoreS3 bar</h3>
+<p>The CoreS3 has no documented bar pin, so a test sketch (<code>tools/ledtest</code>, environment <code>cores3</code>) drives the first pixel on every M-Bus and Grove pin in turn, showing red, green and blue, while the camera compares each frame with a dark baseline. The first sweep covered 20 candidate pins: GPIO 5 (M-Bus pin 8) scored 65 against a noise floor of 38 to 41 for every other pin, and the frame showed the bar's base glowing. A second sweep with a better score ranked it first as well. The Core2 bar sits on the same M-Bus pin, which fits.</p>
+<h3>Checking every layer colour</h3>
+<p>The tool then cycles <code>LAYER 0</code> to <code>LAYER 25</code> on each board and films the bar. The contact sheets below put every frame next to a swatch of the colour the firmware was asked to show. All 26 layers come out with the right hue on both boards. Dark colours (Maroon, Navy, DarkGreen, Indigo) are dimmer, as they should be. Pale colours (PaleGreen, Khaki, Lavender, MistyRose) look blue-white because the camera's white balance shifts when the bar is the only light in the room. The numeric check is weak (the glow is only a few brightness levels), so the verdict comes from looking at the sheets.</p>
+<h3>Core2</h3><img class="wide" src="img/camera/core2-colours.jpg" width="1440" height="840" loading="lazy" alt="Contact sheet of 26 camera frames of the Core2 LED bar, one per layer, each labelled with the expected colour">
+<h3>CoreS3</h3><img class="wide" src="img/camera/cores3-colours.jpg" width="1440" height="840" loading="lazy" alt="Contact sheet of 26 camera frames of the CoreS3 LED bar, one per layer, each labelled with the expected colour">
+<p>Not covered yet: the Locks page colours (caps orange, num green, scroll blue, and the additive mix when several are on).</p>
+</section>
+
+<section id="setup"><h2>Set-up</h2>
+<h3>What you need</h3>
+<ul>
+<li>An M5Stack Core2 and/or CoreS3, ideally with the M5GO base for the LED bar.</li>
+<li><a href="https://platformio.org/">PlatformIO</a> (the project keeps its own copy under <code>.pio/</code>; see <code>docs/wiki/tooling.md</code>).</li>
+<li><a href="https://www.jbang.dev/">JBang</a> for the Java tools (header generator, serial tests, camera tool); it downloads the right JDK itself.</li>
+</ul>
+<h3>Build and flash</h3>
+<pre>git clone https://github.com/nicenemo/Nachtgespenst.git
+cd Nachtgespenst
+pio run -e core2                   # about 12 minutes
+pio run -e core2 -t upload         # Core2: resets itself into the bootloader
+pio run -e cores3
+stty -F /dev/ttyACM0 1200          # CoreS3: ROM download mode, then wait 3 s
+pio run -e cores3 -t nobuild -t upload --upload-port /dev/ttyACM0</pre>
+<p>Pair the board from the host's Bluetooth settings; it advertises as <code>Nachtgespenst-C2</code> or <code>Nachtgespenst-S3</code>. Over USB the CoreS3 simply appears as a keyboard.</p>
+<h3>Change the keymap</h3>
+<p>Layers live in <code>include/Keymap.h</code> as an array of <code>GridLayer</code> (title, bindings, rows, columns, LED colour). Edit, rebuild, flash.</p>
+<h3>Test it</h3>
+<pre>jbang tools/SerialTest.java --board S3    # 29 checks, including USB and BLE routing
+jbang tools/SerialTest.java --board C2    # 11 checks
+jbang tools/SerialTest.java --shot shots  # screenshots of every page
+jbang tools/LedCam.java colours --port /dev/ttyUSB0 --out cam --crop x0,y0,x1,y1</pre>
+<h3>Regenerate the HID vocabulary</h3>
+<pre>cd tools
+jbang FetchHut.jsh          # only when updating to a newer USB HID Usage Tables PDF
+jbang GenerateHeaders.jsh
+cp -r include/. ../include/</pre>
+<p>Full instructions, the sandbox set-up used for Claude Code and the decision records are in the <a href="https://github.com/nicenemo/Nachtgespenst/tree/develop/docs">docs folder</a>.</p>
+</section>
+
+<section id="code"><h2>How it works</h2>
+<ul>
+<li><b>Generated HID vocabulary.</b> <code>tools/GenerateHeaders.jsh</code> reads the USB HID Usage Tables (as JSON extracted from the official PDF) and renders FreeMarker templates into usage constants and shortcut macros such as <code>kp_A</code> and <code>cp_MUTE</code>. Nothing in <code>include/hid_*</code> is edited by hand.</li>
+<li><b>Binding model.</b> A <code>Binding</code> is a HID page, a usage, a modifier mask and a label. Chord helpers (<code>lcs</code>, <code>lmeh</code>, <code>lhyp</code>) wrap macros the way ZMK does.</li>
+<li><b>Keymap and UI.</b> <code>Keymap.h</code> holds the layers; <code>src/ui.cpp</code> draws the current layer, handles touch, mirrors the host LEDs on the bar and dims the backlight after a minute of idleness.</li>
+<li><b>HID transports.</b> <code>HIDManager</code> owns BLE (NimBLE) and, on the CoreS3, USB (TinyUSB). Reports go through a non-blocking press queue with release retry; <code>PREFER</code> and <code>ONLY</code> commands choose which transport receives them.</li>
+<li><b>Serial protocol.</b> <code>PING</code>, <code>INFO</code>, <code>STATE?</code>, <code>LAYER</code>, <code>TAP</code>, <code>KEY</code>, <code>SHOT</code>, <code>PREFER</code>, <code>ONLY</code>: enough for automated tests and for the screenshots above.</li>
+</ul></section>
+
+<section id="history"><h2>Since Claude joined</h2>
+<p>The first firmware was written by hand in May 2026. On 12 November 2026 the project started working with Claude Code, with a project guide (<code>CLAUDE.md</code>), an overnight plan, and tests that drive the real hardware. The big steps since then:</p>
+<ul class="timeline">
+<li><b>10 to 14 May: by hand</b>Core2 BLE macro pad, layers and grids, LED bar, and the generator that turns the USB HID specification into C++ headers with a ZMK-style keymap.</li>
+<li><b>12 November: a new interface and a second board</b>LVGL 9 interface with icons and a Locks page; CoreS3 port; USB HID next to BLE; LED bar feedback; the serial protocol, <code>SerialTest</code> and the first screenshots.</li>
+<li><b>13 November: hardening</b>A review of the HID code led to a non-blocking press queue with release retry, a proper USB-mounted check, BLE security without MITM, atomic LED state and a loop that sleeps instead of spinning.</li>
+<li><b>17 November: project hygiene</b>README, licence and third-party notices; decision records for the Claude Code sandbox, a project-local PlatformIO and pinned JDKs; the HUT download split into its own script.</li>
+<li><b>17 and 18 November: routing, LED bars and camera tests</b>Selectable USB/BLE routing with tests for every mode; the CoreS3 LED bar found and verified with a webcam; <code>LedCam</code> and the pin finder; documentation and code comments in British English; this page, a changelog, and the classic interface branch.</li>
+</ul>
+<p>The complete list is in the <a href="https://github.com/nicenemo/Nachtgespenst/blob/develop/CHANGELOG.md">changelog</a>.</p>
+</section>
+
+</main>
+<footer><div class="wrap">
+<p><b>The name.</b> Nachtgespenst is inspired by Ben Aaronovitch's <em>Rivers of London</em> series, in particular the novella <em>The October Man</em>, which is set in Germany. The German word for a night ghost suits a small device that sits quietly beside the keyboard and does its work on command.</p>
+<p>MIT licence. Third-party components are listed in the <a href="https://github.com/nicenemo/Nachtgespenst/blob/develop/THIRD-PARTY-NOTICES.md">third-party notices</a>.</p>
+</div></footer>
+</body>
+</html>
