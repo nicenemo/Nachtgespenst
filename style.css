@@ -80,3 +80,14 @@ nav.jump a { min-width: 2.3em; padding: 3px 8px; text-align: center; border: 1px
 @media (max-width: 560px) {
   nav.sitenav a { padding: 6px 9px; font-size: .88rem; }
 }
+/* groups of pages: a tab bar under the banner and thumbnail grids on the overview pages */
+nav.tabs { background: var(--panel); border-bottom: 1px solid var(--line); }
+nav.tabs .wrap { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 10px; padding-bottom: 10px; }
+nav.tabs a { padding: 5px 12px; border: 1px solid var(--line); border-radius: 999px; text-decoration: none; font-size: .92rem; background: var(--bg); }
+nav.tabs a[aria-current="page"] { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 600; }
+nav.tabs a.ext { margin-left: auto; border-style: dashed; }
+.thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; margin: 10px 0 8px; }
+.thumbs a { text-decoration: none; color: var(--text); font-size: .85rem; }
+.thumbs img { width: 100%; height: auto; display: block; border-radius: 6px; border: 1px solid var(--line); background: #000; }
+.thumbs span { display: block; margin-top: 3px; }
+section h2 a { text-decoration: none; color: inherit; }
