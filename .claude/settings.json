@@ -1,48 +1,66 @@
 {
   "permissions": {
-    "additionalDirectories": ["/tmp"],
-    "blockReadsOutsideWorkingDirectories": true,
-    "blockWritesOutsideWorkingDirectories": true
+    "additionalDirectories": [
+      "/tmp"
+    ],
+    "blockReadsOutsideWorkingDirectories": false,
+    "blockWritesOutsideWorkingDirectories": false
   },
   "sandbox": {
     "enabled": true,
     "filesystem": {
-      "denyRead": ["~/"],
+      "denyRead": [
+        "~/"
+      ],
       "allowRead": [
         ".",
-        "~/.platformio",
+        "~/jbinst",
         "~/.jbang",
         "~/.m2",
+        "~/.sdkman",
         "~/.gitconfig",
         "~/.config/git"
       ],
       "allowWrite": [
         ".",
         "/tmp",
-        "~/.platformio",
         "~/.jbang",
         "~/.m2"
       ]
     },
     "network": {
       "allowedDomains": [
+        "dl.registry.platformio.org",
         "registry.platformio.org",
         "api.registry.platformio.org",
-        "dl.platformio.org",
         "github.com",
+        "api.github.com",
         "*.githubusercontent.com",
         "pypi.org",
         "files.pythonhosted.org",
         "repo.maven.apache.org",
-        "jitpack.io"
+        "repo1.maven.org",
+        "jitpack.io",
+        "api.foojay.io",
+        "www.usb.org"
       ]
     },
     "excludedCommands": [
-      "pio run -t upload*",
-      "pio run -e * -t upload*",
-      "pio device *",
-      "pio test *",
-      "esptool*"
+      "*pio run*upload*",
+      "*pio device*",
+      "*pio test*",
+      "*esptool*",
+      "*jbang*SerialTest*",
+      "bluetoothctl list*",
+      "bluetoothctl show*",
+      "bluetoothctl devices*",
+      "bluetoothctl paired-devices*",
+      "bluetoothctl info*",
+      "gh *",
+      "git push*",
+      "git pull*",
+      "git fetch*",
+      "git ls-remote*"
     ]
   }
 }

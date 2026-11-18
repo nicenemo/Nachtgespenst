@@ -1,23 +1,45 @@
+///usr/bin/env jbang "$0" "$@" ; exit $?
 //DEPS com.fasterxml.jackson.core:jackson-databind:2.18.2
 //DEPS org.freemarker:freemarker:2.3.33
-//DEPS org.apache.pdfbox:pdfbox:2.0.32
-//JAVA 26
+//JAVA 27
 //JBANG_JSHELL_OPTIONS --enable-preview
 
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.annotation.*;
-import org.apache.pdfbox.pdmodel.*;
-import org.apache.pdfbox.pdmodel.common.filespecification.*;
 import freemarker.template.*;
 import java.nio.file.*;
 import java.io.*;
-import java.net.URL;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.text.Normalizer;
 
+/**
+ * Generates the C++ HID vocabulary headers from the USB HID Usage Tables.
+ *
+ * <p>Reads {@code data/hut.json} (see {@code FetchHut.jsh} for how to obtain it) and
+ * renders the FreeMarker templates in {@code templates/} into {@code include/}:
+ * <ul>
+ *   <li>{@code include/hid_pages/<Page>.h} - per-page namespaces with usage constants</li>
+ *   <li>{@code include/hid_shortcuts/<Page>.h} - shortcut macros such as {@code kp_A}</li>
+ *   <li>{@code include/HID_Types.h}, {@code HID_Shortcuts.h}, {@code HID_Metadata.h},
+ *       {@code Bindings.h} - top-level aggregates</li>
+ * </ul>
+ *
+ * <p>Run from inside {@code tools/} (all paths are relative to the working directory):
+ * <pre>
+ *   jbang GenerateHeaders.jsh
+ *   cp -r include/. ../include/
+ * </pre>
+ * The output lands in {@code tools/include/} (gitignored); the firmware builds from the
+ * checked-in top-level {@code include/}, so the copy step is required.
+ *
+ * <p>The naming rules in {@link Usage#computeCleanName()} must stay consistent with the
+ * identifiers used in {@code include/Keymap.h}.
+ */
+
 // --- DATA CLASSES ---
 
+/** One usage (key, control, ...) within a usage page, as found in {@code hut.json}. */
 class Usage {
     @JsonProperty("Id") public int id;
     @JsonProperty("Name") public String name;
@@ -28,12 +50,27 @@ class Usage {
     public String getName() { return name; }
     public List<String> getKinds() { return kinds; }
 
+    /** @return the usage id as two upper-case hex digits, e.g. {@code 04} */
     public String getIdHex() { return String.format("%02X", id); }
-    
+
+    /**
+     * Name used in templates: the de-duplicated {@link #uniqueName} once the main
+     * routine has assigned one, otherwise the freshly computed clean name.
+     *
+     * @return a valid C++ identifier fragment
+     */
     public String getCleanName() {
         return uniqueName != null ? uniqueName : computeCleanName();
     }
 
+    /**
+     * Turns the spec name into an identifier: strips accents, drops the
+     * {@code Keyboard }/{@code AL }/{@code AC } prefixes, abbreviates {@code Keypad }
+     * and {@code System }, replaces other punctuation with underscores, upper-cases,
+     * and prefixes {@code ID_} when the result is empty or starts with a digit.
+     *
+     * @return the cleaned name, not yet guaranteed unique within its page
+     */
     public String computeCleanName() {
         if (name == null) return "ID_" + id;
         
@@ -59,6 +96,12 @@ class Usage {
         return clean;
     }
 
+    /**
+     * Maps the first usage type listed in the spec to the short code used for
+     * grouping in the page headers (e.g. {@code OOC} for On/Off Control).
+     *
+     * @return the kind code, or {@code OTHER} when none is listed or it is unknown
+     */
     public String getPrimaryKind() {
         if (kinds == null || kinds.isEmpty()) return "OTHER";
         String k = kinds.get(0);
@@ -77,6 +120,7 @@ class Usage {
     }
 }
 
+/** A usage page (keyboard, consumer, ...) and its usages. */
 class Page {
     @JsonProperty("Id") public int id;
     @JsonProperty("Name") public String name;
@@ -88,23 +132,34 @@ class Page {
 
     public String getIdHex() { return String.format("%04X", id); }
 
-    public String getNamespace() { 
-        return name.replaceAll("[^a-zA-Z0-9]+", ""); 
+    /** @return the page name stripped of non-alphanumerics, used as the C++ namespace */
+    public String getNamespace() {
+        return name.replaceAll("[^a-zA-Z0-9]+", "");
     }
 
-    public String getConstantName() { 
+    /** @return the page name as an upper-case, underscore-separated constant name */
+    public String getConstantName() {
         return name.replaceAll("[^a-zA-Z0-9]+", "_").toUpperCase();
     }
 
     public String getFilename() { return getNamespace() + ".h"; }
     
+    /** Final, collision-free prefix assigned by the main routine; {@code null} before that. */
     public String prefixOverride;
 
+    /** @return the shortcut macro / namespace-alias prefix, e.g. {@code kp} */
     public String getMacroPrefix() {
         if (prefixOverride != null) return prefixOverride;
         return computePrefix();
     }
 
+    /**
+     * Default prefix: fixed for the pages used by the keymap ({@code gp} generic desktop,
+     * {@code kp} keyboard, {@code cp} consumer), otherwise the first two letters of the
+     * page name. Uniqueness is enforced later by the main routine.
+     *
+     * @return the preferred prefix
+     */
     public String computePrefix() {
         return switch(id) {
             case 0x01 -> "gp";
@@ -117,12 +172,14 @@ class Page {
         };
     }
 
+    /** @return this page's usages grouped by {@link Usage#getPrimaryKind()} */
     public Map<String, List<Usage>> getGroupedUsages() {
         if (usages == null) return Collections.emptyMap();
         return usages.stream().collect(Collectors.groupingBy(Usage::getPrimaryKind));
     }
 }
 
+/** Root of {@code hut.json}. Unknown properties are ignored. */
 class HutData {
     @JsonProperty("UsagePages") public List<Page> pages;
     public List<Page> getPages() { return pages; }
@@ -130,37 +187,25 @@ class HutData {
 
 // --- MAIN EXECUTION ---
 
+/**
+ * Loads the usage tables, makes names and prefixes unique and C++-safe, then renders
+ * the per-page and aggregate headers.
+ *
+ * @throws Exception if {@code data/hut.json} is missing (run {@code FetchHut.jsh}) or
+ *                   a template cannot be read or rendered
+ */
 public void main() throws Exception {
     Path dataDir = Paths.get("data");
     Path includeDir = Paths.get("include");
     Path jsonPath = dataDir.resolve("hut.json");
-    Path pdfPath = dataDir.resolve("hut_spec.pdf");
-
-    Files.createDirectories(dataDir);
-    Files.createDirectories(includeDir.resolve("hid_pages"));
-    Files.createDirectories(includeDir.resolve("hid_shortcuts"));
 
     if (!Files.exists(jsonPath)) {
-        String pdfUrl = "https://www.usb.org/sites/default/files/hut1_7.pdf";
-        if (!Files.exists(pdfPath)) {
-            System.out.println("Downloading PDF...");
-            try (InputStream in = new URL(pdfUrl).openStream()) {
-                Files.copy(in, pdfPath, StandardCopyOption.REPLACE_EXISTING);
-            }
-        }
-        try (PDDocument doc = PDDocument.load(pdfPath.toFile())) {
-            PDDocumentNameDictionary names = doc.getDocumentCatalog().getNames();
-            Map<String, PDComplexFileSpecification> embeddedFiles = names.getEmbeddedFiles().getNames();
-            for (var entry : embeddedFiles.entrySet()) {
-                if (entry.getKey().toLowerCase().endsWith(".json")) {
-                    try (InputStream is = entry.getValue().getEmbeddedFile().createInputStream()) {
-                        Files.copy(is, jsonPath, StandardCopyOption.REPLACE_EXISTING);
-                        break;
-                    }
-                }
-            }
-        }
+        System.err.println(jsonPath + " not found. Run `jbang FetchHut.jsh` first.");
+        System.exit(1);
     }
+
+    Files.createDirectories(includeDir.resolve("hid_pages"));
+    Files.createDirectories(includeDir.resolve("hid_shortcuts"));
 
     ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     HutData data = mapper.readValue(jsonPath.toFile(), HutData.class);
