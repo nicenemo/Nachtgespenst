@@ -77,7 +77,7 @@ public class Flash {
             Thread.sleep(300);
             port.closePort();                       // dropping DTR at 1200 baud makes the firmware reboot into the bootloader
             Thread.sleep(3000);
-            port = Boards.waitFor(b, 15).orElse(null);
+            port = Boards.waitBoot(b, 15).orElse(null);
             if (port == null) die("the CoreS3 did not come back after the 1200-baud touch (hold the side button ~3 s for download mode)", 1);
         }
 
@@ -88,8 +88,12 @@ public class Flash {
 
         System.out.println("step   : waiting for the board to boot");
         Thread.sleep(3000);
-        port = Boards.waitFor(b, 25).orElse(null);
-        if (port == null) die("the board did not reappear after flashing", 1);
+        port = Boards.waitApp(b, 45).orElse(null);          // the application ID: not the ROM bootloader's (USB enumeration can take 30 s)
+        if (port == null) {
+            port = Boards.waitFor(b, 5).orElse(null);       // any ID: an image with the old USB ID 303a:1001 shows up like that
+            if (port == null) die("the board did not reappear after flashing", 1);
+            System.out.printf("WARNING: the board is up on %04x:%04x, not %s (old firmware, or still in the bootloader)%n", port.getVendorID(), port.getProductID(), b.usbId());
+        }
         Thread.sleep(4000);                         // firmware start + CDC enumeration; a test started earlier loses its first reply
         System.out.println("done   : " + b.env() + " is up on " + Boards.path(port));
     }

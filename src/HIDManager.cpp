@@ -1,6 +1,7 @@
 #include "HIDManager.h"
 #include "HID_Specs.h"
 #include "Lamps.h"
+#include "Config.h"
 #include <M5Unified.h>
 #include <vector>
 #include <atomic>
@@ -170,6 +171,7 @@ namespace HIDManager {
 
         // 4. Device info
         hid->setManufacturer(manufacturer);
+        hid->setPnp(0x02, NG_VID, NG_PID, NG_PNP_VERSION); // mandatory in HID over GATT; without it the host sees 0000:0000
         hid->setHidInfo(0x00, 0x01);
 
         // 5. Report map: keyboard (+LEDs) and consumer control

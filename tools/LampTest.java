@@ -77,7 +77,7 @@ public class LampTest {
         if (sp.isEmpty()) { System.err.println("no " + tag + " board found on USB"); System.exit(2); }
         if (!Boards.usable(sp.get())) { System.err.println(Boards.SANDBOX_HINT); System.exit(2); }
         String node = findHid(usb);
-        if (node == null && !cmds.contains("info")) { System.err.println("no " + (usb ? "USB" : "Bluetooth") + " HID node for Nachtgespenst-" + tag + " (connected and paired? after a descriptor change remove and pair again)"); System.exit(2); }
+        if (node == null && !cmds.contains("info")) { System.err.println("no " + (usb ? "USB" : "Bluetooth") + " HID node for " + tag + " (connected and paired? after a descriptor change remove and pair again)"); System.exit(2); }
 
         try (Ser s = new Ser(sp.get())) {
             Hid h = null;
@@ -121,7 +121,8 @@ public class LampTest {
                     if (l.startsWith("HID_NAME=")) name = l.substring(9);
                 }
                 boolean isUsb = id.startsWith("0003"), isBle = id.startsWith("0005");
-                if (name.contains("Nachtgespenst-" + tag) && (usb ? isUsb : isBle)) {
+                String token = usb ? "NG-" + tag : (tag.equals("S3") ? "-cs3" : "-c2");   // USB product, or the end of the Bluetooth name
+                if (name.contains(token) && (usb ? isUsb : isBle)) {
                     int n = Integer.parseInt(p.getFileName().toString().substring(6));
                     if (n > bestN) { bestN = n; best = "/dev/" + p.getFileName(); }
                 }

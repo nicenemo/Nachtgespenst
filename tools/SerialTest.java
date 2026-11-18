@@ -17,7 +17,7 @@ import javax.imageio.ImageIO;
  * Serial test harness for Nachtgespenst boards (Core2 + CoreS3 only).
  * Usage: jbang tools/SerialTest.java [--board S3|C2] [--shot dir] [--port /dev/ttyX] [--latency]
  * --latency: instead of the functional tests, measure how long a page takes to reach the display (see latency()).
- * Only ports with USB VID:PID 10c4:ea60 (Core2 CP2104) or 303a:1001 (CoreS3) are opened,
+ * Only ports with USB VID:PID 10c4:ea60 (Core2 CP2104) or 1209:0001 (CoreS3; 303a:1001 is the ROM bootloader and the old firmware) are opened,
  * and a board is accepted only if INFO answers with board=C2|S3.
  * Uses the Locks page + Scroll Lock only (harmless on the host).
  * Exit code 0 = all PASS, 1 = failures / no board found.
@@ -90,7 +90,7 @@ public class SerialTest {
 
     static boolean candidate(SerialPort p) {
         int v = p.getVendorID(), id = p.getProductID();
-        return (v == 0x10c4 && id == 0xea60) || (v == 0x303a && id == 0x1001);
+        return (v == 0x10c4 && id == 0xea60) || (v == 0x1209 && id == 0x0001) || (v == 0x303a && id == 0x1001);
     }
 
     /** Find /dev/input/eventN whose name matches (from /proc/bus/input/devices). */
@@ -169,7 +169,7 @@ public class SerialTest {
         }
 
         // KEY on Locks page: Scroll Lock (idx 2) -> host LED must toggle
-        String ev = "S3".equals(tag) ? findEvent(info.get("name") + " Keyboard", true) : null;
+        String ev = "S3".equals(tag) ? findEvent(info.get("name") + " Keyboard", true) : null;   // USB: "<manufacturer> NG-S3 Keyboard"
         Map<String, String> s0 = kv(l.cmd("STATE?", 1500));
         int scroll0 = Integer.parseInt(s0.get("scroll")), presses0 = Integer.parseInt(s0.get("presses"));
         final Link lk = l;
@@ -243,7 +243,7 @@ public class SerialTest {
         String st = l.cmd("PREFER?", 1500);
         Map<String, String> m = st != null && st.startsWith("OK") ? kv(st) : Map.of();
         check(tag, "BLE connected (board reports ble=1)", "1".equals(m.get("ble")), String.valueOf(st));
-        String bleEv = findEvent(info.get("name") + " Keyboard", false), usbEv = findEvent(info.get("name") + " Keyboard", true);
+        String bleEv = findEvent(("S3".equals(tag) ? "-cs3" : "-c2") + " Keyboard", false), usbEv = findEvent(info.get("name") + " Keyboard", true);   // BLE name ends in -cs3 / -c2
         if (bleEv == null || usbEv == null || !"1".equals(m.get("ble")) || !"1".equals(m.get("usb"))) {
             report.add("SKIP [" + tag + "] BLE/USB routing checks (need both host devices and both links up)"); return;
         }
@@ -385,7 +385,7 @@ public class SerialTest {
                 if (!tag.equals("C2") && !tag.equals("S3")) { report.add("SKIP " + p.getSystemPortPath() + ": board=" + tag); continue; }
                 if (only != null && !only.equals(tag)) continue;
                 found++;
-                String exp = tag.equals("S3") ? "Nachtgespenst-S3" : "Nachtgespenst-C2";
+                String exp = tag.equals("S3") ? "NG-S3" : "NG-C2";
                 check(tag, "INFO identity " + p.getSystemPortPath(), exp.equals(info.get("name")), r);
                 if (latency) latency(tag, l, info); else testBoard(tag, l, info, shot);
             } catch (Exception e) {

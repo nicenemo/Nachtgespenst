@@ -11,15 +11,14 @@ The branch `feature/lamparray` turns both boards into a HID **LampArray** device
 - **Bluetooth** asks for a 7.5 to 15 ms connection interval, MTU 247 and 251-byte data packets after connecting.
 
 ## Before the first run
-1. **Pair again.** The HID report map changed, and hosts cache it. Remove both boards on the Linux laptop (`bluetoothctl remove <address>`) and pair them again. The CoreS3 on USB needs no re-pairing.
-2. **hidraw access.** The tool writes reports to `/dev/hidrawN`, which is `root:root 0600` by default. As root add a rule (the first line is USB on the CoreS3, the second any Bluetooth HID device) and reload:
+1. **Pair again.** The HID report map changed, and hosts cache it. Remove both boards on the Linux laptop (`bluetoothctl remove <address>`) and pair them again, and do the same on Windows, Android and the iPhone. The boards are now called `NG-S3` and `NG-C2`. The CoreS3 on USB needs no pairing.
+2. **hidraw access.** The tool writes reports to `/dev/hidrawN`, which is `root:root 0600` by default. One udev rule opens exactly the Nachtgespenst nodes (USB and Bluetooth, matched on the ID 1209:0001, see [ADR 0015](../adr/0015-device-identity-names-and-usb-bluetooth-ids.md)):
 
    ```
    # /etc/udev/rules.d/70-nachtgespenst-hidraw.rules
-   SUBSYSTEM=="hidraw", ATTRS{idVendor}=="303a", ATTRS{idProduct}=="1001", TAG+="uaccess"
-   SUBSYSTEM=="hidraw", KERNELS=="0005:*", TAG+="uaccess"
+   SUBSYSTEM=="hidraw", KERNELS=="000[35]:1209:0001.*", TAG+="uaccess"
    ```
-   `sudo udevadm control --reload && sudo udevadm trigger --subsystem-match=hidraw`, then reconnect the boards. One-off alternative: `sudo setfacl -m u:$USER:rw /dev/hidrawN` for the node `LampTest.java info` reports (the number changes on every reconnect).
+   The owner installs it with the Ansible playbook `udev-setup.yml` (and removes it with `udev-teardown.yml`), kept in the kos project; or by hand with `sudo udevadm control --reload && sudo udevadm trigger --subsystem-match=hidraw`. One-off alternative: `sudo setfacl -m u:$USER:rw /dev/hidrawN` for the node `LampTest.java info` reports.
 3. **Sandbox.** No new entry is needed: `LampTest.java` lives in `tools/`, which the generic `*jbang*tools/*.java*` exclusion covers (hidraw, serial and the camera are invisible inside the sandbox). Run the tool as one plain command.
 
 ## Running it

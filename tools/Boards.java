@@ -17,13 +17,18 @@ import java.util.Optional;
 final class Boards {
     private Boards() {}
 
-    /** A supported board: PlatformIO environment, USB ID, esptool chip name and flash baud rate. */
-    record Board(String tag, String env, int vid, int pid, String chip, int baud) {
+    /**
+     * A supported board: PlatformIO environment, the USB ID of the running application, the USB ID of the ROM bootloader
+     * (the same for the Core2, whose CP2104 bridge never changes), esptool chip name and flash baud rate.
+     */
+    record Board(String tag, String env, int vid, int pid, int bootVid, int bootPid, String chip, int baud) {
         String usbId() { return String.format("%04x:%04x", vid, pid); }
     }
 
-    static final Board C2 = new Board("C2", "core2", 0x10c4, 0xea60, "esp32", 460800);     // CP2104 UART bridge
-    static final Board S3 = new Board("S3", "cores3", 0x303a, 0x1001, "esp32s3", 921600);  // native USB (app and ROM bootloader)
+    static final Board C2 = new Board("C2", "core2", 0x10c4, 0xea60, 0x10c4, 0xea60, "esp32", 460800);     // CP2104 UART bridge
+    // CoreS3 native USB: the firmware uses the pid.codes test ID 1209:0001 (ADR 0015); the ROM bootloader, and firmware
+    // older than 2026-11-18, use Espressif's shared 303a:1001.
+    static final Board S3 = new Board("S3", "cores3", 0x1209, 0x0001, 0x303a, 0x1001, "esp32s3", 921600);
 
     /** Accepts C2, S3, core2 and cores3 in any case. */
     static Board parse(String name) {
@@ -34,19 +39,43 @@ final class Boards {
         }
     }
 
+    /** The board in application mode, or in bootloader mode (and old firmware): any of its USB IDs. */
     static Optional<SerialPort> find(Board b) {
         for (SerialPort p : SerialPort.getCommPorts())
-            if (p.getVendorID() == b.vid() && p.getProductID() == b.pid()) return Optional.of(p);
+            if (p.getVendorID() == b.vid() && p.getProductID() == b.pid() || p.getVendorID() == b.bootVid() && p.getProductID() == b.bootPid())
+                return Optional.of(p);
         return Optional.empty();
     }
 
-    /** Waits until the board shows up as a serial port again (after a flash or a reset). */
+    /** Only the application ID (for the CoreS3: not the ROM bootloader). */
+    static Optional<SerialPort> findApp(Board b) {
+        for (SerialPort p : SerialPort.getCommPorts()) if (p.getVendorID() == b.vid() && p.getProductID() == b.pid()) return Optional.of(p);
+        return Optional.empty();
+    }
+
+    /** Only the bootloader ID. */
+    static Optional<SerialPort> findBoot(Board b) {
+        for (SerialPort p : SerialPort.getCommPorts()) if (p.getVendorID() == b.bootVid() && p.getProductID() == b.bootPid()) return Optional.of(p);
+        return Optional.empty();
+    }
+
+    /** Waits until the board shows up as a serial port again (after a flash or a reset), in any mode. */
     static Optional<SerialPort> waitFor(Board b, int seconds) throws InterruptedException {
         for (int i = 0; i < seconds * 2; i++) {
             Optional<SerialPort> p = find(b);
             if (p.isPresent()) return p;
             Thread.sleep(500);
         }
+        return Optional.empty();
+    }
+
+    static Optional<SerialPort> waitApp(Board b, int seconds) throws InterruptedException {
+        for (int i = 0; i < seconds * 2; i++) { Optional<SerialPort> p = findApp(b); if (p.isPresent()) return p; Thread.sleep(500); }
+        return Optional.empty();
+    }
+
+    static Optional<SerialPort> waitBoot(Board b, int seconds) throws InterruptedException {
+        for (int i = 0; i < seconds * 2; i++) { Optional<SerialPort> p = findBoot(b); if (p.isPresent()) return p; Thread.sleep(500); }
         return Optional.empty();
     }
 

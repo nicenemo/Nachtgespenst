@@ -18,3 +18,4 @@ One file per decision, numbered `NNNN-title.md`, with Status, Context, Decision,
 | [0012](0012-audio-monitor-and-music-visualiser.md) | Audio monitor and music visualiser | Proposed |
 | [0013](0013-hid-features-for-core2-and-cores3.md) | Which parts of the HID specification fit the Core2 and the CoreS3 | Proposed |
 | [0014](0014-settings-page-and-leds-off.md) | A Settings page, switching the LEDs off, and persistent settings | Proposed |
+| [0015](0015-device-identity-names-and-usb-bluetooth-ids.md) | Device identity: short names, own USB ID and a Bluetooth PnP ID | Accepted (test ID) |

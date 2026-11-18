@@ -18,7 +18,7 @@ void setup() {
     Serial.printf("NACHTGESPENST board=%s name=%s fw=%s %s\n", NG_BOARD_ID, K_DEVICE_NAME, __DATE__, __TIME__);
 
     Lamps::begin();   // before HIDManager: BLE and USB handlers may deliver reports as soon as the host connects
-    HIDManager::begin(K_DEVICE_NAME, K_MANUFACTURER);
+    HIDManager::begin(K_BLE_NAME, K_MANUFACTURER);   // the Bluetooth name carries the emoji; USB strings stay ASCII
 
     ui_begin();
 }
