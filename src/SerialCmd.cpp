@@ -32,6 +32,7 @@ void handle(char* line) {
                       __DATE__, __TIME__, (int)M5.Display.width(), (int)M5.Display.height(),
                       (int)ui_page_count(), (int)ui_locks_page());
     else if (!strcmp(cmd, "STATE?") && !a) Serial.printf("OK %s\n", ui_state().c_str());
+    else if (!strcmp(cmd, "PERF?") && !a) Serial.printf("OK %s\n", ui_perf().c_str());
     // PREFER USB: while USB is mounted, keys go over USB only (default).
     // PREFER BLE: while BLE is connected, keys go over BLE only (lets tests exercise BLE with USB attached).
     // PREFER BOTH: keys go to every connected transport.

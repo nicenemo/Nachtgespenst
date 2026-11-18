@@ -316,6 +316,7 @@ public class SerialTest {
         int pages = Integer.parseInt(info.get("pages")), reps = "C2".equals(tag) ? 1 : 3;
         int[] sample = {1, 13, 14, pages - 1};
         List<Double> ping = new ArrayList<>(), readout = new ArrayList<>(), ack = new ArrayList<>(), total = new ArrayList<>();
+        List<Double> build = new ArrayList<>(), render = new ArrayList<>(), flush = new ArrayList<>();
         l.cmd("LAYER 0", 3000); Thread.sleep(600);
         for (int i = 0; i < 20; i++) { long t0 = System.nanoTime(); l.cmd("PING", 1000); ping.add((System.nanoTime() - t0) / 1e6); }
         for (int i = 0; i < 2; i++) readout.add(timeShot(l));
@@ -327,12 +328,35 @@ public class SerialTest {
             double shot = timeShot(l);
             if (a == null || shot < 0) { report.add("FAIL [" + tag + "] latency sample for page " + n); fail++; continue; }
             ack.add(tAck); total.add((System.nanoTime() - t0) / 1e6);
+            String pf = l.cmd("PERF?", 1500);                     // firmware-side split: build / render / flush (LVGL builds only)
+            if (pf != null && pf.startsWith("OK PERF")) {
+                Map<String, String> k = kv(pf);
+                build.add(Double.parseDouble(k.get("build_ms"))); render.add(Double.parseDouble(k.get("render_ms"))); flush.add(Double.parseDouble(k.get("flush_ms")));
+            }
         }
         l.cmd("LAYER 0", 3000);
+        Thread.sleep(800); l.drain();
+        // Fast paging: ten page changes 150 ms apart (about what a finger does on the Core2 buttons), then how long
+        // until the last page is really on screen. LAYER commands queue on the UART, so this is the sum of everything
+        // the firmware does for pages nobody sees.
+        long b0 = System.nanoTime();
+        for (int i = 1; i <= 10; i++) { l.send("LAYER " + i); Thread.sleep(150); }
+        String last = null; long bend = System.currentTimeMillis() + 90000;
+        while (System.currentTimeMillis() < bend) { String x = l.line(1000); if (x != null && x.startsWith("OK LAYER 10")) { last = x; break; } }
+        double bShot = timeShot(l);
+        double burstMs = (System.nanoTime() - b0) / 1e6 - median(readout);
+        l.cmd("LAYER 0", 5000);
+        if (last == null || bShot < 0) { report.add("FAIL [" + tag + "] fast paging burst did not complete"); fail++; }
+        else report.add(String.format("INFO [%s] fast paging: 10 page changes 150 ms apart, last page on screen %.0f ms after the first press (%.0f ms after the last press)",
+                tag, burstMs, burstMs - 1500));
         report.add(String.format("INFO [%s] latency: PING %.0f ms, SHOT read-out %.0f ms, LAYER ack %.0f ms, LAYER+SHOT %.0f ms",
                 tag, median(ping), median(readout), median(ack), median(total)));
         report.add(String.format("INFO [%s] page on screen: %.0f ms (median of %d samples, pages %s)",
                 tag, median(total) - median(readout), total.size(), Arrays.toString(sample)));
+        if (!build.isEmpty())
+            report.add(String.format("INFO [%s] firmware split (PERF?, medians): build %.0f ms, render %.0f ms of which flush to the panel %.0f ms",
+                    tag, median(build), median(render), median(flush)));
+        else report.add("INFO [" + tag + "] PERF? not available on this firmware");
     }
 
     public static void main(String[] args) throws Exception {

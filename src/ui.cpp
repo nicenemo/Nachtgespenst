@@ -47,6 +47,10 @@ int g_injX = 0, g_injY = 0;
 uint32_t g_injUntil = 0;
 
 CRGB g_leds[LED_COUNT];
+
+// Timing for PERF? (microseconds). Build = last buildPage(); render and flush are accumulated since that build
+// (render = time inside lv_timer_handler/lv_refr_now that actually drew strips, flush = the part spent in pushImage).
+uint32_t g_perfBuildUs = 0, g_perfRenderUs = 0, g_perfFlushUs = 0, g_perfStrips = 0;
 uint8_t g_dispBuf[2][320 * 24 * 2] __attribute__((aligned(4)));
 
 lv_color_t c565(uint16_t c) {
@@ -55,10 +59,13 @@ lv_color_t c565(uint16_t c) {
 
 // ---------- display / input ----------
 void flushCb(lv_display_t* disp, const lv_area_t* a, uint8_t* px) {
+    uint32_t t0 = micros();
     int w = a->x2 - a->x1 + 1, h = a->y2 - a->y1 + 1;
     M5.Display.startWrite();
     M5.Display.pushImage(a->x1, a->y1, w, h, (const lgfx::rgb565_t*)px);
     M5.Display.endWrite();
+    g_perfFlushUs += micros() - t0;
+    g_perfStrips++;
     lv_display_flush_ready(disp);
 }
 
@@ -189,6 +196,8 @@ void addTileContent(lv_obj_t* t, const char* layer, const Binding& b, int cw, in
 }
 
 void buildPage() {
+    uint32_t perfT0 = micros();
+    g_perfRenderUs = 0; g_perfFlushUs = 0; g_perfStrips = 0;
     lv_obj_clean(g_body);
     for (int i = 0; i < 3; i++) { g_lockTiles[i] = nullptr; g_lockState[i] = nullptr; }
     int W = M5.Display.width(), H = M5.Display.height() - HEADER_H;
@@ -239,6 +248,7 @@ void buildPage() {
     lv_obj_add_flag(g_pageLbl, LV_OBJ_FLAG_HIDDEN);
 #endif
     g_ledDirty = true;
+    g_perfBuildUs = micros() - perfT0;
 }
 
 #if !NG_HAS_BTNS
@@ -383,9 +393,18 @@ String ui_state() {
     return String(b);
 }
 
+String ui_perf() {
+    char b[160];
+    snprintf(b, sizeof(b), "PERF build_ms=%.1f render_ms=%.1f flush_ms=%.1f strips=%lu page=%d",
+             g_perfBuildUs / 1000.0, g_perfRenderUs / 1000.0, g_perfFlushUs / 1000.0, (unsigned long)g_perfStrips, g_page);
+    return String(b);
+}
+
 void ui_screenshot(Stream& out) {
     int W = M5.Display.width(), H = M5.Display.height();
+    uint32_t perfT0 = micros(), perfStrips0 = g_perfStrips;
     lv_refr_now(nullptr);
+    if (g_perfStrips != perfStrips0) g_perfRenderUs += micros() - perfT0;   // the SHOT forced a render: count it
     out.printf("SHOT %d %d\n", W, H);
     static uint8_t row[320 * 3];
     for (int y = 0; y < H; y++) {
@@ -424,6 +443,8 @@ uint32_t ui_loop() {
         if (g_page == LAYER_COUNT) refreshLocks();
         updateLeds();
     }
+    uint32_t perfT0 = micros(), perfStrips0 = g_perfStrips;
     uint32_t next = lv_timer_handler();
+    if (g_perfStrips != perfStrips0) g_perfRenderUs += micros() - perfT0;
     return next < 1 ? 1 : (next > 10 ? 10 : next);
 }
