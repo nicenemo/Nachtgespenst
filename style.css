@@ -1,0 +1,59 @@
+:root {
+  color-scheme: light dark;
+  --bg: #f6f7fb; --panel: #ffffff; --text: #1b2030; --muted: #5a6478; --line: #d9deea;
+  --accent: #3a56d4; --accent-text: #ffffff; --code: #eef1f8;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #0b0e14; --panel: #151a26; --text: #e6e9f0; --muted: #9aa4ba; --line: #2a3142;
+          --accent: #8ea2ff; --accent-text: #0b0e14; --code: #1d2434; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text);
+       font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+a { color: var(--accent); }
+.wrap { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
+/* the hero is a night banner that runs the full width, in both colour schemes (the sky of the picture the ghost comes from) */
+header.hero { padding: 56px 0 36px; color: #e6e9f0; background: #0b0e1c url(hero-bg.svg) center / cover no-repeat; border-bottom: 1px solid #2a3142; }
+header.hero.compact { padding: 28px 0 20px; }
+.hero h1 { color: #f4f5fb; text-shadow: 0 2px 14px rgba(0, 0, 0, .65); }
+.hero .tag { color: #cfd6ea; text-shadow: 0 1px 10px rgba(0, 0, 0, .7); }
+.hero code { background: rgba(255, 255, 255, .14); color: #f0f2fb; border-radius: 4px; padding: 1px 5px; }
+.hero a:not([class]) { color: #d3dbff; }
+.hero .btns a { background: #8ea2ff; color: #0b0e14; }
+.hero .btns a.alt { background: rgba(11, 14, 28, .55); color: #d3dbff; border: 1px solid #8ea2ff; }
+h1 { font-size: clamp(2rem, 5vw, 3.2rem); margin: 0 0 8px; letter-spacing: -0.02em; display: flex; align-items: center; gap: .4em; }
+/* the logo must override ".hero img" (full-width banner with margin and border) below */
+.hero h1 .logo { width: 1.3em; height: 1.3em; max-height: none; margin: 0; border: 0; border-radius: 22%; object-fit: contain; display: block; flex: none; }
+.tag { font-size: 1.2rem; color: var(--muted); max-width: 46rem; margin: 0 0 20px; }
+.btns a { display: inline-block; margin: 0 8px 8px 0; padding: 8px 16px; border-radius: 8px; text-decoration: none;
+          background: var(--accent); color: var(--accent-text); font-weight: 600; }
+.btns a.alt { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+.hero-photo img { width: 100%; max-height: 380px; object-fit: cover; border-radius: 12px; margin-top: 20px; display: block; border: 1px solid var(--line); }
+nav.toc { padding: 12px 0; border-bottom: 1px solid var(--line); font-size: .95rem; }
+nav.toc a { margin-right: 14px; white-space: nowrap; }
+section { padding: 36px 0 8px; }
+h2 { font-size: 1.7rem; margin: 0 0 12px; }
+h3 { font-size: 1.15rem; margin: 0 0 6px; }
+h3 small { color: var(--muted); font-weight: 400; margin-left: 6px; }
+.num { display: inline-block; min-width: 1.8em; padding: 0 6px; border-radius: 6px; background: var(--accent); color: var(--accent-text); text-align: center; font-size: .9rem; }
+p, li { max-width: 52rem; }
+code, pre { font: .9em/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--code); border-radius: 6px; }
+code { padding: 1px 5px; }
+pre { padding: 12px 14px; overflow-x: auto; max-width: 52rem; }
+table { border-collapse: collapse; width: 100%; max-width: 52rem; background: var(--panel); }
+th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: var(--code); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 4px 18px 14px; }
+article.page { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px 18px; margin: 0 0 18px; }
+.shots { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; margin-top: 10px; }
+figure { margin: 0; }
+figure img { width: 100%; height: auto; display: block; border-radius: 6px; border: 1px solid var(--line); background: #000; }
+figcaption { font-size: .85rem; color: var(--muted); margin-top: 4px; }
+img.wide { width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); display: block; }
+.note { color: var(--muted); font-style: italic; }
+.cols + h3 { margin-top: 28px; }
+ul.timeline { list-style: none; padding: 0; border-left: 3px solid var(--accent); margin-left: 6px; }
+ul.timeline li { margin: 0 0 14px; padding-left: 16px; }
+ul.timeline b { display: block; }
+footer { margin-top: 48px; padding: 24px 0 40px; border-top: 1px solid var(--line); color: var(--muted); font-size: .95rem; }
