@@ -116,7 +116,7 @@ namespace HID {
             0x15, 0x00,         //   Logical Minimum (0)
             0x25, 0x01,         //   Logical Maximum (1)
             0x75, 0x01,         //   Report Size (1 bit)
-            0x95, 0x03,         //   Report Count (3 functies)
+            0x95, 0x03,         //   Report Count (3 functions)
             0x81, 0x02,         //   Input (Data, Variable, Absolute)
             0x95, 0x01,         //   Report Count (1)
             0x75, 0x05,         //   Report Size (5 bits)

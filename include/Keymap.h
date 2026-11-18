@@ -29,7 +29,7 @@ const GridLayer LAYERS[] = {
         4, 3, LAYER_COLORS[1]
     },
 
-    // 3. Edit & Navigatie (5x3)
+    // 3. Edit & Navigation (5x3)
     {
         "Edit/Nav",
         (const Binding[]){
