@@ -14,7 +14,8 @@ import javax.imageio.ImageIO;
 
 /**
  * Serial test harness for Nachtgespenst boards (Core2 + CoreS3 only).
- * Usage: jbang tools/SerialTest.java [--board S3|C2] [--shot dir] [--port /dev/ttyX]
+ * Usage: jbang tools/SerialTest.java [--board S3|C2] [--shot dir] [--port /dev/ttyX] [--latency]
+ * --latency: instead of the functional tests, measure how long a page takes to reach the display (see latency()).
  * Only ports with USB VID:PID 10c4:ea60 (Core2 CP2104) or 303a:1001 (CoreS3) are opened,
  * and a board is accepted only if INFO answers with board=C2|S3.
  * Uses the Locks page + Scroll Lock only (harmless on the host).
@@ -281,13 +282,66 @@ public class SerialTest {
         check(tag, "SHOT saved", Files.size(f) > 500, f.toString());
     }
 
+    /** Milliseconds for one SHOT round trip (header + w*h*3 bytes + END), or -1 on failure. */
+    static double timeShot(Link l) throws Exception {
+        l.drain();
+        long t0 = System.nanoTime();
+        l.send("SHOT");
+        String hdr = null; long end = System.currentTimeMillis() + 5000;
+        while (System.currentTimeMillis() < end) {
+            String s = l.line(1000);
+            if (s != null && s.startsWith("OK SHOT")) { hdr = s; break; }
+        }
+        if (hdr == null) return -1;
+        String[] t = hdr.split("\\s+");
+        byte[] px = l.readBytes(Integer.parseInt(t[2]) * Integer.parseInt(t[3]) * 3, 60000);
+        double ms = (System.nanoTime() - t0) / 1e6;
+        l.drain();
+        return px == null ? -1 : ms;
+    }
+
+    static double median(List<Double> v) {
+        List<Double> s = new ArrayList<>(v); Collections.sort(s);
+        return s.isEmpty() ? Double.NaN : s.get(s.size() / 2);
+    }
+
+    /**
+     * Page-switch latency. A page is "on the display" when the framebuffer shows it, which LVGL only guarantees after
+     * a render: it answers LAYER before it has drawn anything. So the time is (LAYER + SHOT) minus a plain SHOT
+     * (the SHOT also forces the render). Samples a sparse, two dense and the Locks page; one repetition on the slow
+     * Core2 UART (a SHOT takes about 20 s there), three on the S3.
+     */
+    static void latency(String tag, Link l, Map<String, String> info) throws Exception {
+        int pages = Integer.parseInt(info.get("pages")), reps = "C2".equals(tag) ? 1 : 3;
+        int[] sample = {1, 13, 14, pages - 1};
+        List<Double> ping = new ArrayList<>(), readout = new ArrayList<>(), ack = new ArrayList<>(), total = new ArrayList<>();
+        l.cmd("LAYER 0", 3000); Thread.sleep(600);
+        for (int i = 0; i < 20; i++) { long t0 = System.nanoTime(); l.cmd("PING", 1000); ping.add((System.nanoTime() - t0) / 1e6); }
+        for (int i = 0; i < 2; i++) readout.add(timeShot(l));
+        for (int r = 0; r < reps; r++) for (int n : sample) {
+            l.drain();
+            long t0 = System.nanoTime();
+            String a = l.cmd("LAYER " + n, 5000);
+            double tAck = (System.nanoTime() - t0) / 1e6;
+            double shot = timeShot(l);
+            if (a == null || shot < 0) { report.add("FAIL [" + tag + "] latency sample for page " + n); fail++; continue; }
+            ack.add(tAck); total.add((System.nanoTime() - t0) / 1e6);
+        }
+        l.cmd("LAYER 0", 3000);
+        report.add(String.format("INFO [%s] latency: PING %.0f ms, SHOT read-out %.0f ms, LAYER ack %.0f ms, LAYER+SHOT %.0f ms",
+                tag, median(ping), median(readout), median(ack), median(total)));
+        report.add(String.format("INFO [%s] page on screen: %.0f ms (median of %d samples, pages %s)",
+                tag, median(total) - median(readout), total.size(), Arrays.toString(sample)));
+    }
+
     public static void main(String[] args) throws Exception {
-        String only = null, forcePort = null; Path shot = null;
+        String only = null, forcePort = null; Path shot = null; boolean latency = false;
         for (int i = 0; i < args.length; i++) {
             switch (args[i]) {
                 case "--board": only = args[++i].toUpperCase(); break;
                 case "--shot": shot = Path.of(args[++i]); break;
                 case "--port": forcePort = args[++i]; break;
+                case "--latency": latency = true; break;
                 default: System.err.println("unknown arg " + args[i]); System.exit(2);
             }
         }
@@ -308,7 +362,7 @@ public class SerialTest {
                 found++;
                 String exp = tag.equals("S3") ? "Nachtgespenst-S3" : "Nachtgespenst-C2";
                 check(tag, "INFO identity " + p.getSystemPortPath(), exp.equals(info.get("name")), r);
-                testBoard(tag, l, info, shot);
+                if (latency) latency(tag, l, info); else testBoard(tag, l, info, shot);
             } catch (Exception e) {
                 fail++; report.add("FAIL exception on " + p.getSystemPortPath() + ": " + e);
             }
