@@ -5,6 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Nachtgespenst</title>
 <meta name="description" content="Nachtgespenst: a Bluetooth LE and USB HID macro pad for the M5Stack Core2 and CoreS3, with screenshots of every page, camera tests of the LED bars and the project history.">
+<link rel="canonical" href="https://hanskruse.eu/nachtgespenst/">
+<meta name="theme-color" content="#0b0e14" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f6f7fb" media="(prefers-color-scheme: light)">
+<!-- icons: the ICO for old browsers and tools, the SVG for modern ones, PNGs for iOS, Android and Windows tiles -->
+<link rel="icon" href="favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" href="favicon.svg" type="image/svg+xml" sizes="any">
+<link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
+<link rel="mask-icon" href="safari-pinned-tab.svg" color="#8ea2ff">
+<link rel="manifest" href="site.webmanifest">
+<meta name="msapplication-config" content="browserconfig.xml">
+<meta name="msapplication-TileColor" content="#0b0e14">
+<!-- link previews -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Nachtgespenst">
+<meta property="og:description" content="A Bluetooth LE and USB HID macro pad for the M5Stack Core2 and CoreS3.">
+<meta property="og:url" content="https://hanskruse.eu/nachtgespenst/">
+<meta property="og:image" content="https://hanskruse.eu/nachtgespenst/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="A ghost with its hands on its cheeks, screaming under a crescent moon">
+<meta name="twitter:card" content="summary_large_image">
 <style>
 :root {
   color-scheme: light dark;
@@ -21,7 +42,8 @@ body { margin: 0; background: var(--bg); color: var(--text);
 a { color: var(--accent); }
 .wrap { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
 header.hero { padding: 48px 0 32px; border-bottom: 1px solid var(--line); }
-h1 { font-size: clamp(2rem, 5vw, 3.2rem); margin: 0 0 8px; letter-spacing: -0.02em; }
+h1 { font-size: clamp(2rem, 5vw, 3.2rem); margin: 0 0 8px; letter-spacing: -0.02em; display: flex; align-items: center; gap: .4em; }
+h1 .logo { width: 1.1em; height: 1.1em; border-radius: 22%; flex: none; }
 .tag { font-size: 1.2rem; color: var(--muted); max-width: 46rem; margin: 0 0 20px; }
 .btns a { display: inline-block; margin: 0 8px 8px 0; padding: 8px 16px; border-radius: 8px; text-decoration: none;
           background: var(--accent); color: var(--accent-text); font-weight: 600; }
@@ -59,7 +81,7 @@ footer { margin-top: 48px; padding: 24px 0 40px; border-top: 1px solid var(--lin
 </head>
 <body>
 <header class="hero"><div class="wrap">
-<h1>Nachtgespenst</h1>
+<h1><img class="logo" src="favicon.svg" width="56" height="56" alt="">Nachtgespenst</h1>
 <p class="tag">A night ghost for your keyboard: a Bluetooth LE and USB macro pad built on the M5Stack Core2 and CoreS3. Tap a tile on the touchscreen and the matching key, chord or media command arrives on your computer.</p>
 <p class="btns"><a href="https://github.com/nicenemo/nachtgespenst">Source on GitHub</a><a class="alt" href="https://github.com/nicenemo/nachtgespenst/blob/develop/CHANGELOG.md">Changelog</a><a class="alt" href="#setup">Set it up</a></p>
 <img src="img/camera/both-boards.jpg" width="1280" height="720" alt="The Core2 on the left and the CoreS3 on the right in a dark room, both with their LED bars lit blue">
