@@ -4,9 +4,11 @@ Firmware for the M5Stack Core2 and CoreS3 that turns the touchscreen into a
 Bluetooth LE (and, on the CoreS3, USB) HID macro pad. Each *layer* shows a grid
 of keys on the display; tapping a tile sends the matching HID report to the host.
 
+> This is the `feature/classic-ui` branch: the same firmware as `develop`, but without LVGL. The LVGL interface lives on `develop` and `main`.
+
 ## Features
 
-- Touchscreen UI built with LVGL 9: one tile grid per layer, plus a Locks page
+- Touchscreen UI drawn directly onto the display (classic look, no LVGL): one tile grid per layer, plus a Locks page; the CoreS3 gets a bottom bar for previous / Locks / next
 - Keyboard and consumer-control bindings, including modifier chords
 - BLE HID via NimBLE-Arduino; USB HID alongside BLE on the CoreS3
 - Status LED feedback (FastLED) and backlight idle dimming

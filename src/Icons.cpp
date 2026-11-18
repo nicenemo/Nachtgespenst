@@ -4,18 +4,6 @@
 #include "Keymap.h"
 #include "IconCodes.h"
 
-extern "C" const uint8_t ng_icon_ttf[];
-extern "C" const size_t ng_icon_ttf_len;
-
-static lv_font_t* g_if[3];
-
-void icons_init() {
-    static const int px[3] = {20, 28, 36};
-    for (int i = 0; i < 3; i++) g_if[i] = lv_tiny_ttf_create_data(ng_icon_ttf, ng_icon_ttf_len, px[i]);
-}
-
-const lv_font_t* icons_font(int px) { return px <= 20 ? g_if[0] : px <= 28 ? g_if[1] : g_if[2]; }
-
 namespace {
 // Modifier masks, folded so that left and right variants are the same (bit0 Ctrl, 1 Shift, 2 Alt, 3 Win).
 constexpr uint8_t CT = 1, SH = 2, AL = 4, GU = 8, HYP = 15, MEH = 7;

@@ -14,6 +14,7 @@ All notable changes to Nachtgespenst. The project has no tagged releases yet, so
 - This changelog.
 
 ### Changed
+- **Branch `feature/classic-ui`:** LVGL and the icon font are removed; the screen is drawn directly with plain tiles, text labels and arrow shapes, with a bottom navigation bar on the CoreS3. Same `ui.h` API, so the serial protocol and `SerialTest` are unchanged.
 - `SerialTest` finds the USB and the Bluetooth input device of a board separately (by `Phys`, not by name) and checks every routing mode against both.
 - All documentation is in British English; the Dutch code comments and serial log strings were translated to English.
 - `GenerateHeaders.jsh` runs on Java 27 and no longer downloads the specification itself (that moved to `FetchHut.jsh`).
