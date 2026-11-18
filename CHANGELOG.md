@@ -12,7 +12,7 @@ All notable changes to Nachtgespenst. The project has no tagged releases yet, so
 - **Project site** (`site/index.html`, published with GitHub Pages) with screenshots of every page on both boards, the camera test results and the project setup.
 - Architecture decision records for the Claude Code sandbox, the project-local PlatformIO and the pinned JDK; a tooling wiki; the sandbox test plan; `tools/FetchHut.jsh` to download the USB HID Usage Tables.
 - This changelog.
-- **Wrapper scripts** `tools/flash.sh` (find the board by USB ID, CoreS3 1200-baud touch, flash, wait) and `tools/serial.sh`, with the shared `tools/lib-ports.sh`; `SerialTest --latency` measures how long a page takes to reach the display.
+- **Board tools in JBang:** `tools/Flash.java` (find the board by USB ID, CoreS3 1200-baud touch, flash, wait for the board) and `tools/Serial.java` (send text commands), with the shared `tools/Boards.java`; `SerialTest --latency` measures how long a page takes to reach the display. They replace first versions written as bash scripts ([ADR 0008](adr/0008-jbang-for-project-tooling.md)).
 - **Knowledge for Claude Code:** `.claude/rules`, `.claude/skills` (`flash-and-test`, `camera-led-test`, `publish-site`), `.claude/agents` (`hardware-tester`, `firmware-builder`), wiki pages (`claude-code-workflow`, `hardware-testing`, `troubleshooting`) and ADRs 0004 to 0007.
 
 ### Changed

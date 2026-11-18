@@ -8,7 +8,7 @@ Symptom, cause, fix. Every row happened at least once. Background: [claude-code-
 |---|---|---|
 | `SKIP /dev/ttyACM0: cannot open`, `FAIL no Nachtgespenst board found` | the call ran inside the sandbox | run the tool as a single plain command that matches `excludedCommands` (no `cd`, pipe, `;`, `&&`, `VAR=x`) |
 | `Host key verification failed` on `git push` | same: `~/.ssh` is hidden | plain `git push`, no `\| tail` |
-| `esptool: could not open port ... No such file or directory` although `ls /sys/class/tty` lists it | same | `tools/flash.sh` (it says so explicitly) |
+| `esptool: could not open port ... No such file or directory` although `ls /sys/class/tty` lists it | same | `jbang tools/Flash.java` (it says so explicitly and exits with code 3) |
 | `pio device list` prints nothing | env prefix (`PLATFORMIO_CORE_DIR=...`) kept the call sandboxed | drop the prefix; `core_dir` is set in `platformio.ini` |
 | `Failed to connect to system D-Bus` from `bluetoothctl` | sandbox | use an allowed read-only subcommand as a plain command |
 | `curl` returns `000` / connection refused | host not on the network allowlist | use `WebFetch` for public pages, or a single unsandboxed `curl` for your own site |
@@ -22,10 +22,10 @@ Symptom, cause, fix. Every row happened at least once. Background: [claude-code-
 |---|---|---|
 | `*** [src/HIDManager.cpp] .../.sconsign314.dblite: No such file or directory` | `platformio.ini` edited, or a second build started, while a build ran | wait for the running build; one build at a time; rebuild |
 | build killed (`exit 137`) during `Scanning dependencies...` | a foreground call hit its timeout | start builds with `run_in_background` |
-| `Please specify upload_port` or `Looking for upload port...` fails | udev rules missing, port hidden | `tools/flash.sh`, or `--upload-port` with an unsandboxed call |
-| a plain `pio run -t upload` on the CoreS3: `Failed to connect to ESP32-S3: No serial data received` | TinyUSB cannot auto-reset | `tools/flash.sh cores3` (1200-baud touch first) |
-| a build takes 10 minutes again after `pio run -t upload` | `upload` rebuilds | add `-t nobuild` to flash an existing image (or use `tools/flash.sh`) |
-| the wrong UI or firmware appears after flashing | `.pio/build/<env>/firmware.bin` came from another branch | `tools/flash.sh` prints branch and warns about stale images; check `INFO fw=` |
+| `Please specify upload_port` or `Looking for upload port...` fails | udev rules missing, port hidden | `jbang tools/Flash.java`, or `--upload-port` with an unsandboxed call |
+| a plain `pio run -t upload` on the CoreS3: `Failed to connect to ESP32-S3: No serial data received` | TinyUSB cannot auto-reset | `jbang tools/Flash.java cores3` (1200-baud touch first) |
+| a build takes 10 minutes again after `pio run -t upload` | `upload` rebuilds | add `-t nobuild` to flash an existing image (or use `jbang tools/Flash.java`) |
+| the wrong UI or firmware appears after flashing | `.pio/build/<env>/firmware.bin` came from another branch | `jbang tools/Flash.java` prints branch and warns about stale images; check `INFO fw=` |
 | old commit does not build (`...rest of setup() and loop() remain the same ...`) | that commit was a work in progress | use the last working commit (`16fbf03` for the pre-code-generation firmware) |
 | `RAM: ... of 327680 bytes` on the CoreS3 | PlatformIO counts internal RAM only; both boards have `BOARD_HAS_PSRAM` | do not treat it as the whole memory |
 
@@ -35,9 +35,9 @@ Symptom, cause, fix. Every row happened at least once. Background: [claude-code-
 |---|---|---|
 | no `/dev/ttyACM*` / `/dev/ttyUSB*` at all | kernel modules not loaded after a kernel update | reboot; `lsmod \| grep -E "cdc_acm\|cp210x"` |
 | first command after opening the CoreS3 port gets no reply | opening the port reset the chip | wait 1.5 s after opening, retry (`LedCam` does) |
-| the CoreS3 shows "USB JTAG/serial debug unit" but is silent | it is in the ROM bootloader, not running the app | reflash with `tools/flash.sh` |
+| the CoreS3 shows "USB JTAG/serial debug unit" but is silent | it is in the ROM bootloader, not running the app | reflash with `jbang tools/Flash.java` |
 | evdev check fails with 0 events on the S3 | the test read the Bluetooth device while keys go over USB (or the reverse) | `SerialTest` matches by `Phys`; node numbers swap after reboots |
-| must the board be paired again after a flash? | no: bonds survive an application-only flash | do not erase flash; `tools/flash.sh` writes `0x10000` only |
+| must the board be paired again after a flash? | no: bonds survive an application-only flash | do not erase flash; `jbang tools/Flash.java` writes `0x10000` only |
 | key presses arrive twice | USB and BLE both connected | `PREFER USB` (default) or `ONLY USB|BLE` |
 
 ## Camera

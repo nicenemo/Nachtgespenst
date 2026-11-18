@@ -14,11 +14,11 @@ Everything below is a **single plain command** (no pipe, `cd`, `&&`, `;`, `VAR=x
 - Do not edit `platformio.ini`, switch branches or start another `pio` build while one runs.
 
 ## 2. Flash
-- `tools/flash.sh cores3` or `tools/flash.sh core2`. It prints branch and image age and warns when sources are newer than the image. Use `--dry-run` to see what it would do, `--image FILE` for another build.
-- If it says the port is "not visible here", the call was sandboxed: re-issue as a plain command that matches `tools/flash.sh*` in `excludedCommands` (or, if that entry is missing, disable the sandbox for that single call).
+- `jbang tools/Flash.java cores3` or `jbang tools/Flash.java core2`. It prints branch and image age and warns when sources are newer than the image. Use `--dry-run` to see what it would do, `--image FILE` for another build.
+- If it says the port is "not visible here", the call was sandboxed: re-issue as a plain command that matches `*jbang*Flash.java*` in `excludedCommands` (or, if that entry is missing, disable the sandbox for that single call).
 
 ## 3. Confirm what is running
-- `tools/serial.sh S3 "INFO"` and `tools/serial.sh C2 "INFO"`: `fw=` must match the build time.
+- `jbang tools/Serial.java S3 "INFO"` and `jbang tools/Serial.java C2 "INFO"`: `fw=` must match the build time.
 
 ## 4. Test
 - `jbang tools/SerialTest.java --board S3` (29 checks) and `--board C2` (11 checks), or without `--board` for both. All must pass; the S3 run includes USB and BLE routing against the host input devices.
@@ -33,7 +33,7 @@ Everything below is a **single plain command** (no pipe, `cd`, `&&`, `;`, `VAR=x
 | Message | Meaning |
 |---|---|
 | `cannot open /dev/tty...`, `no Nachtgespenst board found` | sandboxed call: fix the command shape |
-| `Failed to connect to ESP32-S3: No serial data received` | plain `pio upload` on the CoreS3: use `tools/flash.sh` |
+| `Failed to connect to ESP32-S3: No serial data received` | plain `pio upload` on the CoreS3: use `jbang tools/Flash.java` |
 | `.sconsign...dblite: No such file` | a config edit or second build during a build |
 | evdev check 0 events on the S3 | test read the wrong input device or the board is not connected over that transport |
 

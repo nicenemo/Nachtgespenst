@@ -11,3 +11,4 @@ One file per decision, numbered `NNNN-title.md`, with Status, Context, Decision,
 | [0005](0005-project-site-on-gh-pages.md) | Publish the project site from `site/` through the `gh-pages` branch | Accepted |
 | [0006](0006-ui-lvgl-or-classic.md) | LVGL or the classic direct-drawing UI | Proposed (leaning LVGL) |
 | [0007](0007-page-switching-speed-and-prerendering.md) | Page switching speed: coalesce, slim down, then pre-render neighbours | Proposed |
+| [0008](0008-jbang-for-project-tooling.md) | Write project tooling in JBang (Java), not in shell scripts | Accepted |

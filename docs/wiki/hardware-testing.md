@@ -13,8 +13,8 @@ Takes 11 to 13 minutes; start it in the background. The result is `.pio/build/<e
 ## 2. Flash
 
 ```sh
-tools/flash.sh cores3     # 1200-baud touch, esptool, waits until the board is back
-tools/flash.sh core2      # the CP2104 resets the chip by itself
+jbang tools/Flash.java cores3     # 1200-baud touch, esptool, waits until the board is back
+jbang tools/Flash.java core2      # the CP2104 resets the chip by itself
 ```
 
 Options: `--image FILE` (flash a different build) and `--dry-run` (find the port, print what would happen). Only the application is written (`0x10000`), so bonds and the bootloader are untouched.
@@ -24,7 +24,7 @@ Why the touch: the CoreS3 firmware uses TinyUSB, whose serial port cannot reset 
 ## 3. Check what runs on the board
 
 ```sh
-tools/serial.sh S3 "INFO" "PREFER?"
+jbang tools/Serial.java S3 "INFO" "PREFER?"
 ```
 
 `INFO` shows `fw=<build date and time>`; compare it with the build time. Do this before trusting a test result.
@@ -37,7 +37,7 @@ jbang tools/SerialTest.java --board C2      # 11 checks
 jbang tools/SerialTest.java                 # both boards
 ```
 
-Wait 6 to 8 seconds after a flash before starting (`tools/flash.sh` already does). The test reads the host input device of the board (USB and Bluetooth separately, matched on `Phys`), so the board must be paired and connected.
+Wait 6 to 8 seconds after a flash before starting (`jbang tools/Flash.java` already does). The test reads the host input device of the board (USB and Bluetooth separately, matched on `Phys`), so the board must be paired and connected.
 
 - Screenshots of every page: `jbang tools/SerialTest.java --shot DIR` writes `DIR/<board>/pageNN.png`. The Core2 takes about 10 minutes because its UART is slow (about 20 s per page); the CoreS3 takes seconds.
 - Page-switch timing: `jbang tools/SerialTest.java --latency`. It reports PING, the `SHOT` read-out, the `LAYER` acknowledgement and "page on screen" = (`LAYER` + `SHOT`) minus a plain `SHOT`. A page is only really on screen after a render, which LVGL does after answering `LAYER`, hence the subtraction. The sample is one sparse page, two dense 6x4 pages and the Locks page, so it leans towards the slow pages.

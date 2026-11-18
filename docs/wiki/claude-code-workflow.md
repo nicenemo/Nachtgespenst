@@ -1,6 +1,6 @@
 # Working with Claude Code in this repository
 
-Everything here was learned the hard way. Reasoning: [ADR 0001](../adr/0001-sandbox-claude-code.md) (the sandbox) and [ADR 0004](../adr/0004-plain-commands-and-wrapper-scripts.md) (plain commands and wrapper scripts). Symptoms and fixes: [troubleshooting](troubleshooting.md).
+Everything here was learned the hard way. Reasoning: [ADR 0001](../adr/0001-sandbox-claude-code.md) (the sandbox) and [ADR 0004](../adr/0004-plain-commands-and-wrapper-scripts.md) (plain commands and board tools). Symptoms and fixes: [troubleshooting](troubleshooting.md).
 
 ## The one rule: hardware and network commands are single plain commands
 
@@ -25,32 +25,32 @@ Only the repository owner can edit `.claude/settings.json` (it is write-protecte
 ```json
 "*pio run*upload*", "*pio device*", "*pio test*", "*esptool*",
 "*jbang*SerialTest*", "*jbang*LedCam*",
-"tools/flash.sh*", "tools/serial.sh*",
+"*jbang*Flash.java*", "*jbang*Serial.java*",
 "git push*", "git pull*", "git fetch*", "git ls-remote*", "gh *",
 "bluetoothctl list*", "bluetoothctl show*", "bluetoothctl devices*", "bluetoothctl paired-devices*", "bluetoothctl info*"
 ```
 
-Until `tools/flash.sh*`, `tools/serial.sh*` and `*jbang*LedCam*` are added, run those three with the sandbox disabled for that single call (the call then goes through the normal permission prompt).
+Until `*jbang*Flash.java*`, `*jbang*Serial.java*` and `*jbang*LedCam*` are added, run those three with the sandbox disabled for that single call (the call then goes through the normal permission prompt).
 
-## Use the wrappers, not hand-made commands
+## Use the board tools, not hand-made commands
 
 | Task | Command |
 |---|---|
 | Build | `.pio/venv/bin/pio run -e core2` / `-e cores3` (background, about 12 minutes) |
-| Flash | `tools/flash.sh core2` / `tools/flash.sh cores3` |
-| One-off serial commands | `tools/serial.sh S3 "LAYER 26" "STATE?"` |
+| Flash | `jbang tools/Flash.java core2` / `jbang tools/Flash.java cores3` |
+| One-off serial commands | `jbang tools/Serial.java S3 "LAYER 26" "STATE?"` |
 | Functional tests | `jbang tools/SerialTest.java [--board S3\|C2]` |
 | Screenshots of every page | `jbang tools/SerialTest.java --shot DIR` |
 | Page-switch timing | `jbang tools/SerialTest.java --latency` |
 | LED bar camera tests | `jbang tools/LedCam.java colours --port PORT --out DIR --crop x0,y0,x1,y1` |
 
-See [hardware-testing](hardware-testing.md) for details.
+`jbang` is on the PATH (`~/jbinst/jbang/bin`), so `jbang tools/X.java ...` is a plain command. The tools exit with code 3 and say so when they are run inside the sandbox. See [hardware-testing](hardware-testing.md) and [tooling](tooling.md).
 
 ## Long jobs
 
 - A build takes 11 to 13 minutes on either board (the dependency scan dominates). Start it with `run_in_background`; you are notified when it ends. Check progress by reading the output file, not by polling.
 - **One `pio` build at a time**, and no edits to `platformio.ini` and no `git switch` while a build runs: PlatformIO cleans the build folder when the configuration changes and the running build dies with `.sconsign...dblite: No such file or directory`. The build also compiles whatever is in the working tree, so switching branches mid-build builds a mixture.
-- Build the branch you intend to flash. `tools/flash.sh` prints the branch and warns when sources are newer than the image.
+- Build the branch you intend to flash. `jbang tools/Flash.java` prints the branch and warns when sources are newer than the image.
 - Cancel a background job with `TaskStop`, not `pkill`.
 
 ## Protected paths

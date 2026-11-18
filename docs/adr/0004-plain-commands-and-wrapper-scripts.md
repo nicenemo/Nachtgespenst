@@ -1,6 +1,6 @@
 # 0004 Run hardware and network commands as single plain commands, backed by wrapper scripts
 
-Status: Accepted. The owner still has to add the new `excludedCommands` entries (see Consequences). Supersedes the `PLATFORMIO_CORE_DIR` clause of [0002](0002-project-local-platformio.md).
+Status: Accepted. The wrapper scripts described below were first written in bash and then replaced by JBang tools (`Flash.java`, `Serial.java`, `Boards.java`) by [0008](0008-jbang-for-project-tooling.md); the rule and the intent stand. The owner still has to add the new `excludedCommands` entries (see Consequences and 0008). Supersedes the `PLATFORMIO_CORE_DIR` clause of [0002](0002-project-local-platformio.md).
 
 ## Context
 [0001](0001-sandbox-claude-code.md) runs Claude Code in a sandbox that hides serial ports, the camera, input devices, `~/.ssh` and D-Bus. A list of `excludedCommands` runs outside it, but a call is excluded only when every command in it matches an entry. Across the first long session the same mistakes were made again and again, each costing minutes and sometimes a 10-minute build:
