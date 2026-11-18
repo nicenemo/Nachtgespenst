@@ -3,14 +3,13 @@
    include/IconCodes.h (UTF-8 string macros IC_<NAME>) + src/icon_font_data.c (TTF bytes).
    Needs: pip install fonttools.  Run from repo root: python3 tools/icons/gen_icons.py"""
 import subprocess, sys, os
-ICONS = """content_copy content_paste content_cut undo redo search select_all save print note_add folder_open
-format_bold format_italic format_underlined refresh description table_chart slideshow mail groups sticky_note_2
-public folder lock lock_open keyboard_return keyboard_tab backspace space_bar arrow_upward arrow_downward arrow_back
-arrow_forward first_page last_page keyboard_double_arrow_up keyboard_double_arrow_down menu screenshot_monitor
-keyboard_capslock pause play_arrow power_settings_new bedtime wb_sunny skip_previous skip_next volume_off
-volume_down volume_up stop language calendar_month calculate memory brightness_low brightness_high mic_off
-videocam call_end reply_all fullscreen close radio_button_checked subdirectory_arrow_right south north
-restart_alt restore_page play_circle delete dialpad keyboard_command_key edit computer settings_power""".split()
+ICONS = """content_copy content_paste content_cut undo redo search select_all save print refresh description
+table_chart slideshow mail groups sticky_note_2 public folder lock keyboard_return keyboard_tab backspace
+space_bar arrow_upward arrow_downward arrow_back arrow_forward first_page last_page keyboard_double_arrow_up
+keyboard_double_arrow_down menu screenshot_monitor keyboard_capslock pause play_arrow power_settings_new
+bedtime wb_sunny skip_previous skip_next volume_off volume_down volume_up stop language calendar_month
+calculate memory brightness_low brightness_high mic_off videocam call_end reply_all fullscreen close
+radio_button_checked subdirectory_arrow_right north restart_alt restore_page play_circle dialpad""".split()
 here = os.path.dirname(os.path.abspath(__file__)); root = os.path.abspath(os.path.join(here, "..", ".."))
 cp = dict(l.split() for l in open(os.path.join(here, "MaterialIcons-Regular.codepoints")))
 uni = [cp[n] for n in ICONS]

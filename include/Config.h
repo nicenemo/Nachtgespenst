@@ -6,9 +6,7 @@
 #define NG_BOARD_ID "UNKNOWN"
 #endif
 #define K_MANUFACTURER "BKA - KDA"
-#define K_MODEL "NG-81-V12"
 #define LED_COUNT       10
-#define TYPING_ANIM_MS  300
 // WS2812 data pin: Core2 side LED bar = GPIO25, CoreS3 M5GO base bar = GPIO5 (both M-Bus pin 8)
 #ifndef LED_PIN
 #define LED_PIN 9

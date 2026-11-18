@@ -34,14 +34,10 @@ const CRGB LAYER_COLORS[] = {
     CRGB::FloralWhite,  CRGB::OldLace
 };
 
-const uint8_t COLOR_COUNT = sizeof(LAYER_COLORS) / sizeof(LAYER_COLORS[0]);
-
 // ---------- Lock indicator colours (Core2 LED bar + Locks page) ----------
 enum LockId : uint8_t { LK_CAPS = 0, LK_NUM = 1, LK_SCROLL = 2, LK_NONE = 255 };
 // activeMask bits: caps=1, num=2, scroll=4 (not the HID LED bits)
 const CRGB LOCK_COLORS[3] = { CRGB(255, 80, 0), CRGB(0, 220, 60), CRGB(40, 80, 255) };
-
-inline CRGB lockColor(LockId id) { return id < 3 ? LOCK_COLORS[id] : CRGB::Black; }
 
 // Additive mix of n colours (saturating)
 inline CRGB mixColors(const CRGB* c, uint8_t n) {

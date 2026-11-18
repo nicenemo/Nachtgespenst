@@ -15,16 +15,14 @@
 
 namespace HIDManager {
     // Event types that tell the listener what is happening
-    enum class HIDEvent { 
-        LED_UPDATED,  // New LED state data from the host
-        QUEUE_FULL    // The buffer is full, data is dropped
+    enum class HIDEvent {
+        LED_UPDATED   // New LED state data from the host
     };
     
     // Signature of the callback function
     typedef void (*HIDEventListener)(HIDEvent event, uint8_t ledStatus);
 
     // --- Public constants ---
-    const uint8_t QUEUE_LENGTH = 10;
     const unsigned long RELEASE_DELAY = 15; // ms
 
     // Initialise Bluetooth and HID
