@@ -58,13 +58,7 @@ ul.timeline li { margin: 0 0 14px; padding-left: 16px; }
 ul.timeline b { display: block; }
 footer { margin-top: 48px; padding: 24px 0 40px; border-top: 1px solid var(--line); color: var(--muted); font-size: .95rem; }
 footer .copyright { margin: 14px 0 0; }
-/* site navigation: one bar on every page, a pager at the end of the page, a jump list on the long page */
-nav.sitenav { position: sticky; top: 0; z-index: 10; background: var(--panel); border-bottom: 1px solid var(--line); }
-nav.sitenav .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 4px; padding-top: 6px; padding-bottom: 6px; }
-nav.sitenav a { padding: 7px 12px; border-radius: 8px; text-decoration: none; color: var(--text); font-weight: 600; font-size: .95rem; }
-nav.sitenav a:hover { background: var(--code); }
-nav.sitenav a[aria-current="page"], nav.sitenav a.active { background: var(--accent); color: var(--accent-text); }
-nav.sitenav a.ext { margin-left: auto; color: var(--accent); }
+/* site navigation: a bar with the key links and a hamburger menu on every page, a pager at the end of the page, a jump list on the long page */
 nav.pager { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 36px 0 0; }
 nav.pager a { display: block; padding: 10px 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); text-decoration: none; font-weight: 600; }
 nav.pager a.next { margin-left: auto; text-align: right; }
@@ -77,9 +71,6 @@ nav.jump a { min-width: 2.3em; padding: 3px 8px; text-align: center; border: 1px
 .explore a.card h3 { color: var(--accent); }
 .explore a.card img { width: 100%; height: auto; display: block; margin-top: 8px; border-radius: 6px; border: 1px solid var(--line); background: #000; }
 :target { scroll-margin-top: 64px; }
-@media (max-width: 560px) {
-  nav.sitenav a { padding: 6px 9px; font-size: .88rem; }
-}
 /* groups of pages: a tab bar under the banner and thumbnail grids on the overview pages */
 nav.tabs { background: var(--panel); border-bottom: 1px solid var(--line); }
 nav.tabs .wrap { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 10px; padding-bottom: 10px; }
@@ -91,3 +82,33 @@ nav.tabs a.ext { margin-left: auto; border-style: dashed; }
 .thumbs img { width: 100%; height: auto; display: block; border-radius: 6px; border: 1px solid var(--line); background: #000; }
 .thumbs span { display: block; margin-top: 3px; }
 section h2 a { text-decoration: none; color: inherit; }
+/* the bar: brand, two key links, a hamburger menu with everything */
+nav.sitenav { position: sticky; top: 0; z-index: 20; background: var(--panel); border-bottom: 1px solid var(--line); }
+nav.sitenav .wrap { position: relative; display: flex; align-items: center; gap: 4px 6px; padding-top: 6px; padding-bottom: 6px; }
+nav.sitenav a.brand { display: flex; align-items: center; gap: 8px; margin-right: 10px; padding: 4px 8px 4px 0; font-weight: 700; color: var(--text); text-decoration: none; }
+nav.sitenav a.brand img { display: block; border-radius: 22%; }
+nav.sitenav a.key { padding: 7px 12px; border-radius: 8px; text-decoration: none; color: var(--text); font-weight: 600; font-size: .95rem; }
+nav.sitenav a.key:hover { background: var(--code); }
+nav.sitenav a.key.active { background: var(--accent); color: var(--accent-text); }
+nav.sitenav details.menu { margin-left: auto; }
+nav.sitenav summary { display: flex; align-items: center; gap: 10px; padding: 7px 12px; list-style: none; cursor: pointer; user-select: none; border: 1px solid var(--line); border-radius: 8px; font-weight: 600; font-size: .95rem; }
+nav.sitenav summary::-webkit-details-marker { display: none; }
+nav.sitenav summary:hover, nav.sitenav details[open] > summary { background: var(--code); }
+nav.sitenav summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.burger { position: relative; width: 18px; height: 2px; border-radius: 2px; background: currentColor; transition: background .15s; }
+.burger::before, .burger::after { content: ""; position: absolute; left: 0; width: 18px; height: 2px; border-radius: 2px; background: currentColor; transition: transform .15s, top .15s; }
+.burger::before { top: -6px; }
+.burger::after { top: 6px; }
+details[open] .burger { background: transparent; }
+details[open] .burger::before { top: 0; transform: rotate(45deg); }
+details[open] .burger::after { top: 0; transform: rotate(-45deg); }
+nav.sitenav .panel { position: absolute; right: 16px; top: calc(100% + 6px); width: min(740px, calc(100vw - 32px)); max-height: calc(100vh - 80px); overflow: auto;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px 22px; padding: 16px 18px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 14px 34px rgba(0, 0, 0, .3); }
+nav.sitenav .panel h2 { margin: 0 0 6px; font-size: .78rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+nav.sitenav .panel ul { margin: 0; padding: 0; list-style: none; }
+nav.sitenav .panel li { max-width: none; }
+nav.sitenav .panel li a { display: block; padding: 6px 8px; border-radius: 6px; color: var(--text); text-decoration: none; }
+nav.sitenav .panel li a:hover { background: var(--code); }
+nav.sitenav .panel li a[aria-current="page"] { background: var(--accent); color: var(--accent-text); font-weight: 600; }
+@media (max-width: 560px) { nav.sitenav a.key { display: none; } nav.sitenav a.brand { margin-right: 0; } }

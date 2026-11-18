@@ -63,6 +63,11 @@ One generic entry, `*jbang*tools/*.java*`, covers every JBang tool in `tools/` (
 - `cd` persists between calls and changes the "primary working directory". Prefer absolute paths; if you must `cd`, `cd` back.
 - Error messages are Dutch: `Toegang geweigerd` = permission denied, `Bestand of map bestaat niet` = no such file or directory, `Actie is niet toegestaan` = operation not permitted (sandbox).
 - Python is only for throw-away scripts and image tweaks; run it with `python3 -I`. Project tooling is Java (JBang) or shell.
+- **Working directory and git worktrees.** `cd` into a worktree (for a site change on `develop` while a build runs on another branch) changes where `pio` and `Flash.java` look for the project: a `pio run` started there builds the worktree and downloads gigabytes of toolchain into it (the `/tmp` tmpfs filled up once). Start builds with `pio run -e <env> -d /home/kruse/Projects/Nachtgespenst` and flash from a call whose directory is the project; remove a worktree as soon as it is pushed.
+
+## Commands for the owner: fish
+
+The owner's login shell on CachyOS is **fish**; the Bash tool runs zsh. A command that works in a tool call is not automatically right to paste, so anything handed to the owner (chat, docs, ADRs, playbook headers) must be fish-compatible: `env VAR=x command` instead of `VAR=x command`, `set -x VAR x` instead of `export VAR=x`, `for f in ...` ... `end` and `if test ...` ... `end` instead of `do`/`done`/`then`/`fi`, no heredocs. `&&`, `||`, `$USER` and `$(...)` work in current fish. Use `bash -c '...'` for anything longer.
 
 ## Git and GitHub
 
