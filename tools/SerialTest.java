@@ -1,6 +1,7 @@
 ///usr/bin/env jbang "$0" "$@" ; exit $?
 //DEPS com.fazecast:jSerialComm:2.11.0
 //JAVA 17+
+//JAVA_OPTIONS --enable-native-access=ALL-UNNAMED
 
 import com.fazecast.jSerialComm.SerialPort;
 import java.io.*;
