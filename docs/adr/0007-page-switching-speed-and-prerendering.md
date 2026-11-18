@@ -1,6 +1,6 @@
 # 0007 Page switching speed: coalesce, slim down, then pre-render neighbours
 
-Status: Proposed (analysis only; nothing implemented yet). Follows [0006](0006-ui-lvgl-or-classic.md).
+Status: Accepted 2026-11-18, implementation starts with stage 1 (coalescing) and stage 2 (slimmer pages), pre-rendering only if still needed. Follows [0006](0006-ui-lvgl-or-classic.md), which chose LVGL.
 
 ## Context
 Paging works, but it gets sluggish when pages are changed quickly (Core2 buttons A/C pressed repeatedly, CoreS3 arrows tapped). Measured with `SerialTest --latency` on 2026-11-18: LVGL needs about 360 ms on average per page on the CoreS3, about 700 ms on the dense 6x4 pages, and 450 to 630 ms on the Core2; the classic UI needs about 92 ms and 100 ms. At 5 presses per second (a 200 ms interval) a 400 to 700 ms page cannot keep up, so the screen lags behind the fingers.
