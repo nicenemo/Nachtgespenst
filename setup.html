@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Set it up · Nachtgespenst</title>
+<meta name="description" content="What you need, how to build, flash and pair the boards, change the keymap and test it, and how the firmware is put together.">
+<link rel="canonical" href="https://hanskruse.eu/nachtgespenst/setup.html">
+<meta name="theme-color" content="#0b0e14" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f6f7fb" media="(prefers-color-scheme: light)">
+<!-- icons: the ICO for old browsers and tools, the SVG for modern ones, PNGs for iOS, Android and Windows tiles -->
+<link rel="icon" href="favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" href="favicon.svg" type="image/svg+xml" sizes="any">
+<link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
+<link rel="mask-icon" href="safari-pinned-tab.svg" color="#8ea2ff">
+<link rel="manifest" href="site.webmanifest">
+<meta name="msapplication-config" content="browserconfig.xml">
+<meta name="msapplication-TileColor" content="#0b0e14">
+<!-- link previews -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Set it up · Nachtgespenst">
+<meta property="og:description" content="What you need, how to build, flash and pair the boards, change the keymap and test it, and how the firmware is put together.">
+<meta property="og:url" content="https://hanskruse.eu/nachtgespenst/setup.html">
+<meta property="og:image" content="https://hanskruse.eu/nachtgespenst/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="A ghost with its hands on its cheeks, screaming under a crescent moon">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="style.css">
+<link rel="prev" href="camera.html">
+<link rel="next" href="story.html">
+<link rel="index" href="index.html">
+</head>
+<body>
+<nav class="sitenav" aria-label="Site"><div class="wrap"><a href="index.html">Home</a><a href="pages.html">Pages</a><a href="interfaces.html">Interfaces</a><a href="camera.html">Camera tests</a><a href="setup.html" aria-current="page">Set-up</a><a href="story.html">Story</a><a class="ext" href="https://github.com/nicenemo/nachtgespenst">GitHub</a></div></nav>
+<header class="hero compact"><div class="wrap">
+<h1><img class="logo" src="favicon.svg" width="56" height="56" alt="">Set it up</h1>
+<p class="tag">What you need, how to build, flash and pair the boards, and how the firmware is put together.</p>
+</div></header>
+<nav class="toc" aria-label="On this page"><div class="wrap"><a href="setup.html">Set-up</a><a href="setup.html#code">How it works</a></div></nav>
+<main class="wrap">
+<section id="setup"><h2>Set-up</h2>
+<h3>What you need</h3>
+<ul>
+<li>An M5Stack Core2 and/or CoreS3, ideally with the M5GO base for the LED bar.</li>
+<li><a href="https://platformio.org/">PlatformIO</a> (the project keeps its own copy under <code>.pio/</code>; see <code>docs/wiki/tooling.md</code>).</li>
+<li><a href="https://www.jbang.dev/">JBang</a> for the Java tools (header generator, serial tests, camera tool); it downloads the right JDK itself.</li>
+</ul>
+<h3>Build and flash</h3>
+<pre>git clone https://github.com/nicenemo/nachtgespenst.git
+cd nachtgespenst
+.pio/venv/bin/pio run -e core2     # about 12 minutes; PlatformIO lives inside the project
+jbang tools/Flash.java core2       # writes the image and waits until the board is back
+.pio/venv/bin/pio run -e cores3
+jbang tools/Flash.java cores3      # does the 1200-baud touch into the ROM bootloader itself</pre>
+<p>Pair the board from the host's Bluetooth settings; it advertises as <code>🌙👻-c2</code> or <code>🌙👻-cs3</code>. Over USB the CoreS3 simply appears as a keyboard.</p>
+<h3>Change the keymap</h3>
+<p>Layers live in <code>include/Keymap.h</code> as an array of <code>GridLayer</code> (title, bindings, rows, columns, LED colour). Edit, rebuild, flash.</p>
+<h3>Test it</h3>
+<pre>jbang tools/SerialTest.java --board S3    # 29 checks, including USB and BLE routing
+jbang tools/SerialTest.java --board C2    # 11 checks
+jbang tools/SerialTest.java --shot shots  # screenshots of every page
+jbang tools/LedCam.java colours --port /dev/ttyUSB0 --out cam --crop x0,y0,x1,y1</pre>
+<h3>Regenerate the HID vocabulary</h3>
+<pre>cd tools
+jbang FetchHut.jsh          # only when updating to a newer USB HID Usage Tables PDF
+jbang GenerateHeaders.jsh
+cp -r include/. ../include/</pre>
+<p>Full instructions, the sandbox set-up used for Claude Code and the decision records are in the <a href="https://github.com/nicenemo/nachtgespenst/tree/develop/docs">docs folder</a>.</p>
+</section>
+
+<section id="code"><h2>How it works</h2>
+<ul>
+<li><b>Generated HID vocabulary.</b> <code>tools/GenerateHeaders.jsh</code> reads the USB HID Usage Tables (as JSON extracted from the official PDF) and renders FreeMarker templates into usage constants and shortcut macros such as <code>kp_A</code> and <code>cp_MUTE</code>. Nothing in <code>include/hid_*</code> is edited by hand.</li>
+<li><b>Binding model.</b> A <code>Binding</code> is a HID page, a usage, a modifier mask and a label. Chord helpers (<code>lcs</code>, <code>lmeh</code>, <code>lhyp</code>) wrap macros the way ZMK does.</li>
+<li><b>Keymap and UI.</b> <code>Keymap.h</code> holds the layers; <code>src/ui.cpp</code> draws the current layer, handles touch, mirrors the host LEDs on the bar and dims the backlight after a minute of idleness.</li>
+<li><b>HID transports.</b> <code>HIDManager</code> owns BLE (NimBLE) and, on the CoreS3, USB (TinyUSB). Reports go through a non-blocking press queue with release retry; <code>PREFER</code> and <code>ONLY</code> commands choose which transport receives them.</li>
+<li><b>Serial protocol.</b> <code>PING</code>, <code>INFO</code>, <code>STATE?</code>, <code>LAYER</code>, <code>TAP</code>, <code>KEY</code>, <code>SHOT</code>, <code>PREFER</code>, <code>ONLY</code>: enough for automated tests and for the screenshots above.</li>
+</ul></section>
+<nav class="pager" aria-label="Previous and next page"><a class="prev" href="camera.html"><small>&larr; Previous</small><br>Camera tests</a><a class="next" href="story.html"><small>Next &rarr;</small><br>Story</a></nav>
+
+</main>
+<footer><div class="wrap">
+<p>MIT licence. Third-party components are listed in the <a href="https://github.com/nicenemo/nachtgespenst/blob/develop/THIRD-PARTY-NOTICES.md">third-party notices</a>.</p>
+<p class="copyright">&copy; 2026 <a href="https://hanskruse.eu">Hans Kruse</a></p>
+</div></footer>
+</body>
+</html>
