@@ -65,7 +65,7 @@ footer { margin-top: 48px; padding: 24px 0 40px; border-top: 1px solid var(--lin
 <img src="img/camera/both-boards.jpg" width="1280" height="720" alt="The Core2 on the left and the CoreS3 on the right in a dark room, both with their LED bars lit blue">
 </div></header>
 <nav class="toc"><div class="wrap">
-<a href="#what">What it does</a><a href="#devices">The devices</a><a href="#pages">Every page</a><a href="#ui">Two interfaces</a><a href="#camera">Camera tests</a><a href="#setup">Set-up</a><a href="#code">How it works</a><a href="#history">Since Claude joined</a>
+<a href="#what">What it does</a><a href="#devices">The devices</a><a href="#pages">Every page</a><a href="#ui">Two interfaces</a><a href="#camera">Camera tests</a><a href="#setup">Set-up</a><a href="#code">How it works</a><a href="#zmk">Inspiration</a><a href="#history">Since Claude joined</a>
 </div></nav>
 <main class="wrap">
 
@@ -278,10 +278,23 @@ cp -r include/. ../include/</pre>
 <li><b>Serial protocol.</b> <code>PING</code>, <code>INFO</code>, <code>STATE?</code>, <code>LAYER</code>, <code>TAP</code>, <code>KEY</code>, <code>SHOT</code>, <code>PREFER</code>, <code>ONLY</code>: enough for automated tests and for the screenshots above.</li>
 </ul></section>
 
+<section id="zmk"><h2>Inspiration: ZMK and the Cornish ZEN keymap</h2>
+<p>The keymap style comes from the owner's ZMK keyboard firmware work, in particular the configuration for the 42-key Corne-ish Zen (<a href="https://github.com/nicenemo/franken-cornish-zen">franken-cornish-zen</a>: 31 layers, home-row mods, combos, Unicode, APL and Greek layers), and the header generator follows <a href="https://github.com/nicenemo/zmk_unicode_headers">zmk_unicode_headers</a>, which turns the Unicode database into named C macros the way <code>GenerateHeaders.jsh</code> turns the USB HID Usage Tables into <code>kp_A</code> and <code>cp_MUTE</code>.</p>
+<table>
+<tr><th>ZMK configuration</th><th>Nachtgespenst</th></tr>
+<tr><td>FUN layer: F7 F8 F9 / F4 F5 F6 / F1 F2 F3, F10 on a thumb</td><td>The <code>F1-F10</code> page has the same rows; F11 to F24 follow the same arrangement</td></tr>
+<tr><td>Plain, Hyper (<code>LH</code>) and Meh (<code>LM</code>) function layers</td><td>The same three families as pages (<code>... HYP</code>, <code>... MEH</code>), written with <code>lhyp()</code> and <code>lmeh()</code></td></tr>
+<tr><td>KEYPAD, SYM1/SYM2, NAV, VOLUME/CONSUMER, APPL</td><td><code>Numpad Full</code>, <code>Symbol Pad</code>, <code>Edit/Nav</code>, <code>Media</code>, <code>App Launch</code></td></tr>
+<tr><td>Home-row mods, combos, mouse, APL, logic, Greek and punctuation layers (Unicode)</td><td>Not carried over: a touch macro pad has no typing layer and HID has no Unicode</td></tr>
+<tr><td>No application layers</td><td>New: Maven, Office, Teams, Outlook, PowerPoint, browser and debugger pages, and the Locks page</td></tr>
+</table>
+<p>The full comparison is in the <a href="https://github.com/nicenemo/Nachtgespenst/blob/develop/docs/wiki/zmk-comparison.md">wiki</a>.</p>
+</section>
+
 <section id="history"><h2>Since Claude joined</h2>
-<p>The first firmware was written by hand in May 2026. On 12 November 2026 the project started working with Claude Code, with a project guide (<code>CLAUDE.md</code>), an overnight plan, and tests that drive the real hardware. The big steps since then:</p>
+<p>The project did not start with Claude Code. An earlier version of the firmware was made about a year before, with Gemini in its chat client (the Android app and the browser) and a little help from GitHub Copilot; its keymap style and its header generator come from the owner's ZMK work (see <a href="#zmk">Inspiration</a>). The history of this repository starts on 10 May 2026. On 12 November 2026 the project started working with Claude Code, with a project guide (<code>CLAUDE.md</code>), an overnight plan, and tests that drive the real hardware. The big steps:</p>
 <ul class="timeline">
-<li><b>10 to 14 May: by hand</b>Core2 BLE macro pad, layers and grids, LED bar, and the generator that turns the USB HID specification into C++ headers with a ZMK-style keymap.</li>
+<li><b>Before Claude Code (commits of 10 to 14 May 2026)</b>Core2 BLE macro pad, layers and grids, LED bar, and the generator that turns the USB HID specification into C++ headers with a ZMK-style keymap; made with Gemini and some GitHub Copilot.</li>
 <li><b>12 November: a new interface and a second board</b>LVGL 9 interface with icons and a Locks page; CoreS3 port; USB HID next to BLE; LED bar feedback; the serial protocol, <code>SerialTest</code> and the first screenshots.</li>
 <li><b>13 November: hardening</b>A review of the HID code led to a non-blocking press queue with release retry, a proper USB-mounted check, BLE security without MITM, atomic LED state and a loop that sleeps instead of spinning.</li>
 <li><b>17 November: project hygiene</b>README, licence and third-party notices; decision records for the Claude Code sandbox, a project-local PlatformIO and pinned JDKs; the HUT download split into its own script.</li>

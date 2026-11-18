@@ -43,6 +43,8 @@ The first day of working with Claude Code (see `CLAUDE.md` and `docs/OVERNIGHT.m
 - ZMK-style keymap with chord helpers (`lcs(...)`, `lhyp(...)`, `lmeh(...)`).
 - Several template clean-ups.
 
-## 2026-05-10 to 2026-05-12: first firmware
+## 2026-05-10 to 2026-05-12: first commits in this repository
 - Initial Core2 macro pad: BLE keyboard, pairing improvements, LED bar on the Core2 base.
 - Layers and grids, more keys, keyboard fixes and a lot of keymap experimentation (including a few broken keymaps along the way).
+
+The two May 2026 sections are dated by the commits in this repository, whose history starts on 2026-05-10. The firmware itself is older: an earlier version was made about a year before Claude Code joined, with Gemini in its chat client (Android app and browser) and a little GitHub Copilot. The keymap style and the header generator come from the owner's ZMK work, see [docs/wiki/zmk-comparison.md](docs/wiki/zmk-comparison.md).
