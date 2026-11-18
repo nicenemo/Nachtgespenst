@@ -48,15 +48,26 @@ jbang GenerateHeaders.jsh
 cp -r include/. ../include/
 ```
 
-This needs Java 26 with `--enable-preview` and [JBang](https://www.jbang.dev/).
-If `tools/data/hut.json` is missing, the generator extracts it from
-`hut_spec.pdf`, which you must place in `tools/` yourself (PDFs are gitignored).
+This needs [JBang](https://www.jbang.dev/) and a recent JDK; setup and Java upgrades are in [docs/wiki/tooling.md](docs/wiki/tooling.md).
+The scripts are executable, so `./GenerateHeaders.jsh` works too.
+
+The generator reads `tools/data/hut.json`, which is checked in. To update it from
+a newer revision of the USB HID Usage Tables, edit the URL in `tools/FetchHut.jsh`
+and run it from inside `tools/`:
+
+```sh
+jbang FetchHut.jsh
+```
+
+It downloads the specification PDF to `tools/data/hut_spec.pdf` (cached and
+gitignored; delete it to force a re-download) and extracts the embedded JSON
+to `tools/data/hut.json`. Then regenerate as above.
 
 ## Project layout
 
 - `src/` — firmware (`main.cpp`, `ui.cpp`, `HIDManager.cpp`, `SerialCmd.cpp`, ...)
 - `include/` — headers, keymap and generated HID vocabulary
-- `tools/` — header generator, templates and a serial test client
+- `tools/` — header generator and HUT fetcher, templates and a serial test client
 - `docs/` — additional documentation
 
 ## Name
@@ -69,7 +80,7 @@ mix: a German word for a night ghost, for a small device that sits quietly
 beside the keyboard and does its work on command. (The English audiobook is the
 better way to experience the story.)
 
-## License
+## Licence
 
-MIT, see [LICENSE](LICENSE). Third-party components and their licenses are
+MIT, see [LICENSE](LICENSE). Third-party components and their licences are
 listed in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).

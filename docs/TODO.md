@@ -1,33 +1,46 @@
-# Nog te doen (geparkeerd 2026-11-13, vervolg op docs/OVERNIGHT.md)
+# To do (parked 2026-11-13, continues docs/OVERNIGHT.md)
 
-Hervat met: "ga verder met docs/TODO.md". Eerst `git status` bekijken. Niet committen tenzij gevraagd. Builds duren ~12 min (cores3 dan core2, zie "Bekend / tips"); geen twee `pio` builds tegelijk in dezelfde `.pio`.
+Resume with: "continue with docs/TODO.md". Run `git status` first. Do not commit unless asked. Builds take about 12 minutes (cores3, then core2; see "Known issues / tips"); never run two `pio` builds at once in the same `.pio`.
 
-## Klaar (gebouwd, geflasht, getest op beide borden)
-- [x] UI iconen + paging (Core2 knoppen A/B/C, S3 on-screen prev/next).
-- [x] Locks-pagina + LED-bar code (`LedColors.h`, `setExtOutput(true)`); LED-bar zelf nog niet visueel bevestigd (zie Open).
-- [x] Caps/Num/Scroll met standaardcodes 0x39/0x53/0x47; host-LED komt terug (S3 USB en Core2 BLE).
-- [x] S3: USB + BLE tegelijk, `setPreferUsb()` default aan. BLE koppelen met S3 (hci0) en Core2 (dongle hci1) werkt; geen dubbele toetsen bij USB+BLE.
-- [x] Geen blokkerende delays; scherm dimt na 60 s, uit na 5 min; wakker-tik wordt ingeslikt (drukt geen tegel).
-- [x] Code review (embedded) en fixes: persistente non-blocking press-queue met release-retry (`HIDManager.cpp`, queue 16, 1 s deadline), USB-connected = `tud_mounted()`, BLE-security zonder MITM + peer-adres in log, atomics i.p.v. LED-queue, USB LED-report op report-id, loop slaapt 1..10 ms (`ui_loop()` geeft ms terug), `toupper((unsigned char))`.
-- [x] Tests: S3 SerialTest 12/12, C2 11/11; stress 50x (S3 USB) en 30x (C2 BLE) alle toetsen aangekomen (down+up).
+## Done (built, flashed, tested on both boards)
+- [x] UI icons and paging (Core2 buttons A/B/C, S3 on-screen prev/next).
+- [x] Locks page and LED bar code (`LedColors.h`, `setExtOutput(true)`). LED bar confirmed visually with the laptop webcam (2026-11-18): Core2 on GPIO25 and CoreS3 on GPIO5 (both M-Bus pin 8, M5GO base); all 26 layer colours show the right hue on both boards. The Locks page colours (caps/num/scroll) have not been checked with the camera yet.
+- [x] Caps/Num/Scroll with the standard codes 0x39/0x53/0x47; the host LED state comes back (S3 over USB, Core2 over BLE).
+- [x] S3: USB and BLE at the same time, `setPreferUsb()` on by default. BLE pairing works with the S3 (hci0) and the Core2 (dongle, hci1); no double keystrokes with USB and BLE together.
+- [x] No blocking delays; the screen dims after 60 s and switches off after 5 min; the wake-up tap is swallowed (it does not press a tile).
+- [x] Code review (embedded) and fixes: persistent non-blocking press queue with release retry (`HIDManager.cpp`, queue of 16, 1 s deadline), USB connected = `tud_mounted()`, BLE security without MITM plus the peer address in the log, atomics instead of the LED queue, USB LED report keyed on report ID, loop sleeps 1..10 ms (`ui_loop()` returns the ms), `toupper((unsigned char))`.
+- [x] Tests: S3 SerialTest 29/29 (including USB and BLE routing), C2 11/11; stress test of 50x (S3 USB) and 30x (C2 BLE), every key arrived (down and up).
+- [x] Selectable USB/BLE routing (`HIDManager::Prefer`: USB (default), BLE, BOTH, USB_ONLY, BLE_ONLY) with the serial commands `PREFER USB|BLE|BOTH`, `ONLY USB|BLE` and `PREFER?` (shows the mode plus `usb=`/`ble=`). SerialTest checks every mode against the host's USB and BLE input devices (matched on `Phys`, not on name).
+- [x] CoreS3 LED bar: pin found with `tools/ledtest` (env `cores3`, `main_s3.cpp`: steps through every M-Bus/Grove pin while a host script films the board and compares frames). Now `NG_HAS_LEDBAR=1` and `LED_PIN=5` in `platformio.ini`.
 
 ## Open
-1. **Door gebruiker te testen**: Core2 LED-bar brandt (anders `tools/ledtest`, GPIO25 vs 15); echte aanraking op beide borden incl. wakker worden uit scherm-uit (eerste tik mag geen toets sturen).
-2. S3 `LED_PIN`/ledbar (nu NG_HAS_LEDBAR=0, pin 9 is een gok) = niet werkende LED-bar op CoreS3.
-3. Review-punten nog niet gedaan:
-   - **System-control toetsen** (`gp_SYS_POWER_DOWN`, Keymap.h:52) worden stil genegeerd: System report (ID 3) toevoegen aan `HID_Specs.h::GetReportMap` + `send()`, of compile-time afkeuren.
-   - Display double buffer nutteloos (synchrone `pushImage`): `pushImageDMA`+`waitDMA` of 1 buffer.
-   - `KEY`/`TAP` serial-commando's (typen echt op host) achter een build-flag/debug-env; seriele activiteit laat scherm niet wakker.
-   - Build reproduceerbaarheid: `platform` pinnen, `lib_ldf_mode = chain+` met expliciete `lib_deps` (bouwtijd), `-I .../FS/src` workaround, `__DATE__/__TIME__` vervangen door git-versie.
-   - BLE: alleen gebonden peers accepteren / pairing-venster met knop (een vreemde central kan de enige verbinding bezetten).
-   - Kleinigheden: magische LED-bits (0x01/0x02/0x04) benoemen (nu deels `LED_*` in HIDManager.cpp, nog 0x02/0x01/0x04 in `ui.cpp`), `LAYER_COLORS` als `inline constexpr` + dubbelen weg, report map als constexpr array, NL/EN comments.
-4. Onverklaard: eenmalig meldde Core2 `conn=1` terwijl de host geen verbinding zag (reset hielp). Niet reproduceerbaar; bij herhaling peer-adres uit de seriele log (`[HID] BLE verbonden met ...`) bekijken.
-5. Optioneel: `STATE?` splitsen in `usb=`/`ble=` (nu `conn=`); NimBLE `startServices()` deprecation warning; Office/Prod Hyper-iconen zijn afgeleid uit de letters (controleren in `Icons.cpp`).
+1. **To be tested by the user**: real touch on both boards, including waking from screen-off (the first tap must not send a key).
+2. Camera check of the Locks page colours (caps/num/scroll, mixed colours) on both boards.
+3. Review items not done yet:
+   - **System-control keys** (`gp_SYS_POWER_DOWN`, Keymap.h:52) are silently ignored: add a System report (ID 3) to `HID_Specs.h::GetReportMap` and `send()`, or reject them at compile time.
+   - The display double buffer is pointless (synchronous `pushImage`): use `pushImageDMA` plus `waitDMA`, or a single buffer.
+   - Put the `KEY`/`TAP` serial commands (they really type on the host) behind a build flag or debug env; serial activity does not wake the screen.
+   - Build reproducibility: pin `platform`, use `lib_ldf_mode = chain+` with explicit `lib_deps` (build time), the `-I .../FS/src` workaround, replace `__DATE__/__TIME__` with a git version.
+   - BLE: accept bonded peers only, or add a pairing window with a button (a foreign central can occupy the only connection).
+   - Small items: name the magic LED bits (0x01/0x02/0x04; partly `LED_*` in HIDManager.cpp, still 0x02/0x01/0x04 in `ui.cpp`), make `LAYER_COLORS` an `inline constexpr` and remove duplicates, make the report map a constexpr array, tidy the Dutch/English comments.
+4. Unexplained: once, the Core2 reported `conn=1` while the host saw no connection (a reset fixed it). Not reproducible; if it happens again, check the peer address in the serial log (`[HID] BLE connected to ...`).
+5. **`tools/LedCam.java`** (JBang port of the throw-away Python camera scripts; frame differencing uses the Vector API from `jdk.incubator.vector`, which only gives a small speed-up because the camera dominates the run time):
+   - `colours` mode is verified on the S3 (all 26 layers, writes `montage.png`); not yet re-run on the Core2 with the Java tool.
+   - `pins` mode is only partly verified. Right after flashing `tools/ledtest` (env `cores3`) it ranks GPIO 5 first with a clear margin, but (a) from the next pin on every score is flat at about 536 (the bar seems to stay lit or the exposure shifts: re-baseline per pin and check that the sketch leaves the pixel off), and (b) a second run stops getting an answer to `LIST`. I suspect that jSerialComm opening/closing the port toggles DTR/RTS and resets the S3's USB-Serial/JTAG into ROM download mode (same USB name as the sketch, so it looks alive); try `clearDTR()`/`clearRTS()` after opening and before closing, or reflash before each run.
+   - `*jbang*LedCam*` is not in `excludedCommands`, so the tool needs the sandbox disabled for serial and camera access. Adding that pattern to `.claude/settings.json` is a manual edit (Claude cannot write that file).
+   - The numeric colour verdict is weak (the glow is only a few brightness levels); judge `montage.png` by eye. The 99.5th-percentile score of the old Python script was replaced by the mean of the 200 largest pixel changes because a small lit bar is smaller than 0.5% of the frame.
+6. LED bars cannot be switched off completely: the Locks page lights a segment for every lock that is on in the host, and otherwise shows faint white (6,6,6), which is effectively dark. Idea: a `LEDS OFF|ON` serial command (and maybe an idle timeout like the screen backlight) that fills the bar with black. Each board needs a rebuild and flash (about 25 min for both, one `pio` build at a time).
+7. Nothing is committed. Changed or new files this session: `platformio.ini`, `include/Config.h`, `include/HIDManager.h`, `include/HID_Specs.h`, `include/DisplayColors.h`, `src/HIDManager.cpp` (serial log strings now English; the boards still run the old Dutch strings until the next build and flash), `src/SerialCmd.cpp`, `tools/SerialTest.java`, `tools/LedCam.java` (new), `tools/ledtest/` (new `main_s3.cpp`, extra env), `CLAUDE.md`, `README.md`, `docs/`. Untracked `.bashrc`, `.bash_profile` and `.claude/*` were not created by this work.
+8. Optional: split `STATE?` into `usb=`/`ble=` (currently `conn=`); the NimBLE `startServices()` deprecation warning; the Office/Prod Hyper icons are derived from the letters (check in `Icons.cpp`).
 
-## Bekend / tips
-- Flashen S3 (TinyUSB): `stty -F /dev/ttyACM0 1200; sleep 3`, daarna esptool zoals in OVERNIGHT.md. Core2: direct esptool op /dev/ttyUSB0.
-- Testtool: `PATH=$HOME/jbinst/jbang/bin:$PATH jbang tools/SerialTest.java [--board S3|C2] [--shot dir]`.
-- `KEY`/`TAP` op een toetsenbordpagina typt echt op de host; test op de Locks-pagina met Scroll Lock.
-- Test: evdev-teller leest ALTIJD tijdens het sturen (kernel-buffer ~64 events loopt anders over en geeft schijnbaar verloren toetsen).
-- Core2 reset zonder knop: RTS-puls op /dev/ttyUSB0. Core2 BLE-bond zit op de USB-dongle (hci1, 34:02:86:6E:1A:EE), S3 op hci0.
-- Niet `pkill -f` met patronen uit je eigen commandoregel.
+## Known issues / tips
+- Flashing the S3 (TinyUSB): first run `stty -F /dev/ttyACM0 1200; sleep 3` (ROM download mode, no button needed; the device is then named "USB JTAG/serial debug unit"), then `pio run -e cores3 -t nobuild -t upload --upload-port /dev/ttyACM0` (or esptool as in OVERNIGHT.md). A plain `pio upload` without that step fails with "No serial data received". Holding the side button for about 3 s also works; too long switches it off. Core2: `pio run -e core2 -t nobuild -t upload --upload-port /dev/ttyUSB0` directly (the CP2104 resets automatically).
+- After a flash, wait 6-8 s before running SerialTest (the CDC port re-enumerates). After an S3 flash the evdev numbers for USB and BLE are often swapped; SerialTest picks by `Phys`, so that is fine.
+- Claude Code sandbox: `pio`, `jbang SerialTest` and `git push|pull|fetch|ls-remote` are in `excludedCommands` (they run outside the sandbox). That only works when the call is that single command: no pipe, `cd`, `&&`, `;` or `VAR=x` prefix, otherwise the whole call stays sandboxed (no serial port, no `~/.ssh`, `Host key verification failed`).
+- Do not edit `platformio.ini` and do not start a second `pio` build while a build is running: PlatformIO then cleans the build folder and the running build fails with `.sconsign...dblite: No such file`.
+- Camera tests: `jbang tools/LedCam.java colours --port /dev/ttyACM0 --out DIR --crop x0,y0,x1,y1` (see Open item 5), or by hand with `ffmpeg -f v4l2 -i /dev/video0 -frames:v 25 -update 1 out.jpg` (the first frames are too dark, hence 25 frames to let the exposure settle). Bar towards the camera, at least 15 cm between the boards, a white surface in front, dim light; the LED itself is overexposed, so judge the reflection.
+- Test tool: `PATH=$HOME/jbinst/jbang/bin:$PATH jbang tools/SerialTest.java [--board S3|C2] [--shot dir]`.
+- `KEY`/`TAP` on a keyboard page really types on the host; test on the Locks page with Scroll Lock.
+- Test: the evdev counter must ALWAYS be reading while keys are sent (the kernel buffer of about 64 events overflows otherwise and keys seem to be lost).
+- Core2 reset without a button: an RTS pulse on /dev/ttyUSB0. The Core2 BLE bond lives on the USB dongle (hci1, 34:02:86:6E:1A:EE), the S3 on hci0.
+- Do not use `pkill -f` with patterns taken from your own command line.
