@@ -40,6 +40,7 @@ Full rules are in `.claude/rules/`, procedures in `.claude/skills/` (`flash-and-
 - Use `jbang tools/Flash.java`, `jbang tools/Serial.java`, `jbang tools/SerialTest.java`, `jbang tools/LedCam.java`; do not improvise `stty`/`esptool` one-liners.
 - One `pio` build at a time, in the background; no `platformio.ini` edits or branch switches while it runs. Confirm `INFO fw=` on the board before trusting a test.
 - Stage explicit paths with `git add`; trailer `Co-Authored-By: Claude <noreply@anthropic.com>`; never `git add -A` (sandbox placeholder files).
+- Secrets: `.githooks/pre-commit` and `pre-push` run trufflehog (`git config core.hooksPath .githooks`, ADR 0016). Never commit keys or tokens and never use `--no-verify`.
 - `.claude/agents|skills|commands|hooks` and `settings*.json` are write-protected in the sandbox; the owner edits `settings.json`.
 
 ## Notes

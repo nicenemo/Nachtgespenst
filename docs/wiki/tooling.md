@@ -36,3 +36,7 @@ Adding a tool:
 4. If it touches hardware, the network or the camera, put it in `tools/` as `<Name>.java`: the generic entry `*jbang*tools/*.java*` in `sandbox.excludedCommands` already covers it. Make it exit with code 3 and a clear message when the port cannot be opened.
 5. Compile check: `jbang build tools/<Name>.java`; then test it on the boards.
 
+## Secret scanning
+- Decision: [ADR 0016](../adr/0016-secret-scanning-with-trufflehog-hooks.md). Install trufflehog (`trufflehog-bin` from the AUR), then once per checkout: `git config core.hooksPath .githooks`.
+- `pre-commit` scans the staged files without network access; `pre-push` scans the commits being pushed, with verification. Both fail on any finding.
+- Whole history: `trufflehog git file://$PWD --results=verified,unknown,unverified`. Do not skip the hooks with `--no-verify`.
