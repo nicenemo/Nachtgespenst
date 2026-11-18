@@ -24,13 +24,12 @@ Only the repository owner can edit `.claude/settings.json` (it is write-protecte
 
 ```json
 "*pio run*upload*", "*pio device*", "*pio test*", "*esptool*",
-"*jbang*SerialTest*", "*jbang*LedCam*",
-"*jbang*Flash.java*", "*jbang*Serial.java*",
+"*jbang*tools/*.java*",
 "git push*", "git pull*", "git fetch*", "git ls-remote*", "gh *",
 "bluetoothctl list*", "bluetoothctl show*", "bluetoothctl devices*", "bluetoothctl paired-devices*", "bluetoothctl info*"
 ```
 
-These entries are in `.claude/settings.json` since 2026-11-18 and were verified: `Serial.java`, `Flash.java` and `LedCam.java` run as plain commands. A new hardware tool needs its own `*jbang*<Name>*` entry; until the owner adds it, run it with the sandbox disabled for that single call (the call then goes through the normal permission prompt).
+One generic entry, `*jbang*tools/*.java*`, covers every JBang tool in `tools/` (`Flash`, `Serial`, `SerialTest`, `LedCam`, `LampTest` and any later one), so a new tool needs no new entry. Before 2026-11-18 there was one entry per tool (`*jbang*SerialTest*`, `*jbang*LedCam*`, `*jbang*Flash.java*`, `*jbang*Serial.java*`). The pattern matches both `jbang tools/X.java` and `jbang /abs/path/tools/X.java`. It also covers `jbang build tools/X.java` (then unsandboxed, harmless), but not the `.jsh` generators, which stay sandboxed. Keep tools that must not touch hardware out of `tools/`, or give them another folder.
 
 ## Use the board tools, not hand-made commands
 

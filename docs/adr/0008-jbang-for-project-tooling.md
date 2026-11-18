@@ -29,3 +29,6 @@ Project tools are JBang single-file Java programs in `tools/`:
 - Flash of the CoreS3 (1200-baud touch from Java) and the Core2, each followed by `SerialTest` on both boards: 40 of 40 checks.
 - A flash of the CoreS3 starting from the ROM bootloader state (after a deliberate touch), which also exercised `Serial.java`'s "no reply" path (exit 1).
 - `Serial.java` against both boards: normal replies, `ERR unknown`, the refused `SHOT`, a bad board name and the sandboxed call.
+
+## Update 2026-11-18
+The per-tool exclusions turned out to be a chore (every new tool needed an owner edit of `.claude/settings.json`). They are replaced by one pattern, `*jbang*tools/*.java*`, which covers every tool in `tools/`. See [claude-code-workflow](../wiki/claude-code-workflow.md).

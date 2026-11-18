@@ -1,6 +1,6 @@
 # 0006 LVGL or the classic direct-drawing UI
 
-Status: Proposed. Current preference of the owner: keep LVGL on `develop`; the decision is theirs.
+Status: Accepted 2026-11-18 (option D): LVGL is the UI. `feature/classic-ui` is kept as a maintained branch for communication purposes and a possible later rollback; it is not merged and not deleted. The page speed work of [0007](0007-page-switching-speed-and-prerendering.md) follows.
 
 ## Context
 Two complete UI implementations exist behind the same `ui.h`: LVGL 9 on `develop`/`main` (icons, anti-aliased text, rounded tiles, partial redraws) and direct drawing on `feature/classic-ui` (plain tiles, text labels, arrow shapes, bottom navigation bar on the CoreS3). Both pass the same serial test suite on both boards. Measured on the boards on 2026-11-18:

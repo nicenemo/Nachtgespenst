@@ -33,6 +33,6 @@ Adding a tool:
 1. One class per file, file name equals class name, first line `///usr/bin/env jbang "$0" "$@" ; exit $?`.
 2. `//DEPS com.fazecast:jSerialComm:2.11.0` for serial access, `//SOURCES Boards.java` for the shared helper, `//JAVA 17+` (pin it, [ADR 0003](../adr/0003-jbang-pinned-jdk.md)), `//JAVA_OPTIONS --enable-native-access=ALL-UNNAMED` (silences the jSerialComm warning).
 3. Child programs (esptool, git) through `ProcessBuilder`; serial ports through jSerialComm, found by USB ID with `Boards.find`.
-4. If it touches hardware, the network or the camera, add one `*jbang*<Name>*` entry to `sandbox.excludedCommands` (owner edits `.claude/settings.json`) and make it exit with code 3 and a clear message when the port cannot be opened.
+4. If it touches hardware, the network or the camera, put it in `tools/` as `<Name>.java`: the generic entry `*jbang*tools/*.java*` in `sandbox.excludedCommands` already covers it. Make it exit with code 3 and a clear message when the port cannot be opened.
 5. Compile check: `jbang build tools/<Name>.java`; then test it on the boards.
 
