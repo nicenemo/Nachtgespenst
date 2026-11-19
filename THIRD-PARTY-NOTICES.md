@@ -12,10 +12,13 @@ downloaded packages under `.pio/`.
 | NimBLE-Arduino | Apache-2.0 | https://github.com/h2zero/NimBLE-Arduino |
 | FastLED | MIT | https://github.com/FastLED/FastLED |
 | LVGL 9.2 | MIT | https://github.com/lvgl/lvgl |
+| Geist Sans and Geist Mono (fonts of the demo window and the device UI, `tools/fonts/`) | SIL OFL 1.1 | https://github.com/vercel/geist-font |
 | arduino-esp32 (Arduino framework for ESP32) | LGPL-2.1 | https://github.com/espressif/arduino-esp32 |
 | ESP-IDF (underlying SDK) | Apache-2.0 | https://github.com/espressif/esp-idf |
 
 ## Notes
+
+- **Geist (SIL Open Font License 1.1):** the fonts may be used, embedded and redistributed with software (this project is MIT) as long as the licence text (`tools/fonts/OFL.txt`) and the copyright notice stay with them and the fonts are not sold on their own. A modified or converted font (for example a subset embedded in the firmware) is a derivative under the same licence.
 
 - **arduino-esp32 (LGPL-2.1):** if you distribute compiled firmware, recipients
   must be able to rebuild it with a modified version of the library. The full

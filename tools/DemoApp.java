@@ -17,6 +17,8 @@
 //SOURCES Tones.java
 //SOURCES Telemetry.java
 //SOURCES Scope.java
+//SOURCES ConsoleTheme.java
+//SOURCES ConsoleUi.java
 //SOURCES Scenarios.java
 //JAVA_OPTIONS --enable-native-access=ALL-UNNAMED
 
@@ -48,18 +50,14 @@ import java.util.concurrent.Callable;
  * Start it as ONE plain command (serial port and /dev/hidraw are needed). It never presses Power Down or Sleep.
  */
 public class DemoApp {
-    static final Color ACCENT = new Color(0x9D7BFF);
-
     // ---- state
-    final JPanel root = new JPanel(new BorderLayout(12, 12));
+    final Root root = new Root();
     final JTextArea log = new JTextArea();
-    final JLabel info = new JLabel("not connected");
-    final JLabel status = new JLabel("Ready");
-    final JProgressBar busy = new JProgressBar();
+    final ConsoleUi.PillBar infoBar = new ConsoleUi.PillBar(ConsoleTheme.PEACH), statusBar = new ConsoleUi.PillBar(ConsoleTheme.LAVENDER);
     final JSpinner seconds = new JSpinner(new SpinnerNumberModel(8, 2, 60, 1));
     final JComboBox<String> photoGrid = new JComboBox<>(new String[]{"64x38", "160x95", "320x190"});
-    final JCheckBox repeat = new JCheckBox("repeat until Stop", false), withFast = new JCheckBox("include the fast disk run", true), withMic = new JCheckBox("include the microphone parts (tones)", false);
-    final JButton stop = new JButton("■  Stop"), reconnect = new JButton("Connect");
+    final JCheckBox repeat = check("Repeat until stopped", false), withFast = check("Include the fast disk run", true), withMic = check("Include the microphone parts", false);
+    final ConsoleUi.BlockButton stop = new ConsoleUi.BlockButton("Stop", ConsoleTheme.CORAL), reconnect = new ConsoleUi.BlockButton("Connect", ConsoleTheme.LAVENDER);
     final List<JButton> actions = new ArrayList<>();
     final ScreenPanel screenPanel = new ScreenPanel();
     final LampPanel lampPanel = new LampPanel();
@@ -68,7 +66,21 @@ public class DemoApp {
 
     DemoApp() { build(); }
 
-    // ---- window
+    /** The window: a black ground, the elbow at the top left with the title, the sidebar of blocks under it, the log and the previews, and a status bar. */
+    static final class Root extends JPanel {
+        Root() { super(new BorderLayout(ConsoleTheme.GAP, ConsoleTheme.GAP)); setOpaque(true); setBackground(ConsoleTheme.BLACK); setBorder(BorderFactory.createEmptyBorder(0, 0, ConsoleTheme.GAP + 4, ConsoleTheme.PAD)); }
+        @Override protected void paintComponent(Graphics g0) {
+            super.paintComponent(g0);
+            Graphics2D g = (Graphics2D) g0.create(); ConsoleUi.quality(g);
+            g.setColor(ConsoleTheme.AMBER);
+            g.fill(ConsoleUi.elbow(0, 0, ConsoleTheme.LEG_W + 90, ConsoleTheme.BAR_H + 40, ConsoleTheme.BAR_H, ConsoleTheme.LEG_W, ConsoleTheme.OUTER_R, ConsoleTheme.INNER_R));
+            g.setColor(ConsoleTheme.BLACK); g.setFont(ConsoleTheme.sansBold(26f));
+            g.drawString("Nachtgespenst", 66, 38);
+            g.drawImage(ghost(40), 18, 8, null);
+            g.dispose();
+        }
+    }
+
     static Image ghost(int size) {
         try {
             Path p = Boards.repoRoot().resolve("site/icon-512.png");
@@ -77,113 +89,103 @@ public class DemoApp {
         return new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
     }
 
+    static JCheckBox check(String text, boolean on) {
+        JCheckBox c = new JCheckBox(text, on);
+        c.setOpaque(false); c.setFont(ConsoleTheme.sansRegular(13f)); c.setForeground(ConsoleTheme.PEACH); c.setAlignmentX(Component.LEFT_ALIGNMENT); c.setFocusPainted(false);
+        return c;
+    }
+
     void build() {
-        root.setBorder(new EmptyBorder(14, 14, 14, 14));
-        // header: the ghost of the site, the title and the board
-        JPanel head = new JPanel(new BorderLayout(14, 0));
-        JLabel g = new JLabel(new ImageIcon(ghost(84)));
-        JLabel title = new JLabel("Nachtgespenst");
-        title.setFont(title.getFont().deriveFont(Font.BOLD, 30f));
-        title.setForeground(ACCENT);
-        JLabel sub = new JLabel("a HID LampArray demo: the PC paints the lamps, the CoreS3 shows them");
-        sub.setForeground(Color.GRAY);
-        JPanel t = new JPanel(); t.setLayout(new BoxLayout(t, BoxLayout.Y_AXIS)); t.setOpaque(false);
-        t.add(title); t.add(sub); t.add(Box.createVerticalStrut(6)); t.add(info);
-        head.add(g, BorderLayout.WEST); head.add(t, BorderLayout.CENTER);
-        JPanel conn = new JPanel(new FlowLayout(FlowLayout.RIGHT)); conn.setOpaque(false); conn.add(reconnect);
-        head.add(conn, BorderLayout.EAST);
+        int gap = ConsoleTheme.GAP;
+        // header: the info bar next to the elbow, the connect block at the right
+        JPanel head = new JPanel(new BorderLayout(gap, 0)); head.setOpaque(false);
+        head.setPreferredSize(new Dimension(100, ConsoleTheme.BAR_H));
+        JPanel infoWrap = new JPanel(new BorderLayout()); infoWrap.setOpaque(false);
+        infoWrap.setBorder(BorderFactory.createEmptyBorder(ConsoleTheme.BAR_H / 2 - 14, 0, ConsoleTheme.BAR_H / 2 - 14, 0)); infoWrap.add(infoBar);
+        JPanel west = new JPanel(); west.setOpaque(false); west.setPreferredSize(new Dimension(ConsoleTheme.LEG_W + 90 + gap, ConsoleTheme.BAR_H));
+        reconnect.setPreferredSize(new Dimension(130, ConsoleTheme.BLOCK_H)); reconnect.setMaximumSize(new Dimension(130, ConsoleTheme.BLOCK_H));
+        JPanel conn = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, ConsoleTheme.BAR_H / 2 - ConsoleTheme.BLOCK_H / 2)); conn.setOpaque(false); conn.add(reconnect);
+        head.add(west, BorderLayout.WEST); head.add(infoWrap, BorderLayout.CENTER); head.add(conn, BorderLayout.EAST);
+        infoBar.setText("not connected"); infoBar.setPreferredSize(new Dimension(100, 28));
         root.add(head, BorderLayout.NORTH);
 
-        // controls
-        JPanel left = new JPanel(); left.setLayout(new BoxLayout(left, BoxLayout.Y_AXIS));
-        JButton start = new JButton("▶  Start the cycle");
-        start.addActionListener(e -> cycleRun());
-        actions.add(start);
-        start.setFont(start.getFont().deriveFont(Font.BOLD, 15f));
-        stop.addActionListener(e -> stopRun());
-        stop.setEnabled(false);
-        JPanel cyc = section("Cycle");
-        cyc.add(row(start, stop)); cyc.add(repeat); cyc.add(withFast); cyc.add(withMic);
-        left.add(cyc);
+        // sidebar: blocks in the colours of the console, the text at the bottom right of each block
+        JPanel side = new JPanel(); side.setLayout(new BoxLayout(side, BoxLayout.Y_AXIS)); side.setOpaque(false);
+        side.setBorder(BorderFactory.createEmptyBorder(40 + gap, 0, gap, gap));
+        ConsoleUi.BlockButton start = new ConsoleUi.BlockButton("Start the cycle", ConsoleTheme.AMBER);
+        start.setFont(ConsoleTheme.sansBold(16f)); start.setPreferredSize(new Dimension(100, 52)); start.setMaximumSize(new Dimension(Integer.MAX_VALUE, 52));
+        start.addActionListener(e -> cycleRun()); actions.add(start);
+        stop.setEnabled(false); stop.addActionListener(e -> stopRun());
+        side.add(start); side.add(stop); side.add(Box.createVerticalStrut(gap));
+        side.add(repeat); side.add(withFast); side.add(withMic);
 
-        JPanel one = section("Parts");
-        one.add(action("Walk through all pages", () -> sc.walkPages(), false));
-        one.add(action("Jules Verne to the SD card and back", () -> sc.disk(false), false));
-        one.add(action("… the same in fast mode (no display, no sound)", () -> sc.disk(true), false));
-        left.add(one);
+        side.add(group("Parts", ConsoleTheme.PEACH));
+        side.add(action("Walk through all pages", () -> sc.walkPages(), ConsoleTheme.PEACH));
+        side.add(action("Jules Verne to the SD card", () -> sc.disk(false), ConsoleTheme.PEACH));
+        side.add(action("The same, fast mode", () -> sc.disk(true), ConsoleTheme.PEACH));
 
-        JPanel bar = section("LED bar");
-        JPanel br = new JPanel(new GridLayout(0, 2, 6, 6));
-        for (String n : Scenarios.BAR_EFFECTS) br.add(action(Character.toUpperCase(n.charAt(0)) + n.substring(1), () -> sc.barEffect(n), false));
-        br.add(action("All of them", () -> sc.bar(), false));
-        bar.add(br); left.add(bar);
+        side.add(group("LED bar, painted by the PC", ConsoleTheme.LAVENDER));
+        for (String n : Scenarios.BAR_EFFECTS) side.add(action(cap(n), () -> sc.barEffect(n), ConsoleTheme.LAVENDER));
+        side.add(action("All of them", () -> sc.bar(), ConsoleTheme.LAVENDER));
 
-        JPanel board = section("On the board itself (autonomous)");
-        JPanel bb = new JPanel(new GridLayout(0, 2, 6, 6));
-        for (String n : Scenarios.BOARD_EFFECTS) bb.add(action(Character.toUpperCase(n.charAt(0)) + n.substring(1), () -> sc.boardEffect(n), false));
-        board.add(bb); left.add(board);
+        side.add(group("On the board itself", ConsoleTheme.AMBER));
+        for (String n : Scenarios.BOARD_EFFECTS) side.add(action(cap(n), () -> sc.boardEffect(n), ConsoleTheme.AMBER));
 
-        JPanel mic = section("Microphone and oscilloscope (the PC plays tones)");
-        mic.add(action("Oscilloscope on the lamps", () -> sc.micScope(), false));
-        mic.add(action("VU meter on the LED bar", () -> sc.micDemo(), false));
-        mic.add(action("Microphone check (pass or fail)", () -> sc.micCheck(), false));
-        left.add(mic);
+        side.add(group("Microphone, the PC plays tones", ConsoleTheme.CORAL));
+        side.add(action("Oscilloscope on the lamps", () -> sc.micScope(), ConsoleTheme.CORAL));
+        side.add(action("Vu meter on the LED bar", () -> sc.micDemo(), ConsoleTheme.CORAL));
+        side.add(action("Microphone check", () -> sc.micCheck(), ConsoleTheme.CORAL));
 
-        JPanel grid = section("Lamp grid (C64 style)");
-        for (String n : Scenarios.GRID_EFFECTS) grid.add(action(Character.toUpperCase(n.charAt(0)) + n.substring(1), () -> sc.gridEffect(n), false));
-        left.add(grid);
+        side.add(group("Lamp grid, in the style of a home computer", ConsoleTheme.PEACH));
+        for (String n : Scenarios.GRID_EFFECTS) side.add(action(cap(n), () -> sc.gridEffect(n), ConsoleTheme.PEACH));
 
-        JPanel ph = section("Photo slideshow (prime-modulo dissolve)");
-        photoGrid.setSelectedItem("160x95");
-        ph.add(row(new JLabel("Lamps"), photoGrid));
-        ph.add(action("Slideshow of five photos", () -> { sc.photoGrid = (String) photoGrid.getSelectedItem(); return sc.photos(); }, false));
-        left.add(ph);
+        side.add(group("Photo slideshow", ConsoleTheme.LAVENDER));
+        photoGrid.setSelectedItem("160x95"); photoGrid.setFont(ConsoleTheme.mono(13f)); photoGrid.setAlignmentX(Component.LEFT_ALIGNMENT);
+        photoGrid.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+        side.add(photoGrid); side.add(Box.createVerticalStrut(gap));
+        side.add(action("Slideshow of five photos", () -> { sc.photoGrid = (String) photoGrid.getSelectedItem(); return sc.photos(); }, ConsoleTheme.LAVENDER));
 
-        JPanel set = section("Settings");
-        set.add(row(new JLabel("Seconds per effect"), seconds));
-        left.add(set);
-        for (Component c : left.getComponents()) if (c instanceof JPanel p) p.setMaximumSize(new Dimension(Integer.MAX_VALUE, p.getPreferredSize().height));
-        left.add(Box.createVerticalGlue());
-        JScrollPane lp = new JScrollPane(left, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        lp.setBorder(null); lp.getVerticalScrollBar().setUnitIncrement(16);
-        lp.setPreferredSize(new Dimension(380, 100));
+        side.add(group("Seconds per effect", ConsoleTheme.PEACH));
+        seconds.setFont(ConsoleTheme.mono(13f)); seconds.setAlignmentX(Component.LEFT_ALIGNMENT); seconds.setMaximumSize(new Dimension(120, 30));
+        side.add(seconds);
+        JScrollPane lp = new JScrollPane(side, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        lp.getVerticalScrollBar().putClientProperty("FlatLaf.style", "width: 8; thumbArc: 999; trackArc: 999; thumb: #9999FF; track: #000000; hoverThumbColor: #FFCC99; pressedThumbColor: #FF9900");
+        lp.setBorder(null); lp.setOpaque(false); lp.getViewport().setOpaque(false); lp.getVerticalScrollBar().setUnitIncrement(18);
+        lp.setPreferredSize(new Dimension(ConsoleTheme.LEG_W + gap, 100));
         root.add(lp, BorderLayout.WEST);
 
-        // log and status
-        log.setEditable(false); log.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12)); log.setLineWrap(true); log.setWrapStyleWord(true);
-        JScrollPane logPane = new JScrollPane(log);
-        logPane.setBorder(BorderFactory.createTitledBorder("What is happening"));
-        root.add(logPane, BorderLayout.CENTER);
-        // right: the screen of the board and the lamps as the PC has worked them out
-        JPanel right = new JPanel(new GridLayout(2, 1, 8, 8));
-        right.setPreferredSize(new Dimension(420, 100));
-        screenPanel.setBorder(BorderFactory.createTitledBorder("The board (screenshot)"));
-        lampPanel.setBorder(BorderFactory.createTitledBorder("The lamps, worked out on the PC"));
-        right.add(screenPanel); right.add(lampPanel);
-        root.add(right, BorderLayout.EAST);
-        JPanel south = new JPanel(new BorderLayout(10, 0));
-        busy.setPreferredSize(new Dimension(160, 8)); busy.setIndeterminate(false);
-        south.add(status, BorderLayout.CENTER); south.add(busy, BorderLayout.EAST);
+        // centre: the log, and the board and the lamps on the right
+        log.setEditable(false); log.setFont(ConsoleTheme.mono(13f)); log.setLineWrap(true); log.setWrapStyleWord(true);
+        log.setBackground(ConsoleTheme.BLACK); log.setForeground(ConsoleTheme.TEXT); log.setCaretColor(ConsoleTheme.AMBER); log.setBorder(BorderFactory.createEmptyBorder(4, 6, 4, 6));
+        JScrollPane logPane = new JScrollPane(log); logPane.setBorder(null); logPane.getViewport().setBackground(ConsoleTheme.BLACK);
+        ConsoleUi.Frame logFrame = new ConsoleUi.Frame("What is happening", ConsoleTheme.PEACH); logFrame.setLayout(new BorderLayout()); logFrame.add(logPane);
+        ConsoleUi.Frame boardFrame = new ConsoleUi.Frame("The board", ConsoleTheme.LAVENDER); boardFrame.setLayout(new BorderLayout()); boardFrame.add(screenPanel);
+        ConsoleUi.Frame lampFrame = new ConsoleUi.Frame("The lamps, worked out on the PC", ConsoleTheme.AMBER); lampFrame.setLayout(new BorderLayout()); lampFrame.add(lampPanel);
+        JPanel right = new JPanel(new GridLayout(2, 1, 0, gap)); right.setOpaque(false); right.setPreferredSize(new Dimension(430, 100));
+        right.add(boardFrame); right.add(lampFrame);
+        JPanel centre = new JPanel(new BorderLayout(gap, 0)); centre.setOpaque(false);
+        centre.add(logFrame, BorderLayout.CENTER); centre.add(right, BorderLayout.EAST);
+        root.add(centre, BorderLayout.CENTER);
+
+        statusBar.setText("Ready"); statusBar.setPreferredSize(new Dimension(100, 30));
+        JPanel south = new JPanel(new BorderLayout()); south.setOpaque(false); south.setBorder(BorderFactory.createEmptyBorder(0, ConsoleTheme.LEG_W + gap, 0, 0)); south.add(statusBar);
         root.add(south, BorderLayout.SOUTH);
 
+        screenPanel.setOpaque(false); lampPanel.setOpaque(false);
         reconnect.addActionListener(e -> connect());
         setEnabledActions(false);
     }
 
-    static JPanel section(String name) {
-        JPanel p = new JPanel(); p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
-        TitledBorder b = BorderFactory.createTitledBorder(name); b.setTitleColor(ACCENT);
-        p.setBorder(BorderFactory.createCompoundBorder(b, new EmptyBorder(4, 8, 8, 8)));
-        p.setAlignmentX(Component.LEFT_ALIGNMENT);
+    static String cap(String n) { return Character.toUpperCase(n.charAt(0)) + n.substring(1); }
+    static Component group(String name, Color c) {
+        JPanel p = new JPanel(); p.setOpaque(false); p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS)); p.setAlignmentX(Component.LEFT_ALIGNMENT);
+        p.add(Box.createVerticalStrut(ConsoleTheme.GAP + 4)); p.add(new ConsoleUi.Band(name, c)); p.add(Box.createVerticalStrut(4));
         return p;
     }
-    static JPanel row(Component... cs) { JPanel r = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 2)); for (Component c : cs) r.add(c); r.setAlignmentX(Component.LEFT_ALIGNMENT); return r; }
 
-    JButton action(String label, Callable<String> body, boolean unused) {
-        JButton b = new JButton(label);
-        b.setAlignmentX(Component.LEFT_ALIGNMENT);
-        b.setMaximumSize(new Dimension(Integer.MAX_VALUE, b.getPreferredSize().height));
-        b.addActionListener(e -> run(label.replaceAll("[^\\p{L}\\p{N} ()-]", "").trim(), body));
+    JButton action(String label, Callable<String> body, Color colour) {
+        ConsoleUi.BlockButton b = new ConsoleUi.BlockButton(label, colour);
+        b.addActionListener(e -> run(label, body));
         actions.add(b);
         return b;
     }
@@ -194,7 +196,7 @@ public class DemoApp {
         SwingUtilities.invokeLater(() -> { log.append(s + "\n"); log.setCaretPosition(log.getDocument().getLength()); });
     }
     void state(String s, boolean running) {
-        SwingUtilities.invokeLater(() -> { status.setText(s); busy.setIndeterminate(running); stop.setEnabled(running); setEnabledActions(!running && sc != null); reconnect.setEnabled(!running); });
+        SwingUtilities.invokeLater(() -> { statusBar.setText(s); statusBar.setBusy(running); statusBar.setFill(running ? ConsoleTheme.AMBER : ConsoleTheme.LAVENDER); stop.setEnabled(running); setEnabledActions(!running && sc != null); reconnect.setEnabled(!running); });
     }
 
     // ---- the board
@@ -217,12 +219,12 @@ public class DemoApp {
                     public void grid(int[] rgb, int cols, int rows) { lampPanel.setGrid(rgb, cols, rows); }
                 };
                 Map<String, String> i = ser.kv("info");
-                SwingUtilities.invokeLater(() -> info.setText("connected: " + i.get("name") + ", firmware " + i.get("fw") + ", " + i.get("pages") + " pages, USB " + node));
+                SwingUtilities.invokeLater(() -> infoBar.setText("Connected: " + i.get("name") + ", firmware " + i.get("fw") + ", " + i.get("pages") + " pages, USB " + node));
                 say("Connected. Pick a demo, or start the cycle.");
                 state("Ready", false);
             } catch (Exception e) {
                 say("Cannot connect: " + e.getMessage());
-                SwingUtilities.invokeLater(() -> info.setText("not connected"));
+                SwingUtilities.invokeLater(() -> infoBar.setText("Not connected"));
                 state("Not connected", false);
             }
         });
@@ -297,7 +299,7 @@ public class DemoApp {
         FlatDarkLaf.setup();
         if (shot != null) {
             DemoApp app = new DemoApp();
-            app.info.setText("connected: NG-S3, firmware Nov 19 2026, 30 pages, USB /dev/hidraw0 (preview)");
+            app.infoBar.setText("Connected: NG-S3, firmware Nov 19 2026, 30 pages, USB /dev/hidraw0");
             app.log.setText("Connected. Pick a demo, or start the cycle.\n=== Jules Verne to the SD card and back\nbook 618734 bytes, raw deflate 232700 bytes (38%)\nsent 232700 compressed bytes in 7,95 s = 28,6 kB/s\nloaded back 618734 bytes in 16,37 s = 36,9 kB/s over the gamepad\nSHA-256 of the received file equals the original\n");
             app.setEnabledActions(true);
             try {
