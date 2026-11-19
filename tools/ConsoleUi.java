@@ -144,6 +144,47 @@ final class ConsoleUi {
         }
     }
 
+    /** A small block with a drawn symbol instead of text: a turn clockwise or anticlockwise, a half turn, a mirror left to right or top to bottom. */
+    static class IconButton extends BlockButton {
+        enum Kind { TURN_RIGHT, TURN_LEFT, TURN_HALF, MIRROR_H, MIRROR_V }
+        private final Kind kind;
+        IconButton(Kind kind, String tip, Color base) {
+            super("", base); this.kind = kind; setToolTipText(tip); getAccessibleContext().setAccessibleName(tip);
+            setPreferredSize(new Dimension(40, 30)); setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+        }
+        @Override protected void paintComponent(Graphics g0) {
+            super.paintComponent(g0);
+            Graphics2D g = (Graphics2D) g0.create(); quality(g);
+            double cx = getWidth() / 2.0, cy = getHeight() / 2.0; boolean on = isEnabled(), down = getModel().isPressed();
+            g.setColor(on ? ConsoleTheme.TEXT_ON_BLOCK : ConsoleTheme.mix(base, ConsoleTheme.BLACK, 0.45));
+            g.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g.translate(cx + (down ? 1 : 0), cy + (down ? 1 : 0));
+            switch (kind) {
+                case TURN_RIGHT, TURN_LEFT, TURN_HALF -> {
+                    double r = kind == Kind.TURN_HALF ? 9 : 7; boolean left = kind == Kind.TURN_LEFT;
+                    if (left) g.scale(-1, 1);
+                    g.draw(new Arc2D.Double(-r, -r, 2 * r, 2 * r, 100, -300, Arc2D.OPEN));           // a clockwise arc with a gap at the top left
+                    double th = Math.toRadians(160), ex = r * Math.cos(th), ey = -r * Math.sin(th);   // where the arc ends
+                    double dx = Math.sin(th), dy = Math.cos(th);                                      // the direction of travel there (clockwise on the screen)
+                    double tx = ex + dx * 3, ty = ey + dy * 3, nx = -dy, ny = dx;
+                    Path2D.Double head = new Path2D.Double();
+                    head.moveTo(tx - dx * 5 + nx * 4, ty - dy * 5 + ny * 4); head.lineTo(tx, ty); head.lineTo(tx - dx * 5 - nx * 4, ty - dy * 5 - ny * 4);
+                    g.draw(head);
+                    if (kind == Kind.TURN_HALF) { g.setFont(ConsoleTheme.sansBold(8f)); g.drawString("180", -g.getFontMetrics().stringWidth("180") / 2f, 3); }
+                }
+                case MIRROR_H, MIRROR_V -> {
+                    if (kind == Kind.MIRROR_V) g.rotate(Math.PI / 2);
+                    Path2D.Double l = new Path2D.Double(); l.moveTo(-3, -6); l.lineTo(-9, 6); l.lineTo(-3, 6); l.closePath();
+                    Path2D.Double r2 = new Path2D.Double(); r2.moveTo(3, -6); r2.lineTo(9, 6); r2.lineTo(3, 6); r2.closePath();
+                    g.fill(r2); g.draw(l);                                                           // one solid and one outlined triangle either side of the axis
+                    g.setStroke(new BasicStroke(1.5f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10f, new float[]{2.5f, 2.5f}, 0f));
+                    g.draw(new java.awt.geom.Line2D.Double(0, -8, 0, 8));
+                }
+            }
+            g.dispose();
+        }
+    }
+
     /** A rounded bar with a line of text (Geist Mono) and, optionally, a row of small moving segments while something is going on. */
     static class PillBar extends JComponent {
         private String text = ""; private Color fill; private boolean busy; private int tick; private final javax.swing.Timer timer;

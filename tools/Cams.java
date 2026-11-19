@@ -84,7 +84,7 @@ final class Cams {
     /** A picture panel for one camera: the latest frame scaled to fit, or a short line of text. */
     static final class CamPanel extends JPanel {
         volatile Cam cam; volatile String text = "off";
-        volatile int quarter; volatile boolean mirror;      // quarter turns clockwise (0..3) and a left-right mirror, applied when drawing
+        volatile int quarter; volatile boolean mirror, flip;      // quarter turns clockwise (0..3) and a left-right mirror, applied when drawing
         private final AtomicBoolean pending = new AtomicBoolean();
         CamPanel() { setOpaque(false); }
         void refresh() { if (!pending.getAndSet(true)) SwingUtilities.invokeLater(() -> { pending.set(false); repaint(); }); }
@@ -104,7 +104,7 @@ final class Cams {
                 g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
                 g.setClip(new java.awt.geom.RoundRectangle2D.Double((w - pw) / 2.0, (h - ph) / 2.0, pw, ph, 14, 14));
                 java.awt.geom.AffineTransform at = new java.awt.geom.AffineTransform();
-                at.translate(w / 2.0, h / 2.0); if (mirror) at.scale(-1, 1); at.rotate(q * Math.PI / 2); at.scale(k, k); at.translate(-iw / 2.0, -ih / 2.0);
+                at.translate(w / 2.0, h / 2.0); if (mirror) at.scale(-1, 1); if (flip) at.scale(1, -1); at.rotate(q * Math.PI / 2); at.scale(k, k); at.translate(-iw / 2.0, -ih / 2.0);
                 g.drawImage(im, at, null);
             }
             g.dispose();

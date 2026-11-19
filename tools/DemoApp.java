@@ -153,16 +153,15 @@ public class DemoApp {
             camBox[i].addActionListener(e -> camToggle(k));
             camPick[i].addActionListener(e -> { if (camBox[k].isSelected()) camToggle(k); });
             camPanel[i].quarter = pr.getInt("rot" + i, 0); camPanel[i].mirror = pr.getBoolean("mir" + i, false);
-            JPanel row = new JPanel(new GridLayout(1, 4, 4, 0)); row.setOpaque(false); row.setAlignmentX(Component.LEFT_ALIGNMENT); row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
-            row.add(turnButton("+90°", () -> { camPanel[k].quarter = (camPanel[k].quarter + 1) & 3; camSaved(k); }));
-            row.add(turnButton("-90°", () -> { camPanel[k].quarter = (camPanel[k].quarter + 3) & 3; camSaved(k); }));
-            row.add(turnButton("180°", () -> { camPanel[k].quarter = (camPanel[k].quarter + 2) & 3; camSaved(k); }));
-            row.add(turnButton("Mirror", () -> { camPanel[k].mirror = !camPanel[k].mirror; camSaved(k); }));
+            camPanel[i].flip = pr.getBoolean("flip" + i, false);
+            JPanel row = new JPanel(new GridLayout(1, 5, 4, 0)); row.setOpaque(false); row.setAlignmentX(Component.LEFT_ALIGNMENT); row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+            row.add(iconButton(ConsoleUi.IconButton.Kind.TURN_LEFT, "Turn a quarter anticlockwise", () -> { camPanel[k].quarter = (camPanel[k].quarter + 3) & 3; camSaved(k); }));
+            row.add(iconButton(ConsoleUi.IconButton.Kind.TURN_RIGHT, "Turn a quarter clockwise", () -> { camPanel[k].quarter = (camPanel[k].quarter + 1) & 3; camSaved(k); }));
+            row.add(iconButton(ConsoleUi.IconButton.Kind.TURN_HALF, "Turn half a circle", () -> { camPanel[k].quarter = (camPanel[k].quarter + 2) & 3; camSaved(k); }));
+            row.add(iconButton(ConsoleUi.IconButton.Kind.MIRROR_H, "Mirror left to right", () -> { camPanel[k].mirror = !camPanel[k].mirror; camSaved(k); }));
+            row.add(iconButton(ConsoleUi.IconButton.Kind.MIRROR_V, "Mirror top to bottom", () -> { camPanel[k].flip = !camPanel[k].flip; camSaved(k); }));
             side.add(camBox[i]); side.add(camPick[i]); side.add(Box.createVerticalStrut(3)); side.add(row); side.add(Box.createVerticalStrut(gap));
         }
-        JLabel camHint = new JLabel("<html>Unticking a camera frees it, for example for Teams.</html>");
-        camHint.setFont(ConsoleTheme.sansRegular(11f)); camHint.setForeground(ConsoleTheme.mix(ConsoleTheme.PEACH, ConsoleTheme.BLACK, 0.4)); camHint.setAlignmentX(Component.LEFT_ALIGNMENT);
-        side.add(camHint);
 
         side.add(group("Parts", ConsoleTheme.PEACH));
         side.add(action("Walk through all pages", () -> sc.walkPages(), ConsoleTheme.PEACH));
@@ -269,15 +268,14 @@ public class DemoApp {
         root.revalidate(); root.repaint();
     }
 
-    ConsoleUi.BlockButton turnButton(String label, Runnable r) {
-        ConsoleUi.BlockButton b = new ConsoleUi.BlockButton(label, ConsoleTheme.LAVENDER);
-        b.setFont(ConsoleTheme.sansBold(11f)); b.setPreferredSize(new Dimension(40, 30)); b.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+    ConsoleUi.IconButton iconButton(ConsoleUi.IconButton.Kind kind, String tip, Runnable r) {
+        ConsoleUi.IconButton b = new ConsoleUi.IconButton(kind, tip, ConsoleTheme.LAVENDER);
         b.addActionListener(e -> r.run());
         return b;
     }
     void camSaved(int i) {
         var pr = java.util.prefs.Preferences.userNodeForPackage(DemoApp.class);
-        pr.putInt("rot" + i, camPanel[i].quarter); pr.putBoolean("mir" + i, camPanel[i].mirror);
+        pr.putInt("rot" + i, camPanel[i].quarter); pr.putBoolean("mir" + i, camPanel[i].mirror); pr.putBoolean("flip" + i, camPanel[i].flip);
         camPanel[i].refresh();
     }
 
