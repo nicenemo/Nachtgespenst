@@ -60,7 +60,7 @@ public class DemoApp {
     final JSpinner seconds = new JSpinner(new SpinnerNumberModel(8, 2, 60, 1));
     final JComboBox<String> photoGrid = new JComboBox<>(new String[]{"64x38", "160x95", "320x190"});
     final JCheckBox repeat = check("Repeat until stopped", false), withFast = check("Include the fast disk run", true), withMic = check("Include the microphone parts", false);
-    final ConsoleUi.BlockButton stop = new ConsoleUi.BlockButton("Stop", ConsoleTheme.CORAL), reconnect = new ConsoleUi.BlockButton("Connect", ConsoleTheme.LAVENDER);
+    final ConsoleUi.BlockButton stop = new ConsoleUi.IconButton(ConsoleUi.IconButton.Kind.CANCEL, "Stop the running demo", ConsoleTheme.CORAL), reconnect = new ConsoleUi.BlockButton("Connect", ConsoleTheme.LAVENDER);
     final List<JButton> actions = new ArrayList<>();
     final Talk.SlidePanel slidePanel = new Talk.SlidePanel();
     Talk.Player player;
@@ -80,10 +80,9 @@ public class DemoApp {
 
     DemoApp() { build(); }
 
-    /** The window: a black ground, the elbow at the top left with the title, the sidebar of blocks under it, the log and the previews, and a status bar. */
+    /** The window: a black ground, the title and a bar of icon buttons on top, the slide with the cameras and previews under it, and a status bar. */
     static final class Root extends JPanel {
-        boolean elbow = true;
-        Root() { super(new BorderLayout(ConsoleTheme.GAP, ConsoleTheme.GAP)); setOpaque(true); setBackground(ConsoleTheme.BLACK); setBorder(BorderFactory.createEmptyBorder(0, 0, ConsoleTheme.GAP + 4, ConsoleTheme.PAD)); }
+        Root() { super(new BorderLayout(ConsoleTheme.GAP, ConsoleTheme.GAP)); setOpaque(true); setBackground(ConsoleTheme.BLACK); setBorder(BorderFactory.createEmptyBorder(0, ConsoleTheme.PAD, ConsoleTheme.GAP + 4, ConsoleTheme.PAD)); }
         @Override protected void paintComponent(Graphics g0) {
             super.paintComponent(g0);
             Graphics2D g = (Graphics2D) g0.create(); ConsoleUi.quality(g);
@@ -91,10 +90,6 @@ public class DemoApp {
             ConsoleUi.ghost(g, gap + 12, gap, ConsoleTheme.BAR_H - gap - 2);
             g.setColor(Color.WHITE); g.setFont(ConsoleTheme.sansBold(26f));
             g.drawString("Nachtgespenst", gap + 12 + ConsoleTheme.BAR_H + 4, gap + (ConsoleTheme.BAR_H - gap) / 2 + 10);
-            // the elbow frames the sidebar: a thin bar over it and a leg beside it, a large outer radius and a tight inner radius
-            g.setColor(ConsoleTheme.AMBER);
-            int y0 = ConsoleTheme.BAR_H + gap;
-            if (elbow) g.fill(ConsoleUi.elbow(0, y0, ConsoleTheme.LEG_W + ConsoleTheme.ELBOW_W, h - y0 - gap - 4, ConsoleTheme.ELBOW_W, ConsoleTheme.ELBOW_W, 28, 8));
             g.dispose();
         }
     }
@@ -127,27 +122,24 @@ public class DemoApp {
         infoBar.setText("not connected"); infoBar.setPreferredSize(new Dimension(100, 28));
         root.add(head, BorderLayout.NORTH);
 
-        // sidebar: the talk and three small blocks that open a popup (demos, cameras, log); nothing in it scrolls
-        JPanel side = new JPanel(); side.setLayout(new BoxLayout(side, BoxLayout.Y_AXIS)); side.setOpaque(false);
-        side.setBorder(BorderFactory.createEmptyBorder(ConsoleTheme.ELBOW_W + 2 * gap, ConsoleTheme.ELBOW_W + gap, gap, gap));
-        side.add(group("The talk", ConsoleTheme.AMBER));
-        side.add(talkButton("Start the talk", ConsoleTheme.AMBER, this::talkStart));
-        side.add(talkButton("Pause or resume", ConsoleTheme.PEACH, () -> { if (player != null) player.pause(); }));
-        side.add(talkButton("Previous slide", ConsoleTheme.LAVENDER, () -> { if (player != null) player.prev(); }));
-        side.add(talkButton("Next slide", ConsoleTheme.LAVENDER, () -> { if (player != null) player.next(); }));
-        side.add(talkButton("Stop the talk", ConsoleTheme.CORAL, this::talkStop));
-        side.add(group("More", ConsoleTheme.PEACH));
+        // toolbar: icon buttons for the talk and the popups (demos, cameras, microphone, speaker, log); every button has a tooltip
         stop.setEnabled(false); stop.addActionListener(e -> stopRun());
-        side.add(stop);
-        side.add(talkButton("Demos …", ConsoleTheme.LAVENDER, () -> popup("Demos", demoPane)));
-        JPanel icons = new JPanel(new GridLayout(1, 3, 4, 0)); icons.setOpaque(false); icons.setAlignmentX(Component.LEFT_ALIGNMENT); icons.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
-        icons.add(iconButton(ConsoleUi.IconButton.Kind.CAMERA, "Cameras: choose, turn and mirror", () -> popup("Cameras", camPane)));
-        icons.add(iconButton(ConsoleUi.IconButton.Kind.MIC, "Microphone: device, volume and level", this::micPopup));
-        icons.add(iconButton(ConsoleUi.IconButton.Kind.SPEAKER, "Speaker: device and volume", () -> popup("Speaker", speakerPane)));
-        for (Component c : icons.getComponents()) c.setPreferredSize(new Dimension(40, 34));
-        side.add(Box.createVerticalStrut(2)); side.add(icons); side.add(Box.createVerticalStrut(4));
-        side.add(talkButton("Log …", ConsoleTheme.LAVENDER, () -> popup("What is happening", logPaneOuter)));
-        side.add(Box.createVerticalGlue());
+        JPanel tools = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, ConsoleTheme.BAR_H / 2 - 17)); tools.setOpaque(false);
+        tools.add(tb(ConsoleUi.IconButton.Kind.PLAY, "Start the talk (F5)", ConsoleTheme.AMBER, this::talkStart));
+        tools.add(tb(ConsoleUi.IconButton.Kind.PAUSE, "Pause or resume the talk (P)", ConsoleTheme.PEACH, () -> { if (player != null) player.pause(); }));
+        tools.add(tb(ConsoleUi.IconButton.Kind.PREV, "Previous slide (left, up, Page Up)", ConsoleTheme.LAVENDER, () -> { if (player != null) player.prev(); }));
+        tools.add(tb(ConsoleUi.IconButton.Kind.NEXT, "Next slide (right, down, space, Page Down)", ConsoleTheme.LAVENDER, () -> { if (player != null) player.next(); }));
+        tools.add(tb(ConsoleUi.IconButton.Kind.STOP, "Stop the talk (Esc)", ConsoleTheme.CORAL, this::talkStop));
+        tools.add(Box.createHorizontalStrut(10));
+        stop.setPreferredSize(new Dimension(44, 34)); stop.setMaximumSize(new Dimension(44, 34)); tools.add(stop);
+        tools.add(tb(ConsoleUi.IconButton.Kind.DEMOS, "Demos: the cycle and every part on its own", ConsoleTheme.LAVENDER, () -> popup("Demos", demoPane)));
+        tools.add(tb(ConsoleUi.IconButton.Kind.CAMERA, "Cameras: choose, turn and mirror", ConsoleTheme.LAVENDER, () -> popup("Cameras", camPane)));
+        tools.add(tb(ConsoleUi.IconButton.Kind.MIC, "Microphone: device, gain and level", ConsoleTheme.LAVENDER, this::micPopup));
+        tools.add(tb(ConsoleUi.IconButton.Kind.SPEAKER, "Speaker: device and volume", ConsoleTheme.LAVENDER, () -> popup("Speaker", speakerPane)));
+        tools.add(tb(ConsoleUi.IconButton.Kind.LOG, "What is happening: the log", ConsoleTheme.LAVENDER, () -> popup("What is happening", logPaneOuter)));
+        JPanel mid = new JPanel(new BorderLayout(gap, 0)); mid.setOpaque(false); mid.add(tools, BorderLayout.WEST); mid.add(infoWrap, BorderLayout.CENTER);
+        head.remove(infoWrap); head.add(mid, BorderLayout.CENTER);
+        sideScroll = tools;
 
         // popup: the demos, in three columns
         ConsoleUi.BlockButton start = new ConsoleUi.BlockButton("Start the cycle", ConsoleTheme.AMBER);
@@ -206,8 +198,6 @@ public class DemoApp {
         }
         camPane.setPreferredSize(new Dimension(380, 220));
         buildAudioPanes(pr);
-        sideScroll = side; root.add(side, BorderLayout.WEST);
-        side.setPreferredSize(new Dimension(ConsoleTheme.LEG_W - 30 + ConsoleTheme.ELBOW_W + gap, 100));
 
         // centre: the slide and the log on the left, the cameras, the board and the lamps on the right
         log.setEditable(false); log.setFont(ConsoleTheme.mono(12f)); log.setLineWrap(true); log.setWrapStyleWord(true);
@@ -236,7 +226,6 @@ public class DemoApp {
         statusBar.setText("Ready");
         statusBar.setPreferredSize(new Dimension(100, 30)); metricsBar.setPreferredSize(new Dimension(100, 30)); metricsBar.setText("");
         JPanel south = southPane = new JPanel(new GridBagLayout()); south.setOpaque(false);
-        south.setBorder(BorderFactory.createEmptyBorder(0, ConsoleTheme.LEG_W - 30 + ConsoleTheme.ELBOW_W + gap, 0, 0));
         GridBagConstraints sc2 = new GridBagConstraints(); sc2.fill = GridBagConstraints.HORIZONTAL; sc2.weightx = 0.45; sc2.gridx = 0; sc2.insets = new Insets(0, 0, 0, gap); south.add(statusBar, sc2);
         sc2.weightx = 0.55; sc2.gridx = 1; sc2.insets = new Insets(0, 0, 0, 0); south.add(metricsBar, sc2);
         root.add(south, BorderLayout.SOUTH);
@@ -344,6 +333,14 @@ public class DemoApp {
         }
     }
 
+    /** A toolbar button: a drawn icon in a block, with a tooltip. */
+    ConsoleUi.IconButton tb(ConsoleUi.IconButton.Kind kind, String tip, Color colour, Runnable r) {
+        ConsoleUi.IconButton b = new ConsoleUi.IconButton(kind, tip, colour);
+        b.setPreferredSize(new Dimension(44, 34)); b.setMaximumSize(new Dimension(44, 34));
+        b.addActionListener(e -> r.run());
+        return b;
+    }
+
     static JPanel column() { JPanel c = new JPanel(); c.setLayout(new BoxLayout(c, BoxLayout.Y_AXIS)); c.setOpaque(false); return c; }
 
     /** A modal popup with the content on black; Escape closes it. Starting a demo from it closes it too. */
@@ -386,8 +383,7 @@ public class DemoApp {
 
     void toggleSidebar() {
         boolean show = !sideScroll.isVisible();
-        sideScroll.setVisible(show); root.elbow = show;
-        southPane.setBorder(BorderFactory.createEmptyBorder(0, show ? ConsoleTheme.LEG_W + ConsoleTheme.ELBOW_W + ConsoleTheme.GAP : 0, 0, 0));
+        sideScroll.setVisible(show);
         root.revalidate(); root.repaint();
     }
 

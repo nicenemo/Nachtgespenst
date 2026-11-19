@@ -146,7 +146,7 @@ final class ConsoleUi {
 
     /** A small block with a drawn symbol instead of text: a turn clockwise or anticlockwise, a half turn, a mirror left to right or top to bottom. */
     static class IconButton extends BlockButton {
-        enum Kind { TURN_RIGHT, TURN_LEFT, TURN_HALF, MIRROR_H, MIRROR_V, CAMERA, MIC, SPEAKER }
+        enum Kind { TURN_RIGHT, TURN_LEFT, TURN_HALF, MIRROR_H, MIRROR_V, CAMERA, MIC, SPEAKER, PLAY, PAUSE, PREV, NEXT, STOP, CANCEL, DEMOS, LOG }
         private final Kind kind;
         IconButton(Kind kind, String tip, Color base) {
             super("", base); this.kind = kind; setToolTipText(tip); getAccessibleContext().setAccessibleName(tip);
@@ -172,6 +172,14 @@ final class ConsoleUi {
                     g.draw(head);
                     if (kind == Kind.TURN_HALF) { g.setFont(ConsoleTheme.sansBold(8f)); g.drawString("180", -g.getFontMetrics().stringWidth("180") / 2f, 3); }
                 }
+                case PLAY -> { Path2D.Double t = new Path2D.Double(); t.moveTo(-4, -7); t.lineTo(-4, 7); t.lineTo(7, 0); t.closePath(); g.fill(t); }
+                case PAUSE -> { g.fill(new RoundRectangle2D.Double(-6, -7, 4, 14, 2, 2)); g.fill(new RoundRectangle2D.Double(2, -7, 4, 14, 2, 2)); }
+                case PREV -> { g.fill(new RoundRectangle2D.Double(-8, -7, 2.5, 14, 1, 1)); Path2D.Double t = new Path2D.Double(); t.moveTo(7, -7); t.lineTo(7, 7); t.lineTo(-4, 0); t.closePath(); g.fill(t); }
+                case NEXT -> { g.fill(new RoundRectangle2D.Double(5.5, -7, 2.5, 14, 1, 1)); Path2D.Double t = new Path2D.Double(); t.moveTo(-7, -7); t.lineTo(-7, 7); t.lineTo(4, 0); t.closePath(); g.fill(t); }
+                case STOP -> g.fill(new RoundRectangle2D.Double(-6, -6, 12, 12, 3, 3));
+                case CANCEL -> { g.draw(new java.awt.geom.Line2D.Double(-6, -6, 6, 6)); g.draw(new java.awt.geom.Line2D.Double(6, -6, -6, 6)); }
+                case DEMOS -> { for (int i = 0; i < 4; i++) g.fill(new RoundRectangle2D.Double(i % 2 == 0 ? -8 : 1, i < 2 ? -8 : 1, 7, 7, 2, 2)); }
+                case LOG -> { for (int i = 0; i < 3; i++) { g.fill(new Ellipse2D.Double(-9, i * 6 - 8, 3, 3)); g.draw(new java.awt.geom.Line2D.Double(-3.5, i * 6 - 6.5, 8, i * 6 - 6.5)); } }
                 case CAMERA -> {
                     g.draw(new RoundRectangle2D.Double(-9, -5, 18, 12, 4, 4));
                     g.draw(new Ellipse2D.Double(-3.5, -2.5, 7, 7));
