@@ -220,8 +220,8 @@ public class DemoApp {
         rc.gridy = 2; rc.weighty = 0.26; rc.insets = new Insets(0, 0, 0, 0); right.add(lampFrame, rc);
         JPanel centre = new JPanel(new GridBagLayout()); centre.setOpaque(false);
         GridBagConstraints cc = new GridBagConstraints(); cc.fill = GridBagConstraints.BOTH; cc.weighty = 1; cc.gridy = 0;
-        cc.gridx = 0; cc.weightx = 0.52; cc.insets = new Insets(0, 0, 0, gap); centre.add(left, cc);
-        cc.gridx = 1; cc.weightx = 0.48; cc.insets = new Insets(0, 0, 0, 0); centre.add(right, cc);
+        cc.gridx = 0; cc.weightx = 0.68; cc.insets = new Insets(0, 0, 0, gap); centre.add(left, cc);
+        cc.gridx = 1; cc.weightx = 0.32; cc.insets = new Insets(0, 0, 0, 0); centre.add(right, cc);
         root.add(centre, BorderLayout.CENTER);
 
         statusBar.setText("Ready");
@@ -731,7 +731,7 @@ public class DemoApp {
             g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
             g.drawImage(im, px, py, pw, ph, null);
             g.setColor(Color.GRAY); g.setFont(ConsoleTheme.mono(11f));
-            String cap = c + " x " + r + " lamps, bar 0-4 down the right, 5-9 up the left";
+            String cap = c + " x " + r + " lamps";
             while (cap.length() > 12 && g.getFontMetrics().stringWidth(cap) > w) cap = cap.substring(0, cap.length() - 1);   // never wider than the panel
             g.drawString(cap, x0, Math.min(getHeight() - 6, py + ph + 18));
         }
