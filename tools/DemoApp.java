@@ -67,7 +67,10 @@ public class DemoApp {
     final JCheckBox[] camBox = {check("Tripod camera above the board", false), check("Laptop camera", false)};
     final JComboBox<Cams.Device> camPick0 = new JComboBox<>(), camPick1 = new JComboBox<>();
     final JComboBox<?>[] camPick = {camPick0, camPick1};
-    ConsoleUi.Frame camsFrame; JScrollPane sideScroll; JPanel southPane;
+    ConsoleUi.Frame camsFrame; JComponent sideScroll; JPanel southPane;
+    final JPanel demoPane = new JPanel(), camPane = new JPanel(), logPaneOuter = new JPanel();
+    final ConsoleUi.PillBar metricsBar = new ConsoleUi.PillBar(ConsoleTheme.PEACH);
+    JDialog openDialog;
     String statusBase = "Ready";
     final ScreenPanel screenPanel = new ScreenPanel();
     final LampPanel lampPanel = new LampPanel();
@@ -123,31 +126,64 @@ public class DemoApp {
         infoBar.setText("not connected"); infoBar.setPreferredSize(new Dimension(100, 28));
         root.add(head, BorderLayout.NORTH);
 
-        // sidebar: blocks in the colours of the console, the text at the bottom right of each block
-        JPanel side = new ColumnPanel(); side.setLayout(new BoxLayout(side, BoxLayout.Y_AXIS)); side.setOpaque(false);
+        // sidebar: the talk and three small blocks that open a popup (demos, cameras, log); nothing in it scrolls
+        JPanel side = new JPanel(); side.setLayout(new BoxLayout(side, BoxLayout.Y_AXIS)); side.setOpaque(false);
         side.setBorder(BorderFactory.createEmptyBorder(ConsoleTheme.ELBOW_W + 2 * gap, ConsoleTheme.ELBOW_W + gap, gap, gap));
-        ConsoleUi.BlockButton start = new ConsoleUi.BlockButton("Start the cycle", ConsoleTheme.AMBER);
-        start.setFont(ConsoleTheme.sansBold(16f)); start.setPreferredSize(new Dimension(100, 52)); start.setMaximumSize(new Dimension(Integer.MAX_VALUE, 52));
-        start.addActionListener(e -> cycleRun()); actions.add(start);
-        stop.setEnabled(false); stop.addActionListener(e -> stopRun());
-        side.add(start); side.add(stop); side.add(Box.createVerticalStrut(gap));
-        side.add(repeat); side.add(withFast); side.add(withMic);
-
-        side.add(group("The talk, ten minutes", ConsoleTheme.AMBER));
+        side.add(group("The talk", ConsoleTheme.AMBER));
         side.add(talkButton("Start the talk", ConsoleTheme.AMBER, this::talkStart));
         side.add(talkButton("Pause or resume", ConsoleTheme.PEACH, () -> { if (player != null) player.pause(); }));
         side.add(talkButton("Previous slide", ConsoleTheme.LAVENDER, () -> { if (player != null) player.prev(); }));
         side.add(talkButton("Next slide", ConsoleTheme.LAVENDER, () -> { if (player != null) player.next(); }));
         side.add(talkButton("Stop the talk", ConsoleTheme.CORAL, this::talkStop));
+        side.add(group("More", ConsoleTheme.PEACH));
+        stop.setEnabled(false); stop.addActionListener(e -> stopRun());
+        side.add(stop);
+        side.add(talkButton("Demos …", ConsoleTheme.LAVENDER, () -> popup("Demos", demoPane)));
+        side.add(talkButton("Cameras …", ConsoleTheme.LAVENDER, () -> popup("Cameras", camPane)));
+        side.add(talkButton("Log …", ConsoleTheme.LAVENDER, () -> popup("What is happening", logPaneOuter)));
+        side.add(Box.createVerticalGlue());
 
-        side.add(group("Cameras", ConsoleTheme.PEACH));
+        // popup: the demos, in three columns
+        ConsoleUi.BlockButton start = new ConsoleUi.BlockButton("Start the cycle", ConsoleTheme.AMBER);
+        start.setFont(ConsoleTheme.sansBold(16f)); start.setPreferredSize(new Dimension(100, 52)); start.setMaximumSize(new Dimension(Integer.MAX_VALUE, 52));
+        start.addActionListener(e -> cycleRun()); actions.add(start);
+        JPanel c1 = column(), c2 = column(), c3 = column();
+        c1.add(start); c1.add(Box.createVerticalStrut(gap)); c1.add(repeat); c1.add(withFast); c1.add(withMic);
+        c1.add(group("Parts", ConsoleTheme.PEACH));
+        c1.add(action("Walk through all pages", () -> sc.walkPages(), ConsoleTheme.PEACH));
+        c1.add(action("Jules Verne to the SD card", () -> sc.disk(false), ConsoleTheme.PEACH));
+        c1.add(action("The same, fast mode", () -> sc.disk(true), ConsoleTheme.PEACH));
+        c1.add(group("Microphone, the PC plays tones", ConsoleTheme.CORAL));
+        c1.add(action("Oscilloscope on the lamps", () -> sc.micScope(), ConsoleTheme.CORAL));
+        c1.add(action("Vu meter on the LED bar", () -> sc.micDemo(), ConsoleTheme.CORAL));
+        c1.add(action("Microphone check", () -> sc.micCheck(), ConsoleTheme.CORAL));
+        c2.add(group("LED bar, painted by the PC", ConsoleTheme.LAVENDER));
+        for (String n : Scenarios.BAR_EFFECTS) c2.add(action(cap(n), () -> sc.barEffect(n), ConsoleTheme.LAVENDER));
+        c2.add(action("All of them", () -> sc.bar(), ConsoleTheme.LAVENDER));
+        c2.add(group("On the board itself", ConsoleTheme.AMBER));
+        for (String n : Scenarios.BOARD_EFFECTS) c2.add(action(cap(n), () -> sc.boardEffect(n), ConsoleTheme.AMBER));
+        c3.add(group("Lamp grid, in the style of a home computer", ConsoleTheme.PEACH));
+        for (String n : Scenarios.GRID_EFFECTS) c3.add(action(cap(n), () -> sc.gridEffect(n), ConsoleTheme.PEACH));
+        c3.add(group("Photo slideshow", ConsoleTheme.LAVENDER));
+        photoGrid.setSelectedItem("160x95"); photoGrid.setFont(ConsoleTheme.mono(13f)); photoGrid.setAlignmentX(Component.LEFT_ALIGNMENT);
+        photoGrid.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+        c3.add(photoGrid); c3.add(Box.createVerticalStrut(gap));
+        c3.add(action("Slideshow of five photos", () -> { sc.photoGrid = (String) photoGrid.getSelectedItem(); return sc.photos(); }, ConsoleTheme.LAVENDER));
+        c3.add(group("Seconds per effect", ConsoleTheme.PEACH));
+        seconds.setFont(ConsoleTheme.mono(13f)); seconds.setAlignmentX(Component.LEFT_ALIGNMENT); seconds.setMaximumSize(new Dimension(120, 30));
+        c3.add(seconds);
+        demoPane.setLayout(new GridLayout(1, 3, 2 * gap, 0)); demoPane.setOpaque(false);
+        demoPane.add(c1); demoPane.add(c2); demoPane.add(c3);
+
+        // popup: the cameras
+        camPane.setLayout(new BoxLayout(camPane, BoxLayout.Y_AXIS)); camPane.setOpaque(false);
         for (Cams.Device d : Cams.list()) { camPick0.addItem(d); camPick1.addItem(d); }
         if (camPick1.getItemCount() > 1) camPick1.setSelectedIndex(0);
         if (camPick0.getItemCount() > 1) camPick0.setSelectedIndex(camPick0.getItemCount() - 1);
         java.util.prefs.Preferences pr = java.util.prefs.Preferences.userNodeForPackage(DemoApp.class);
         for (int i = 0; i < 2; i++) {
             final int k = i;
-            camPick[i].setFont(ConsoleTheme.mono(11f)); camPick[i].setAlignmentX(Component.LEFT_ALIGNMENT); camPick[i].setMaximumSize(new Dimension(Integer.MAX_VALUE, 26));
+            camPick[i].setFont(ConsoleTheme.mono(12f)); camPick[i].setAlignmentX(Component.LEFT_ALIGNMENT); camPick[i].setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
             String want = pr.get("cam" + i, null);
             if (want != null) for (int j = 0; j < camPick[i].getItemCount(); j++) if (camPick[i].getItemAt(j).toString().equals(want)) camPick[i].setSelectedIndex(j);
             camBox[i].addActionListener(e -> camToggle(k));
@@ -160,61 +196,26 @@ public class DemoApp {
             row.add(iconButton(ConsoleUi.IconButton.Kind.TURN_HALF, "Turn half a circle", () -> { camPanel[k].quarter = (camPanel[k].quarter + 2) & 3; camSaved(k); }));
             row.add(iconButton(ConsoleUi.IconButton.Kind.MIRROR_H, "Mirror left to right", () -> { camPanel[k].mirror = !camPanel[k].mirror; camSaved(k); }));
             row.add(iconButton(ConsoleUi.IconButton.Kind.MIRROR_V, "Mirror top to bottom", () -> { camPanel[k].flip = !camPanel[k].flip; camSaved(k); }));
-            side.add(camBox[i]); side.add(camPick[i]); side.add(Box.createVerticalStrut(3)); side.add(row); side.add(Box.createVerticalStrut(gap));
+            camPane.add(camBox[i]); camPane.add(camPick[i]); camPane.add(Box.createVerticalStrut(4)); camPane.add(row); camPane.add(Box.createVerticalStrut(2 * gap));
         }
-
-        side.add(group("Parts", ConsoleTheme.PEACH));
-        side.add(action("Walk through all pages", () -> sc.walkPages(), ConsoleTheme.PEACH));
-        side.add(action("Jules Verne to the SD card", () -> sc.disk(false), ConsoleTheme.PEACH));
-        side.add(action("The same, fast mode", () -> sc.disk(true), ConsoleTheme.PEACH));
-
-        side.add(group("LED bar, painted by the PC", ConsoleTheme.LAVENDER));
-        for (String n : Scenarios.BAR_EFFECTS) side.add(action(cap(n), () -> sc.barEffect(n), ConsoleTheme.LAVENDER));
-        side.add(action("All of them", () -> sc.bar(), ConsoleTheme.LAVENDER));
-
-        side.add(group("On the board itself", ConsoleTheme.AMBER));
-        for (String n : Scenarios.BOARD_EFFECTS) side.add(action(cap(n), () -> sc.boardEffect(n), ConsoleTheme.AMBER));
-
-        side.add(group("Microphone, the PC plays tones", ConsoleTheme.CORAL));
-        side.add(action("Oscilloscope on the lamps", () -> sc.micScope(), ConsoleTheme.CORAL));
-        side.add(action("Vu meter on the LED bar", () -> sc.micDemo(), ConsoleTheme.CORAL));
-        side.add(action("Microphone check", () -> sc.micCheck(), ConsoleTheme.CORAL));
-
-        side.add(group("Lamp grid, in the style of a home computer", ConsoleTheme.PEACH));
-        for (String n : Scenarios.GRID_EFFECTS) side.add(action(cap(n), () -> sc.gridEffect(n), ConsoleTheme.PEACH));
-
-        side.add(group("Photo slideshow", ConsoleTheme.LAVENDER));
-        photoGrid.setSelectedItem("160x95"); photoGrid.setFont(ConsoleTheme.mono(13f)); photoGrid.setAlignmentX(Component.LEFT_ALIGNMENT);
-        photoGrid.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
-        side.add(photoGrid); side.add(Box.createVerticalStrut(gap));
-        side.add(action("Slideshow of five photos", () -> { sc.photoGrid = (String) photoGrid.getSelectedItem(); return sc.photos(); }, ConsoleTheme.LAVENDER));
-
-        side.add(group("Seconds per effect", ConsoleTheme.PEACH));
-        seconds.setFont(ConsoleTheme.mono(13f)); seconds.setAlignmentX(Component.LEFT_ALIGNMENT); seconds.setMaximumSize(new Dimension(120, 30));
-        side.add(seconds);
-        JScrollPane lp = new JScrollPane(side, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        lp.getVerticalScrollBar().putClientProperty("FlatLaf.style", "width: 8; thumbArc: 999; trackArc: 999; thumb: #9999FF; track: #000000; hoverThumbColor: #FFCC99; pressedThumbColor: #FF9900");
-        lp.setBorder(null); lp.setOpaque(false); lp.getViewport().setOpaque(false); lp.getVerticalScrollBar().setUnitIncrement(18);
-        lp.setPreferredSize(new Dimension(ConsoleTheme.LEG_W + ConsoleTheme.ELBOW_W + gap, 100));
-        sideScroll = lp; root.add(lp, BorderLayout.WEST);
+        camPane.setPreferredSize(new Dimension(380, 220));
+        sideScroll = side; root.add(side, BorderLayout.WEST);
+        side.setPreferredSize(new Dimension(ConsoleTheme.LEG_W - 30 + ConsoleTheme.ELBOW_W + gap, 100));
 
         // centre: the slide and the log on the left, the cameras, the board and the lamps on the right
         log.setEditable(false); log.setFont(ConsoleTheme.mono(12f)); log.setLineWrap(true); log.setWrapStyleWord(true);
         log.setBackground(ConsoleTheme.BLACK); log.setForeground(ConsoleTheme.TEXT); log.setCaretColor(ConsoleTheme.AMBER); log.setBorder(BorderFactory.createEmptyBorder(4, 6, 4, 6));
         JScrollPane logPane = new JScrollPane(log); logPane.setBorder(null); logPane.getViewport().setBackground(ConsoleTheme.BLACK);
+        logPaneOuter.setLayout(new BorderLayout()); logPaneOuter.setOpaque(false); logPaneOuter.add(logPane); logPaneOuter.setPreferredSize(new Dimension(640, 360));
         ConsoleUi.Frame slideFrame = new ConsoleUi.Frame("The talk", ConsoleTheme.AMBER); slideFrame.setLayout(new BorderLayout()); slideFrame.add(slidePanel);
-        ConsoleUi.Frame logFrame = new ConsoleUi.Frame("What is happening", ConsoleTheme.PEACH); logFrame.setLayout(new BorderLayout()); logFrame.add(logPane);
-        camsFrame = new ConsoleUi.Frame("The cameras", ConsoleTheme.PEACH); camsFrame.setLayout(new GridBagLayout()); camsFrame.setVisible(false);
+                camsFrame = new ConsoleUi.Frame("The cameras", ConsoleTheme.PEACH); camsFrame.setLayout(new GridBagLayout()); camsFrame.setVisible(false);
         GridBagConstraints kc = new GridBagConstraints(); kc.fill = GridBagConstraints.BOTH; kc.weightx = 1; kc.weighty = 1;
         for (int i = 0; i < 2; i++) { kc.gridx = i; kc.insets = new Insets(0, i == 0 ? 0 : gap, 0, 0); camPanel[i].setPreferredSize(new Dimension(10, 10)); camPanel[i].setVisible(false); camsFrame.add(camPanel[i], kc); }
         ConsoleUi.Frame boardFrame = new ConsoleUi.Frame("The board", ConsoleTheme.LAVENDER); boardFrame.setLayout(new BorderLayout()); boardFrame.add(screenPanel);
         ConsoleUi.Frame lampFrame = new ConsoleUi.Frame("The lamps, worked out on the PC", ConsoleTheme.AMBER); lampFrame.setLayout(new BorderLayout()); lampFrame.add(lampPanel);
         // the centre grows and shrinks with the window: two fifths for the slide and the log, three fifths for the pictures
-        for (JComponent c : new JComponent[]{slideFrame, logFrame, camsFrame, boardFrame, lampFrame, screenPanel, lampPanel, logPane, slidePanel}) c.setPreferredSize(new Dimension(10, 10));
-        JPanel left = new JPanel(new GridBagLayout()); left.setOpaque(false);
-        GridBagConstraints lc = new GridBagConstraints(); lc.fill = GridBagConstraints.BOTH; lc.weightx = 1; lc.gridx = 0;
-        lc.gridy = 0; lc.weighty = 0.72; lc.insets = new Insets(0, 0, gap, 0); left.add(slideFrame, lc);
-        lc.gridy = 1; lc.weighty = 0.28; lc.insets = new Insets(0, 0, 0, 0); left.add(logFrame, lc);
+        for (JComponent c : new JComponent[]{slideFrame, camsFrame, boardFrame, lampFrame, screenPanel, lampPanel, slidePanel}) c.setPreferredSize(new Dimension(10, 10));
+        JPanel left = new JPanel(new BorderLayout()); left.setOpaque(false); left.add(slideFrame);
         JPanel right = new JPanel(new GridBagLayout()); right.setOpaque(false);
         GridBagConstraints rc = new GridBagConstraints(); rc.fill = GridBagConstraints.BOTH; rc.weightx = 1; rc.gridx = 0; rc.insets = new Insets(0, 0, gap, 0);
         rc.gridy = 0; rc.weighty = 0.34; right.add(camsFrame, rc);
@@ -222,12 +223,16 @@ public class DemoApp {
         rc.gridy = 2; rc.weighty = 0.38; rc.insets = new Insets(0, 0, 0, 0); right.add(lampFrame, rc);
         JPanel centre = new JPanel(new GridBagLayout()); centre.setOpaque(false);
         GridBagConstraints cc = new GridBagConstraints(); cc.fill = GridBagConstraints.BOTH; cc.weighty = 1; cc.gridy = 0;
-        cc.gridx = 0; cc.weightx = 0.42; cc.insets = new Insets(0, 0, 0, gap); centre.add(left, cc);
-        cc.gridx = 1; cc.weightx = 0.58; cc.insets = new Insets(0, 0, 0, 0); centre.add(right, cc);
+        cc.gridx = 0; cc.weightx = 0.52; cc.insets = new Insets(0, 0, 0, gap); centre.add(left, cc);
+        cc.gridx = 1; cc.weightx = 0.48; cc.insets = new Insets(0, 0, 0, 0); centre.add(right, cc);
         root.add(centre, BorderLayout.CENTER);
 
-        statusBar.setText("Ready"); statusBar.setPreferredSize(new Dimension(100, 30));
-        JPanel south = southPane = new JPanel(new BorderLayout()); south.setOpaque(false); south.setBorder(BorderFactory.createEmptyBorder(0, ConsoleTheme.LEG_W + ConsoleTheme.ELBOW_W + gap, 0, 0)); south.add(statusBar);
+        statusBar.setText("Ready");
+        statusBar.setPreferredSize(new Dimension(100, 30)); metricsBar.setPreferredSize(new Dimension(100, 30)); metricsBar.setText("");
+        JPanel south = southPane = new JPanel(new GridBagLayout()); south.setOpaque(false);
+        south.setBorder(BorderFactory.createEmptyBorder(0, ConsoleTheme.LEG_W - 30 + ConsoleTheme.ELBOW_W + gap, 0, 0));
+        GridBagConstraints sc2 = new GridBagConstraints(); sc2.fill = GridBagConstraints.HORIZONTAL; sc2.weightx = 0.45; sc2.gridx = 0; sc2.insets = new Insets(0, 0, 0, gap); south.add(statusBar, sc2);
+        sc2.weightx = 0.55; sc2.gridx = 1; sc2.insets = new Insets(0, 0, 0, 0); south.add(metricsBar, sc2);
         root.add(south, BorderLayout.SOUTH);
 
         screenPanel.setOpaque(false); lampPanel.setOpaque(false);
@@ -254,6 +259,20 @@ public class DemoApp {
         public boolean getScrollableTracksViewportWidth() { return true; }
         public boolean getScrollableTracksViewportHeight() { return false; }
     }
+
+    static JPanel column() { JPanel c = new JPanel(); c.setLayout(new BoxLayout(c, BoxLayout.Y_AXIS)); c.setOpaque(false); return c; }
+
+    /** A modal popup with the content on black; Escape closes it. Starting a demo from it closes it too. */
+    void popup(String title, JComponent content) {
+        Window owner = SwingUtilities.getWindowAncestor(root);
+        JDialog d = new JDialog(owner, title, Dialog.ModalityType.APPLICATION_MODAL);
+        JPanel p = new JPanel(new BorderLayout()); p.setBackground(ConsoleTheme.BLACK); p.setBorder(BorderFactory.createEmptyBorder(14, 16, 16, 16)); p.add(content);
+        d.setContentPane(p); d.pack(); d.setLocationRelativeTo(owner);
+        p.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("ESCAPE"), "close");
+        p.getActionMap().put("close", new AbstractAction() { public void actionPerformed(java.awt.event.ActionEvent e) { d.dispose(); } });
+        openDialog = d; d.setVisible(true); openDialog = null;
+    }
+    void closePopup() { JDialog d = openDialog; if (d != null) SwingUtilities.invokeLater(d::dispose); }
 
     static void bindKey(InputMap im, ActionMap am, String key, Runnable r) {
         im.put(KeyStroke.getKeyStroke(key), "k-" + key);
@@ -394,7 +413,8 @@ public class DemoApp {
 
     // ---- log and status (called from any thread)
     void say(String s) {
-        SwingUtilities.invokeLater(() -> { log.append(s + "\n"); log.setCaretPosition(log.getDocument().getLength()); });
+        boolean metric = s.matches("(?is).*(kB/s|MB/s|\\bHz\\b|\\bms\\b|bytes|sha-256|pass=|crc|blocks).*");
+        SwingUtilities.invokeLater(() -> { log.append(s + "\n"); log.setCaretPosition(log.getDocument().getLength()); if (metric) metricsBar.setText(s.strip()); });
     }
     void state(String s, boolean running) {
         statusBase = s; SwingUtilities.invokeLater(() -> { statusBar.setText(s); statusBar.setBusy(running); statusBar.setFill(running ? ConsoleTheme.AMBER : ConsoleTheme.LAVENDER); stop.setEnabled(running); setEnabledActions(!running && sc != null); reconnect.setEnabled(!running); });
@@ -440,6 +460,7 @@ public class DemoApp {
     // ---- running demos on virtual threads
     void run(String name, Callable<String> body) {
         if (sc == null || (worker != null && worker.isAlive())) return;
+        closePopup();
         sc.seconds = ((Number) seconds.getValue()).doubleValue();
         state("Running: " + name, true);
         say("=== " + name);
@@ -459,6 +480,7 @@ public class DemoApp {
         if (sc == null || (worker != null && worker.isAlive())) return;
         sc.seconds = ((Number) seconds.getValue()).doubleValue();
         sc.photoGrid = (String) photoGrid.getSelectedItem();
+        closePopup();
         boolean again = repeat.isSelected(), fast = withFast.isSelected(), mic = withMic.isSelected();
         state("Cycle running", true);
         lampPanel.clear();
@@ -507,7 +529,7 @@ public class DemoApp {
             DemoApp app = new DemoApp();
             app.infoBar.setText("Connected: NG-S3, firmware Nov 19 2026, 30 pages");
             app.log.setText("Connected. Pick a demo, or start the cycle.\n=== Jules Verne to the SD card and back\nbook 618734 bytes, raw deflate 232700 bytes (38%)\nsent 232700 compressed bytes in 7,95 s = 28,6 kB/s\nloaded back 618734 bytes in 16,37 s = 36,9 kB/s over the gamepad\nSHA-256 of the received file equals the original\n");
-            app.setEnabledActions(true);
+            app.setEnabledActions(true); app.metricsBar.setText("loaded back 618734 bytes in 16,37 s = 36,9 kB/s over the gamepad");
             try {
                 BufferedImage sample = ImageIO.read(Boards.repoRoot().resolve("site/img/lamps/scope-880.png").toFile());
                 app.screenPanel.set(sample);                       // the board shows the oscilloscope the PC paints on its lamps

@@ -200,7 +200,9 @@ final class ConsoleUi {
             int w = getWidth(), h = getHeight();
             g.setColor(fill); g.fill(new RoundRectangle2D.Double(0, 0, w, h, h, h));
             g.setFont(ConsoleTheme.mono(13f)); g.setColor(ConsoleTheme.BLACK);
-            g.drawString(text, h / 2 + 2, (h + g.getFontMetrics().getAscent() - g.getFontMetrics().getDescent()) / 2);
+            FontMetrics fm = g.getFontMetrics(); String t = text; int room = w - h - (busy ? 6 * 16 + h / 2 : 0);
+            while (t.length() > 1 && fm.stringWidth(t) > room) t = t.substring(0, t.length() - 2) + "…";          // never wider than the bar
+            g.drawString(t, h / 2 + 2, (h + fm.getAscent() - fm.getDescent()) / 2);
             if (busy) {
                 for (int i = 0; i < 6; i++) {
                     g.setColor(ConsoleTheme.mix(fill, ConsoleTheme.BLACK, i == tick % 6 ? 0.0 : 0.55));
