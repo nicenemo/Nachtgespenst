@@ -18,7 +18,7 @@ Everything below is a **single plain command** (no pipe, `cd`, `&&`, `;`, `VAR=x
 - If it says the port is "not visible here", the call was sandboxed: re-issue as a plain command that matches `*jbang*Flash.java*` in `excludedCommands` (or, if that entry is missing, disable the sandbox for that single call).
 
 ## 3. Confirm what is running
-- `jbang tools/Serial.java S3 "INFO"` and `jbang tools/Serial.java C2 "INFO"`: `fw=` must match the build time.
+- `jbang tools/Serial.java S3 "info"` and `jbang tools/Serial.java C2 "info"`: `fw=` must match the build time.
 
 ## 4. Test
 - `jbang tools/SerialTest.java --board S3` (29 checks) and `--board C2` (11 checks), or without `--board` for both. All must pass; the S3 run includes USB and BLE routing against the host input devices.

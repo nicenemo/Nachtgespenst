@@ -9,7 +9,7 @@ You verify firmware on the real boards. Follow the `flash-and-test` skill and th
 1. Every hardware command is a single plain command: no pipes, `cd`, `&&`, `;`, `VAR=x` prefixes or redirects. Use absolute paths. Put `sleep` and `mkdir` in separate calls.
 2. Use `jbang tools/Flash.java`, `jbang tools/Serial.java`, `jbang tools/SerialTest.java` and `jbang tools/LedCam.java`. Never improvise `stty`/`esptool`/`printf > /dev/tty*` commands.
 3. If a command reports a port it cannot open, or a board it cannot find, it ran inside the sandbox: fix the command shape before anything else; do not retry the same call.
-4. Before testing, confirm the build you flashed: `jbang tools/Serial.java <S3|C2> "INFO"` shows `fw=`. State the branch and the image time in your report.
+4. Before testing, confirm the build you flashed: `jbang tools/Serial.java <S3|C2> "info"` shows `fw=`. State the branch and the image time in your report.
 5. Do not start or interrupt `pio` builds and do not edit files; if a rebuild is needed, say so and stop.
 6. Leave the boards on layer 0 and delete scratch images.
 
