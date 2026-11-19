@@ -1,6 +1,7 @@
 ///usr/bin/env jbang "$0" "$@" ; exit $?
 //DEPS com.fazecast:jSerialComm:2.11.0
 //SOURCES Boards.java
+//SOURCES V4l2.java
 //JAVA 27
 //COMPILE_OPTIONS --add-modules=jdk.incubator.vector
 //JAVA_OPTIONS --add-modules=jdk.incubator.vector --enable-native-access=ALL-UNNAMED
@@ -21,7 +22,7 @@ import java.util.List;
 import java.util.regex.*;
 
 /**
- * Films the LED bars of the Nachtgespenst boards with the laptop webcam (ffmpeg + v4l2) and drives the boards over serial.
+ * Films the LED bars of the Nachtgespenst boards with the laptop webcam (Video4Linux2 in plain Java, tools/V4l2.java) and drives the boards over serial.
  *
  * <pre>
  * jbang tools/LedCam.java pins    --port /dev/ttyACM0 --out DIR            CoreS3 pin finder (flash tools/ledtest env cores3 first)
@@ -131,13 +132,17 @@ public class LedCam {
 
     record Frame(Path path, BufferedImage img, Planes planes) {}
 
-    /** One webcam frame; 25 frames are read and the last kept, so the auto exposure can settle. */
+    /** One webcam frame, through V4l2.java (plain Java, no ffmpeg); 25 frames are read and the last kept, so the auto exposure can settle. */
     static Frame frame(String name) throws Exception {
         Path path = Path.of(out, name);
-        Process pr = new ProcessBuilder("ffmpeg", "-loglevel", "error", "-y", "-f", "v4l2", "-video_size", size, "-i", camera,
-                "-frames:v", "25", "-update", "1", path.toString()).inheritIO().start();
-        if (pr.waitFor() != 0) throw new IOException("ffmpeg failed");
-        BufferedImage img = ImageIO.read(path.toFile());
+        String[] wh = size.split("x");
+        V4l2 cam = new V4l2(camera, Integer.parseInt(wh[0]), Integer.parseInt(wh[1]));
+        BufferedImage img = null;
+        try {
+            for (int n = 0, tries = 0; n < 25 && tries < 200; tries++) { BufferedImage im = cam.next(500, 0); if (im != null) { img = im; n++; } }
+        } finally { cam.close(); }
+        if (img == null) throw new IOException("no picture from " + camera);
+        ImageIO.write(img, "png", path.toFile());
         return new Frame(path, img, Planes.of(img));
     }
 

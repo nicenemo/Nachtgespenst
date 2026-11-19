@@ -9,8 +9,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Webcams for the demo window, through ffmpeg and v4l2 (the same route as tools/LedCam.java; no extra library). A camera is only opened while its box is
- * ticked: unticking it ends the ffmpeg process and frees the device at once, so the laptop camera can go to Teams or another call. A camera that is not
+ * Webcams for the demo window, through Video4Linux2 in plain Java (V4l2.java, the foreign function API; no ffmpeg and no native library). A camera is only opened while its box is
+ * ticked: unticking it stops the capture and frees the device at once, so the laptop camera can go to Teams or another call. A camera that is not
  * there is not an error: the panel just says so.
  */
 final class Cams {
@@ -36,53 +36,29 @@ final class Cams {
         return out;
     }
 
-    /** One ffmpeg process per device, shared by everything that has the device open: the same camera in two panels is no problem. */
+    /** One capture per device, shared by everything that has the device open: the same camera in two panels is no problem. */
     private static final Map<String, Shared> OPEN = new HashMap<>();
 
     private static final class Shared {
-        final String node; volatile BufferedImage frame; volatile String problem, lastError;
+        final String node; volatile BufferedImage frame; volatile String problem;
         final List<Runnable> listeners = new java.util.concurrent.CopyOnWriteArrayList<>();
-        private Process proc; private final AtomicBoolean stop = new AtomicBoolean();
-        Shared(String node) { this.node = node; start(true); }
-
-        private void notifyAll_() { for (Runnable r : listeners) { try { r.run(); } catch (RuntimeException ignored) { } } }
-
-        private void start(boolean mjpegIn) {
-            try {
-                List<String> cmd = new ArrayList<>(List.of("ffmpeg", "-loglevel", "error", "-f", "v4l2"));
-                if (mjpegIn) cmd.addAll(List.of("-input_format", "mjpeg"));
-                cmd.addAll(List.of("-video_size", "640x360", "-framerate", "15", "-i", node, "-an", "-c:v", mjpegIn ? "copy" : "mjpeg", "-q:v", "6", "-f", "image2pipe", "-"));
-                proc = new ProcessBuilder(cmd).start();
-                Process ep = proc;
-                Thread.ofVirtual().start(() -> { try (var br = new BufferedReader(new InputStreamReader(ep.getErrorStream()))) { String l; while ((l = br.readLine()) != null) lastError = l; } catch (IOException ignored) { } });
-            } catch (IOException e) { problem = "ffmpeg is not available"; notifyAll_(); return; }
-            Process p = proc;
-            Thread.ofVirtual().name("cam " + node).start(() -> {
-                long got = 0;
-                try (InputStream in = new BufferedInputStream(p.getInputStream(), 1 << 16)) {
-                    ByteArrayOutputStream buf = new ByteArrayOutputStream(1 << 16);
-                    int prev = -1, b;
-                    while (!stop.get() && (b = in.read()) >= 0) {
-                        if (prev == 0xFF && b == 0xD8) { buf.reset(); buf.write(0xFF); }
-                        buf.write(b);
-                        if (prev == 0xFF && b == 0xD9 && buf.size() > 4) {
-                            BufferedImage im = null;
-                            try { im = ImageIO.read(new ByteArrayInputStream(buf.toByteArray())); } catch (IOException | RuntimeException ignored) { }
-                            if (im != null) { frame = im; problem = null; got++; notifyAll_(); }
-                            buf.reset();
+        private final AtomicBoolean stop = new AtomicBoolean(); private Thread thread;
+        Shared(String node) {
+            this.node = node;
+            thread = Thread.ofPlatform().daemon().name("cam " + node).start(() -> {          // a platform thread: the capture sits in native calls
+                try {
+                    V4l2 v = new V4l2(node, 640, 360);
+                    try {
+                        while (!stop.get()) {
+                            BufferedImage im = v.next(300, 60);
+                            if (im != null) { frame = im; problem = null; notifyAll_(); }
                         }
-                        prev = b;
-                    }
-                } catch (IOException ignored) { }
-                if (!stop.get() && got == 0) {
-                    if (mjpegIn) { start(false); return; }          // the camera does not do MJPEG: let ffmpeg convert it
-                    problem = "cannot open " + node + (lastError != null ? ": " + lastError : " (in use by another program?)");
-                    notifyAll_();
-                }
+                    } finally { v.close(); }                                                   // the device is free again
+                } catch (IOException e) { if (!stop.get()) { problem = e.getMessage(); notifyAll_(); } }
             });
         }
-
-        void end() { stop.set(true); Process p = proc; if (p != null) p.destroy(); frame = null; }   // the device is free again once ffmpeg has gone
+        private void notifyAll_() { for (Runnable r : listeners) { try { r.run(); } catch (RuntimeException ignored) { } } }
+        void end() { stop.set(true); frame = null; }
     }
 
     /** A handle on a camera. Opening never throws: a camera that is missing or busy only has a problem text. */

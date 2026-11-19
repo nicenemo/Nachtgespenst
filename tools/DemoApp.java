@@ -20,6 +20,7 @@
 //SOURCES ConsoleTheme.java
 //SOURCES ConsoleUi.java
 //SOURCES Cams.java
+//SOURCES V4l2.java
 //SOURCES Talk.java
 //SOURCES Scenarios.java
 //JAVA_OPTIONS --enable-native-access=ALL-UNNAMED

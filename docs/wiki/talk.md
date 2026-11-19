@@ -30,7 +30,7 @@ Keys: space or right arrow next slide, left arrow previous, `P` pause, `H` hide 
 
 The window can show two webcams: the one on the tripod above the board and the laptop camera. Open the camera popup (camera icon in the toolbar), tick a camera to open it and pick the device from the list; the icon buttons turn and mirror the picture; untick it and the device is released at once, so the laptop camera is free for Teams (or any other call) while the window is closed or the box is empty. A camera that is not there is not an error: the panel says so. The choice of devices is remembered.
 
-Cameras are read through `ffmpeg` and Video4Linux (`/dev/video*`), the same route as `tools/LedCam.java`: `ffmpeg` must be installed, nothing else. If the camera is in use by another program the panel says "cannot open ... (in use?)".
+Cameras are read in plain Java through Video4Linux (`tools/V4l2.java`, the foreign function API: `open`, `ioctl`, `mmap` of libc), so nothing has to be installed. The picture is asked as YUYV (raw); a camera with only MJPEG is decoded with the Java image library. The user needs access to `/dev/video*` (a normal desktop session has it). If another program holds the camera the panel says so ("the camera is in use by another program"); a camera that answers with an input/output error is probably a bad USB connection. The same camera can be shown in both panels.
 
 ## Giving the talk online
 

@@ -1,10 +1,12 @@
 ///usr/bin/env jbang "$0" "$@" ; exit $?
 //SOURCES Cams.java
+//SOURCES V4l2.java
 //SOURCES ConsoleUi.java
 //SOURCES ConsoleTheme.java
 //SOURCES Boards.java
 //DEPS com.fazecast:jSerialComm:2.11.0
 //JAVA 27
+//JAVA_OPTIONS --enable-native-access=ALL-UNNAMED
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -23,7 +25,7 @@ import java.util.List;
  *                                                         open one or two cameras (number or /dev/videoN; the same one twice is fine),
  *                                                         wait for a frame, write them side by side to OUT.png, release the cameras
  * </pre>
- * A camera that is missing or in use is reported on the line for that camera and the exit code is 1; nothing crashes. Run it as ONE plain command (the cameras are not visible in the sandbox).
+ * A camera that is missing or in use is reported on the line for that camera and the exit code is 1; nothing crashes. Run it as ONE plain command (the cameras are not visible in the sandbox; plain Java through Video4Linux2, no ffmpeg).
  */
 public class CamTool {
     public static void main(String[] args) throws Exception {

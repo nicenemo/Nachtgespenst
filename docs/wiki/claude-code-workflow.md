@@ -79,6 +79,6 @@ The owner's login shell on CachyOS is **fish**; the Bash tool runs zsh. A comman
 
 ## Camera and browser checks
 
-- `ffmpeg -f v4l2 -i /dev/video0 ...` needs the sandbox off. Read 25 frames and keep the last (`-frames:v 25 -update 1`): the first frames are black while the exposure settles.
+- The webcam needs the sandbox off (plain command). `tools/LedCam.java` and the demo window read it in plain Java (`tools/V4l2.java`, no ffmpeg) and keep the 25th frame: the first frames are black while the exposure settles.
 - Delete frames afterwards; they show the room.
 - Check a page in a browser without Playwright: `firefox --headless --profile /abs/dir --screenshot /abs/out.png --window-size=1280,2600 file:///abs/index.html` (absolute paths, own profile directory). One-shot screenshots do not load `loading="lazy"` images below the fold: strip the attribute in a temporary copy before rendering and delete the copy.
