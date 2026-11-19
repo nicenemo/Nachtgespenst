@@ -15,12 +15,20 @@ final class BarEffects {
     static int scale(int c, double f) { f = Math.max(0, Math.min(1, f)); return ((int) (((c >> 16) & 255) * f) << 16) | ((int) (((c >> 8) & 255) * f) << 8) | (int) ((c & 255) * f); }
     static int hsv(double h, double s, double v) { return java.awt.Color.HSBtoRGB((float) (h - Math.floor(h)), (float) s, (float) v) & 0xFFFFFF; }
 
-    /** Knight Rider: a red scanner that sweeps to and fro with a fading tail. */
+    /**
+     * Where the lamps are (measured with the webcam, `LampTest barmap`, 2026-11-19): the ten LEDs of the base are one chain in the shape of a U around the
+     * bottom of the board. Lamps 0 to 4 run down the RIGHT side (0 at the top, 4 at the bottom), lamps 5 to 9 run up the LEFT side (5 at the bottom, 9 at the top).
+     * A row is counted from the top: row r of the right side is lamp r, row r of the left side is lamp 9 - r.
+     */
+    static int right(int row) { return row; }
+    static int left(int row) { return 9 - row; }
+
+    /** Knight Rider: a red scanner that sweeps up and down both sides together, with a fading tail. */
     static void nightrider(Hid h, double seconds) throws InterruptedException {
         long t0 = System.nanoTime(); int[] px = new int[10];
         while ((System.nanoTime() - t0) / 1e9 < seconds) {
-            double t = (System.nanoTime() - t0) / 1e9, p = 4.5 + 4.5 * Math.sin(t * 3.2);       // 0..9
-            for (int i = 0; i < 10; i++) px[i] = scale(0xFF1000, Math.exp(-Math.abs(i - p) * 0.9));
+            double t = (System.nanoTime() - t0) / 1e9, p = 2.0 + 2.0 * Math.sin(t * 3.2);       // row 0..4 from the top
+            for (int r = 0; r < 5; r++) { int c = scale(0xFF1000, Math.exp(-Math.abs(r - p) * 1.1)); px[right(r)] = c; px[left(r)] = c; }
             frame(h, px); Thread.sleep(16);
         }
     }
@@ -33,16 +41,16 @@ final class BarEffects {
             frame(h, px); Thread.sleep(16);
         }
     }
-    /** A rainbow that moves along the bar. */
+    /** A rainbow that runs down both sides. */
     static void rainbow(Hid h, double seconds) throws InterruptedException {
         long t0 = System.nanoTime(); int[] px = new int[10];
         while ((System.nanoTime() - t0) / 1e9 < seconds) {
             double t = (System.nanoTime() - t0) / 1e9;
-            for (int i = 0; i < 10; i++) px[i] = hsv(i / 10.0 + t * 0.3, 1, 1);
+            for (int r = 0; r < 5; r++) { int c = hsv(r / 5.0 - t * 0.3, 1, 1); px[right(r)] = c; px[left(r)] = c; }
             frame(h, px); Thread.sleep(16);
         }
     }
-    /** A comet with a long tail that runs from the left to the right and starts over. */
+    /** A comet with a long tail that runs along the chain: down the right side, round the bottom and up the left side. */
     static void comet(Hid h, double seconds) throws InterruptedException {
         long t0 = System.nanoTime(); int[] px = new int[10];
         while ((System.nanoTime() - t0) / 1e9 < seconds) {

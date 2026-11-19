@@ -9,6 +9,7 @@
 //SOURCES Ser.java
 //SOURCES Proto.java
 //SOURCES DiskDrive.java
+//SOURCES BarEffects.java
 //SOURCES LedCam.java
 //COMPILE_OPTIONS --add-modules=jdk.incubator.vector
 //JAVA_OPTIONS --add-modules=jdk.incubator.vector --enable-native-access=ALL-UNNAMED
@@ -126,6 +127,8 @@ public class LampTest {
                     case "latency" -> latency(s, h);
                     case "ingest" -> ingest(s, h);
                     case "disk" -> disk(s, h);
+                    case "barmap" -> barmap(s, h);
+                    case "effectcheck" -> effectcheck(s, h);
                     case "all" -> { enumerate(s, h); bar(s, h); rate(s, h); screen(s, h); }
                     default -> usage("unknown command " + c);
                 }
@@ -428,6 +431,91 @@ public class LampTest {
             public void check(String name, boolean ok, String detail) { LampTest.check(name, ok, detail); }
             public void info(String msg) { LampTest.info(msg); }
         }).disk(s, h);
+    }
+
+    /**
+     * Does a bar effect move where the mapping says? Runs Nightrider while the webcam takes frames and reports where the light is in each frame
+     * (the centre of the changed pixels); on the side that faces the camera the light has to travel along the whole strip.
+     */
+    static void effectcheck(Ser s, Hid h) throws Exception {
+        LedCam.out = out; LedCam.camera = camera;
+        Files.createDirectories(Path.of(out));
+        LedCam.otherBars(ownPort, false);
+        try {
+            s.cmd("LAYER " + barPage(s), 3000); Thread.sleep(500); s.cmd("LAMPS BRIGHT 120", 2000);
+            h.write(Proto.control(false));
+            h.write(Proto.range(0, 9, 0, 0, 0, 0, true)); Thread.sleep(900);
+            LedCam.Planes dark = LedCam.frame("dark.jpg").planes();
+            Thread runner = Thread.ofVirtual().start(() -> { try { BarEffects.nightrider(h, 24); } catch (InterruptedException ignored) { } });
+            Thread.sleep(500);
+            int n = 10; LedCam.Planes[] fr = new LedCam.Planes[n]; long[] at = new long[n]; long t0 = System.nanoTime();
+            for (int i = 0; i < n; i++) { fr[i] = LedCam.frame(String.format("e%d.jpg", i)).planes(); at[i] = (System.nanoTime() - t0) / 1_000_000; }
+            runner.join();
+            h.write(Proto.range(0, 9, 0, 0, 0, 0, true));
+            int w = fr[0].w(), hh = fr[0].h(), px = w * hh;
+            double lo = 1e9, hi = -1e9;
+            for (int i = 0; i < n; i++) {
+                float[] d = new float[px]; float max = 0;
+                for (int k = 0; k < px; k++) { float v = Math.max(0, fr[i].r()[k] - dark.r()[k]) + Math.max(0, fr[i].g()[k] - dark.g()[k]) + Math.max(0, fr[i].b()[k] - dark.b()[k]); d[k] = v; if (v > max) max = v; }
+                double sx = 0, sw = 0;
+                for (int y = 0; y < hh; y++) for (int x = 0; x < w; x++) { float v = d[y * w + x]; if (v > max * 0.6f) { sx += x * v; sw += v; } }
+                double cx = sw > 0 ? sx / sw : -1; lo = Math.min(lo, cx); hi = Math.max(hi, cx);
+                info(String.format("frame %d (%d ms): the light is at x = %.0f", i, at[i], cx));
+            }
+            info(String.format("the light travelled over %.0f pixels (the strip is about 60 pixels wide in the picture)", hi - lo));
+        } finally {
+            try { s.cmd("LAMPS BRIGHT 40", 2000); } catch (Exception ignored) { }
+            deleteFrames(); LedCam.otherBars(ownPort, true);
+        }
+    }
+
+    /**
+     * Which bar lamp is where? Each lamp is lit white on its own while the webcam films the board; the difference with a dark frame shows how
+     * strongly the camera sees that lamp and where in the picture it is. Show the camera one side of the board at a time (the right side, then
+     * the left side, board standing upright): the lamps that light up belong to that side, and their order in the picture (y) is their order
+     * from top to bottom. No frame is kept (they show the room).
+     */
+    static void barmap(Ser s, Hid h) throws Exception {
+        LedCam.out = out; LedCam.camera = camera;
+        Files.createDirectories(Path.of(out));
+        LedCam.otherBars(ownPort, false);
+        try {
+            s.cmd("LAYER " + barPage(s), 3000); Thread.sleep(500);
+            s.cmd("LAMPS BRIGHT 120", 2000);
+            h.write(Proto.control(false));
+            h.write(Proto.range(0, 9, 0, 0, 0, 0, true)); Thread.sleep(900);
+            LedCam.Frame base = LedCam.frame("base.jpg");
+            int w = base.planes().w(), hh = base.planes().h(), n = w * hh;
+            LedCam.Planes[] fr = new LedCam.Planes[10];
+            for (int i = 0; i < 10; i++) {
+                h.write(Proto.range(0, 9, 0, 0, 0, 0, false)); h.write(Proto.range(i, i, 255, 255, 255, 255, true));
+                Thread.sleep(800);
+                fr[i] = LedCam.frame(String.format("lamp%d.jpg", i)).planes();
+            }
+            // Compare every lamp with the average of the other nine: a change of exposure or of the room light is in all of them and drops out,
+            // what is left is the light of that one lamp.
+            float[] sr = new float[n], sg = new float[n], sb = new float[n];
+            for (LedCam.Planes f : fr) for (int k = 0; k < n; k++) { sr[k] += f.r()[k]; sg[k] += f.g()[k]; sb[k] += f.b()[k]; }
+            double[] score = new double[10], cx = new double[10], cy = new double[10];
+            for (int i = 0; i < 10; i++) {
+                float[] d = new float[n]; float max = 0;
+                for (int k = 0; k < n; k++) {
+                    float v = Math.abs(fr[i].r()[k] - (sr[k] - fr[i].r()[k]) / 9) + Math.abs(fr[i].g()[k] - (sg[k] - fr[i].g()[k]) / 9) + Math.abs(fr[i].b()[k] - (sb[k] - fr[i].b()[k]) / 9);
+                    d[k] = v; if (v > max) max = v;
+                }
+                score[i] = LedCam.topMean(d, 300);
+                double sx = 0, sy = 0, sw = 0;
+                for (int y = 0; y < hh; y++) for (int x = 0; x < w; x++) { float v = d[y * w + x]; if (v > max * 0.5f) { sx += x * v; sy += y * v; sw += v; } }
+                cx[i] = sw > 0 ? sx / sw : -1; cy[i] = sw > 0 ? sy / sw : -1;
+            }
+            double lo = Arrays.stream(score).min().getAsDouble(), hi = Arrays.stream(score).max().getAsDouble();
+            info(String.format("camera picture %d x %d, scores %.0f to %.0f", w, hh, lo, hi));
+            for (int i = 0; i < 10; i++) info(String.format("lamp %d: score %6.1f%s  at x=%4.0f y=%4.0f", i, score[i], score[i] > lo + (hi - lo) * 0.5 ? "  SEEN" : "", cx[i], cy[i]));
+            h.write(Proto.range(0, 9, 0, 0, 0, 0, true));
+        } finally {
+            try { s.cmd("LAMPS BRIGHT 40", 2000); } catch (Exception ignored) { }
+            deleteFrames(); LedCam.otherBars(ownPort, true);
+        }
     }
 
     static int barPage(Ser s) throws Exception { return Integer.parseInt(s.kv("INFO").get("pages")) - 1; }

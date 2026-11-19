@@ -330,7 +330,7 @@ public class DemoApp {
         void setBar(int[] rgb) { bar = rgb; touch(); }
         void setGrid(int[] rgb, int c, int r) { grid = rgb; cols = c; rows = r; touch(); }
         void clear() { bar = new int[10]; grid = null; touch(); }
-        /** Two vertical bars of five lamps left and right of the picture (lamps 0 to 4 on the left, 5 to 9 on the right, top to bottom). */
+        /** Two vertical bars of five lamps left and right of the picture: lamps 0 to 4 run down the right side, lamps 5 to 9 run up the left side (webcam measurement). */
         @Override protected void paintComponent(Graphics g0) {
             super.paintComponent(g0);
             Graphics2D g = (Graphics2D) g0;
@@ -348,7 +348,8 @@ public class DemoApp {
                 int bx = side == 0 ? px - gap - barW : px + pw + gap;
                 for (int i = 0; i < 5; i++) {
                     int cell = ph / 5, ly = py + i * cell + 3;
-                    g.setColor(new Color(b[side * 5 + i] & 0xFFFFFF)); g.fillRoundRect(bx, ly, barW, cell - 6, 10, 10);
+                    int lamp = side == 0 ? 9 - i : i;                          // the left side runs up (lamp 9 at the top), the right side runs down
+                    g.setColor(new Color(b[lamp] & 0xFFFFFF)); g.fillRoundRect(bx, ly, barW, cell - 6, 10, 10);
                     g.setColor(new Color(0x555555)); g.drawRoundRect(bx, ly, barW, cell - 6, 10, 10);
                 }
             }
@@ -361,7 +362,7 @@ public class DemoApp {
             im.setRGB(0, 0, c, r, gr, 0, c);
             g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
             g.drawImage(im, px, py, pw, ph, null);
-            g.setColor(Color.GRAY); g.drawString(c + " x " + r + " lamps, bar lamps 0-4 left, 5-9 right", x0, py + ph + 18);
+            g.setColor(Color.GRAY); g.drawString(c + " x " + r + " lamps; bar: lamps 0-4 down the right, 5-9 up the left (measured)", x0, py + ph + 18);
         }
     }
 
