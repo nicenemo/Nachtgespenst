@@ -41,3 +41,7 @@ Photos of five European places, fetched once from Wikimedia Commons at 640 pixel
 | `BarEffects`, `GridEffects`, `Photos` | the effects and the photo loader |
 | `Scenarios` | the demo parts, shared by `Demo` and `DemoApp` |
 | `LampTest` | the LampArray test bench ([lamparray-testing](lamparray-testing.md)) |
+
+## The talk and the cameras
+
+The window also plays a ten-minute talk from Markdown slides and shows up to two webcams; see [talk.md](talk.md).

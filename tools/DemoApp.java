@@ -19,6 +19,8 @@
 //SOURCES Scope.java
 //SOURCES ConsoleTheme.java
 //SOURCES ConsoleUi.java
+//SOURCES Cams.java
+//SOURCES Talk.java
 //SOURCES Scenarios.java
 //JAVA_OPTIONS --enable-native-access=ALL-UNNAMED
 
@@ -59,6 +61,14 @@ public class DemoApp {
     final JCheckBox repeat = check("Repeat until stopped", false), withFast = check("Include the fast disk run", true), withMic = check("Include the microphone parts", false);
     final ConsoleUi.BlockButton stop = new ConsoleUi.BlockButton("Stop", ConsoleTheme.CORAL), reconnect = new ConsoleUi.BlockButton("Connect", ConsoleTheme.LAVENDER);
     final List<JButton> actions = new ArrayList<>();
+    final Talk.SlidePanel slidePanel = new Talk.SlidePanel();
+    Talk.Player player;
+    final Cams.CamPanel[] camPanel = {new Cams.CamPanel(), new Cams.CamPanel()};            // 0 = the camera on the tripod above the board, 1 = the laptop camera
+    final JCheckBox[] camBox = {check("Tripod camera above the board", false), check("Laptop camera", false)};
+    final JComboBox<Cams.Device> camPick0 = new JComboBox<>(), camPick1 = new JComboBox<>();
+    final JComboBox<?>[] camPick = {camPick0, camPick1};
+    ConsoleUi.Frame camsFrame; JScrollPane sideScroll; JPanel southPane;
+    String statusBase = "Ready";
     final ScreenPanel screenPanel = new ScreenPanel();
     final LampPanel lampPanel = new LampPanel();
     volatile Scenarios sc; volatile Ser ser; volatile Hid hid;
@@ -68,6 +78,7 @@ public class DemoApp {
 
     /** The window: a black ground, the elbow at the top left with the title, the sidebar of blocks under it, the log and the previews, and a status bar. */
     static final class Root extends JPanel {
+        boolean elbow = true;
         Root() { super(new BorderLayout(ConsoleTheme.GAP, ConsoleTheme.GAP)); setOpaque(true); setBackground(ConsoleTheme.BLACK); setBorder(BorderFactory.createEmptyBorder(0, 0, ConsoleTheme.GAP + 4, ConsoleTheme.PAD)); }
         @Override protected void paintComponent(Graphics g0) {
             super.paintComponent(g0);
@@ -83,7 +94,7 @@ public class DemoApp {
             // the elbow frames the sidebar: a thin bar over it and a leg beside it, a large outer radius and a tight inner radius
             g.setColor(ConsoleTheme.AMBER);
             int y0 = ConsoleTheme.BAR_H + gap;
-            g.fill(ConsoleUi.elbow(0, y0, ConsoleTheme.LEG_W + ConsoleTheme.ELBOW_W, h - y0 - gap - 4, ConsoleTheme.ELBOW_W, ConsoleTheme.ELBOW_W, 28, 8));
+            if (elbow) g.fill(ConsoleUi.elbow(0, y0, ConsoleTheme.LEG_W + ConsoleTheme.ELBOW_W, h - y0 - gap - 4, ConsoleTheme.ELBOW_W, ConsoleTheme.ELBOW_W, 28, 8));
             g.dispose();
         }
     }
@@ -117,7 +128,7 @@ public class DemoApp {
         root.add(head, BorderLayout.NORTH);
 
         // sidebar: blocks in the colours of the console, the text at the bottom right of each block
-        JPanel side = new JPanel(); side.setLayout(new BoxLayout(side, BoxLayout.Y_AXIS)); side.setOpaque(false);
+        JPanel side = new ColumnPanel(); side.setLayout(new BoxLayout(side, BoxLayout.Y_AXIS)); side.setOpaque(false);
         side.setBorder(BorderFactory.createEmptyBorder(ConsoleTheme.ELBOW_W + 2 * gap, ConsoleTheme.ELBOW_W + gap, gap, gap));
         ConsoleUi.BlockButton start = new ConsoleUi.BlockButton("Start the cycle", ConsoleTheme.AMBER);
         start.setFont(ConsoleTheme.sansBold(16f)); start.setPreferredSize(new Dimension(100, 52)); start.setMaximumSize(new Dimension(Integer.MAX_VALUE, 52));
@@ -125,6 +136,31 @@ public class DemoApp {
         stop.setEnabled(false); stop.addActionListener(e -> stopRun());
         side.add(start); side.add(stop); side.add(Box.createVerticalStrut(gap));
         side.add(repeat); side.add(withFast); side.add(withMic);
+
+        side.add(group("The talk, ten minutes", ConsoleTheme.AMBER));
+        side.add(talkButton("Start the talk", ConsoleTheme.AMBER, this::talkStart));
+        side.add(talkButton("Pause or resume", ConsoleTheme.PEACH, () -> { if (player != null) player.pause(); }));
+        side.add(talkButton("Previous slide", ConsoleTheme.LAVENDER, () -> { if (player != null) player.prev(); }));
+        side.add(talkButton("Next slide", ConsoleTheme.LAVENDER, () -> { if (player != null) player.next(); }));
+        side.add(talkButton("Stop the talk", ConsoleTheme.CORAL, this::talkStop));
+
+        side.add(group("Cameras", ConsoleTheme.PEACH));
+        for (Cams.Device d : Cams.list()) { camPick0.addItem(d); camPick1.addItem(d); }
+        if (camPick1.getItemCount() > 1) camPick1.setSelectedIndex(0);
+        if (camPick0.getItemCount() > 1) camPick0.setSelectedIndex(camPick0.getItemCount() - 1);
+        java.util.prefs.Preferences pr = java.util.prefs.Preferences.userNodeForPackage(DemoApp.class);
+        for (int i = 0; i < 2; i++) {
+            final int k = i;
+            camPick[i].setFont(ConsoleTheme.mono(11f)); camPick[i].setAlignmentX(Component.LEFT_ALIGNMENT); camPick[i].setMaximumSize(new Dimension(Integer.MAX_VALUE, 26));
+            String want = pr.get("cam" + i, null);
+            if (want != null) for (int j = 0; j < camPick[i].getItemCount(); j++) if (camPick[i].getItemAt(j).toString().equals(want)) camPick[i].setSelectedIndex(j);
+            camBox[i].addActionListener(e -> camToggle(k));
+            camPick[i].addActionListener(e -> { if (camBox[k].isSelected()) camToggle(k); });
+            side.add(camBox[i]); side.add(camPick[i]); side.add(Box.createVerticalStrut(gap));
+        }
+        JLabel camHint = new JLabel("<html>Unticking a camera frees it, for example for Teams.</html>");
+        camHint.setFont(ConsoleTheme.sansRegular(11f)); camHint.setForeground(ConsoleTheme.mix(ConsoleTheme.PEACH, ConsoleTheme.BLACK, 0.4)); camHint.setAlignmentX(Component.LEFT_ALIGNMENT);
+        side.add(camHint);
 
         side.add(group("Parts", ConsoleTheme.PEACH));
         side.add(action("Walk through all pages", () -> sc.walkPages(), ConsoleTheme.PEACH));
@@ -159,34 +195,142 @@ public class DemoApp {
         lp.getVerticalScrollBar().putClientProperty("FlatLaf.style", "width: 8; thumbArc: 999; trackArc: 999; thumb: #9999FF; track: #000000; hoverThumbColor: #FFCC99; pressedThumbColor: #FF9900");
         lp.setBorder(null); lp.setOpaque(false); lp.getViewport().setOpaque(false); lp.getVerticalScrollBar().setUnitIncrement(18);
         lp.setPreferredSize(new Dimension(ConsoleTheme.LEG_W + ConsoleTheme.ELBOW_W + gap, 100));
-        root.add(lp, BorderLayout.WEST);
+        sideScroll = lp; root.add(lp, BorderLayout.WEST);
 
-        // centre: the log, and the board and the lamps on the right
-        log.setEditable(false); log.setFont(ConsoleTheme.mono(13f)); log.setLineWrap(true); log.setWrapStyleWord(true);
+        // centre: the slide and the log on the left, the cameras, the board and the lamps on the right
+        log.setEditable(false); log.setFont(ConsoleTheme.mono(12f)); log.setLineWrap(true); log.setWrapStyleWord(true);
         log.setBackground(ConsoleTheme.BLACK); log.setForeground(ConsoleTheme.TEXT); log.setCaretColor(ConsoleTheme.AMBER); log.setBorder(BorderFactory.createEmptyBorder(4, 6, 4, 6));
         JScrollPane logPane = new JScrollPane(log); logPane.setBorder(null); logPane.getViewport().setBackground(ConsoleTheme.BLACK);
+        ConsoleUi.Frame slideFrame = new ConsoleUi.Frame("The talk", ConsoleTheme.AMBER); slideFrame.setLayout(new BorderLayout()); slideFrame.add(slidePanel);
         ConsoleUi.Frame logFrame = new ConsoleUi.Frame("What is happening", ConsoleTheme.PEACH); logFrame.setLayout(new BorderLayout()); logFrame.add(logPane);
+        camsFrame = new ConsoleUi.Frame("The cameras", ConsoleTheme.PEACH); camsFrame.setLayout(new GridBagLayout()); camsFrame.setVisible(false);
+        GridBagConstraints kc = new GridBagConstraints(); kc.fill = GridBagConstraints.BOTH; kc.weightx = 1; kc.weighty = 1;
+        for (int i = 0; i < 2; i++) { kc.gridx = i; kc.insets = new Insets(0, i == 0 ? 0 : gap, 0, 0); camPanel[i].setPreferredSize(new Dimension(10, 10)); camPanel[i].setVisible(false); camsFrame.add(camPanel[i], kc); }
         ConsoleUi.Frame boardFrame = new ConsoleUi.Frame("The board", ConsoleTheme.LAVENDER); boardFrame.setLayout(new BorderLayout()); boardFrame.add(screenPanel);
         ConsoleUi.Frame lampFrame = new ConsoleUi.Frame("The lamps, worked out on the PC", ConsoleTheme.AMBER); lampFrame.setLayout(new BorderLayout()); lampFrame.add(lampPanel);
-        // the centre grows and shrinks with the window: the log takes two fifths, the previews three fifths, board and lamps share the height
-        for (JComponent c : new JComponent[]{logFrame, boardFrame, lampFrame, screenPanel, lampPanel, logPane}) c.setPreferredSize(new Dimension(10, 10));
+        // the centre grows and shrinks with the window: two fifths for the slide and the log, three fifths for the pictures
+        for (JComponent c : new JComponent[]{slideFrame, logFrame, camsFrame, boardFrame, lampFrame, screenPanel, lampPanel, logPane, slidePanel}) c.setPreferredSize(new Dimension(10, 10));
+        JPanel left = new JPanel(new GridBagLayout()); left.setOpaque(false);
+        GridBagConstraints lc = new GridBagConstraints(); lc.fill = GridBagConstraints.BOTH; lc.weightx = 1; lc.gridx = 0;
+        lc.gridy = 0; lc.weighty = 0.72; lc.insets = new Insets(0, 0, gap, 0); left.add(slideFrame, lc);
+        lc.gridy = 1; lc.weighty = 0.28; lc.insets = new Insets(0, 0, 0, 0); left.add(logFrame, lc);
         JPanel right = new JPanel(new GridBagLayout()); right.setOpaque(false);
         GridBagConstraints rc = new GridBagConstraints(); rc.fill = GridBagConstraints.BOTH; rc.weightx = 1; rc.gridx = 0; rc.insets = new Insets(0, 0, gap, 0);
-        rc.gridy = 0; rc.weighty = 0.5; right.add(boardFrame, rc);
-        rc.gridy = 1; rc.weighty = 0.5; rc.insets = new Insets(0, 0, 0, 0); right.add(lampFrame, rc);
+        rc.gridy = 0; rc.weighty = 0.34; right.add(camsFrame, rc);
+        rc.gridy = 1; rc.weighty = 0.28; right.add(boardFrame, rc);
+        rc.gridy = 2; rc.weighty = 0.38; rc.insets = new Insets(0, 0, 0, 0); right.add(lampFrame, rc);
         JPanel centre = new JPanel(new GridBagLayout()); centre.setOpaque(false);
         GridBagConstraints cc = new GridBagConstraints(); cc.fill = GridBagConstraints.BOTH; cc.weighty = 1; cc.gridy = 0;
-        cc.gridx = 0; cc.weightx = 0.4; cc.insets = new Insets(0, 0, 0, gap); centre.add(logFrame, cc);
-        cc.gridx = 1; cc.weightx = 0.6; cc.insets = new Insets(0, 0, 0, 0); centre.add(right, cc);
+        cc.gridx = 0; cc.weightx = 0.42; cc.insets = new Insets(0, 0, 0, gap); centre.add(left, cc);
+        cc.gridx = 1; cc.weightx = 0.58; cc.insets = new Insets(0, 0, 0, 0); centre.add(right, cc);
         root.add(centre, BorderLayout.CENTER);
 
         statusBar.setText("Ready"); statusBar.setPreferredSize(new Dimension(100, 30));
-        JPanel south = new JPanel(new BorderLayout()); south.setOpaque(false); south.setBorder(BorderFactory.createEmptyBorder(0, ConsoleTheme.LEG_W + ConsoleTheme.ELBOW_W + gap, 0, 0)); south.add(statusBar);
+        JPanel south = southPane = new JPanel(new BorderLayout()); south.setOpaque(false); south.setBorder(BorderFactory.createEmptyBorder(0, ConsoleTheme.LEG_W + ConsoleTheme.ELBOW_W + gap, 0, 0)); south.add(statusBar);
         root.add(south, BorderLayout.SOUTH);
 
         screenPanel.setOpaque(false); lampPanel.setOpaque(false);
         reconnect.addActionListener(e -> connect());
         setEnabledActions(false);
+        loadSlides();
+        // keys for the talk: space or right = next, left = previous, P = pause, H = hide the sidebar (a clean window to share), F11 = full screen
+        JComponent r = root; var im = r.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW); var am = r.getActionMap();
+        bindKey(im, am, "SPACE", () -> { if (player != null) player.next(); }); bindKey(im, am, "RIGHT", () -> { if (player != null) player.next(); });
+        bindKey(im, am, "LEFT", () -> { if (player != null) player.prev(); }); bindKey(im, am, "P", () -> { if (player != null) player.pause(); });
+        bindKey(im, am, "H", this::toggleSidebar);
+    }
+
+    /** A column inside a scroll pane that always has the width of the viewport, so wide children (the camera lists) are cut off instead of widening the sidebar. */
+    static final class ColumnPanel extends JPanel implements Scrollable {
+        public Dimension getPreferredScrollableViewportSize() { return getPreferredSize(); }
+        public int getScrollableUnitIncrement(Rectangle r, int o, int d) { return 18; }
+        public int getScrollableBlockIncrement(Rectangle r, int o, int d) { return 120; }
+        public boolean getScrollableTracksViewportWidth() { return true; }
+        public boolean getScrollableTracksViewportHeight() { return false; }
+    }
+
+    static void bindKey(InputMap im, ActionMap am, String key, Runnable r) {
+        im.put(KeyStroke.getKeyStroke(key), "k-" + key);
+        am.put("k-" + key, new AbstractAction() { public void actionPerformed(java.awt.event.ActionEvent e) { r.run(); } });
+    }
+
+    JButton talkButton(String label, Color colour, Runnable r) {
+        ConsoleUi.BlockButton b = new ConsoleUi.BlockButton(label, colour);
+        b.addActionListener(e -> r.run());
+        return b;
+    }
+
+    void toggleSidebar() {
+        boolean show = !sideScroll.isVisible();
+        sideScroll.setVisible(show); root.elbow = show;
+        southPane.setBorder(BorderFactory.createEmptyBorder(0, show ? ConsoleTheme.LEG_W + ConsoleTheme.ELBOW_W + ConsoleTheme.GAP : 0, 0, 0));
+        root.revalidate(); root.repaint();
+    }
+
+    // ---- cameras: a camera is only open while its box is ticked
+    void camToggle(int i) {
+        Cams.CamPanel p = camPanel[i];
+        Cams.Cam old = p.cam; p.cam = null; if (old != null) old.close();
+        if (camBox[i].isSelected()) {
+            Cams.Device d = (Cams.Device) camPick[i].getSelectedItem();
+            if (d == null) p.text = "no camera found"; else { p.cam = new Cams.Cam(d.node(), p::refresh); java.util.prefs.Preferences.userNodeForPackage(DemoApp.class).put("cam" + i, d.toString()); }
+        } else p.text = "off";
+        p.setVisible(camBox[i].isSelected());
+        camsFrame.setVisible(camBox[0].isSelected() || camBox[1].isSelected());
+        p.refresh(); root.revalidate(); root.repaint();
+    }
+    void closeCams() { for (int i = 0; i < 2; i++) { Cams.Cam c = camPanel[i].cam; camPanel[i].cam = null; if (c != null) c.close(); } }
+
+    // ---- the talk
+    static final Path TALK_DIR = Boards.repoRoot().resolve("tools/talk");
+    void loadSlides() {
+        List<Talk.Slide> slides = Talk.load(TALK_DIR);
+        player = new Talk.Player(slides, this::slideShown, this::showProgress, () -> worker != null && worker.isAlive());
+        if (!slides.isEmpty()) slidePanel.show(slides.get(0), 0, slides.size());
+    }
+    void talkStart() {
+        if (player != null && player.running) return;
+        loadSlides();                                                                // the files are read again, so edits show without a restart
+        if (player.slides.isEmpty()) { say("No slides found in " + TALK_DIR); return; }
+        say("=== the talk starts, " + player.slides.size() + " slides, about " + player.totalMs() / 60000 + " minutes " + (player.totalMs() / 1000 % 60) + " s");
+        player.start();
+    }
+    void talkStop() { if (player != null && player.running) { player.stop(); stopRun(); say("The talk is stopped."); } }
+    void slideShown(Talk.Slide s) {
+        slidePanel.show(s, player.index, player.slides.size());
+        for (String n : s.notes()) say("note: " + n);
+        Thread w = worker;
+        if (s.demo() == null) { if (w != null && w.isAlive()) w.interrupt(); return; }
+        Thread.ofVirtual().start(() -> {
+            try { if (w != null && w.isAlive()) { w.interrupt(); w.join(4000); } } catch (InterruptedException ignored) { }
+            SwingUtilities.invokeLater(() -> { Callable<String> d = demoFor(s.demo()); if (d != null && sc != null) run(s.title(), d); else if (sc == null) say("(no board: the demo of this slide is skipped)"); else say("unknown demo " + s.demo()); });
+        });
+    }
+    void showProgress() {
+        if (player == null || !player.running) { setStatus(statusBase); return; }
+        long e = player.elapsedMs() / 1000, t = player.totalMs() / 1000;
+        setStatus(statusBase + "   |   talk " + (player.index + 1) + "/" + player.slides.size() + "  " + e / 60 + ":" + String.format("%02d", e % 60) + " of " + t / 60 + ":" + String.format("%02d", t % 60) + (player.paused ? "  (paused)" : ""));
+        if (player.index >= 0) slidePanel.show(player.slides.get(player.index), player.index, player.slides.size());
+    }
+    void setStatus(String t) { SwingUtilities.invokeLater(() -> statusBar.setText(t)); }
+
+    /** The demos a slide can start: pages, disk, diskfast, bars, bar:name, board:name, grid:name, scope, vu, miccheck, photos. */
+    Callable<String> demoFor(String id) {
+        String k = id.contains(":") ? id.substring(0, id.indexOf(':')) : id, v = id.contains(":") ? id.substring(id.indexOf(':') + 1) : "";
+        return switch (k) {
+            case "pages" -> () -> sc.walkPages();
+            case "disk" -> () -> sc.disk(false);
+            case "diskfast" -> () -> sc.disk(true);
+            case "bars" -> () -> sc.bar();
+            case "bar" -> () -> sc.barEffect(v);
+            case "board" -> () -> sc.boardEffect(v);
+            case "grid" -> () -> sc.gridEffect(v);
+            case "scope" -> () -> sc.micScope();
+            case "vu" -> () -> sc.micDemo();
+            case "miccheck" -> () -> sc.micCheck();
+            case "photos" -> () -> { sc.photoGrid = (String) photoGrid.getSelectedItem(); return sc.photos(); };
+            default -> null;
+        };
     }
 
     static String cap(String n) { return Character.toUpperCase(n.charAt(0)) + n.substring(1); }
@@ -209,7 +353,7 @@ public class DemoApp {
         SwingUtilities.invokeLater(() -> { log.append(s + "\n"); log.setCaretPosition(log.getDocument().getLength()); });
     }
     void state(String s, boolean running) {
-        SwingUtilities.invokeLater(() -> { statusBar.setText(s); statusBar.setBusy(running); statusBar.setFill(running ? ConsoleTheme.AMBER : ConsoleTheme.LAVENDER); stop.setEnabled(running); setEnabledActions(!running && sc != null); reconnect.setEnabled(!running); });
+        statusBase = s; SwingUtilities.invokeLater(() -> { statusBar.setText(s); statusBar.setBusy(running); statusBar.setFill(running ? ConsoleTheme.AMBER : ConsoleTheme.LAVENDER); stop.setEnabled(running); setEnabledActions(!running && sc != null); reconnect.setEnabled(!running); });
     }
 
     // ---- the board
@@ -232,7 +376,7 @@ public class DemoApp {
                     public void grid(int[] rgb, int cols, int rows) { lampPanel.setGrid(rgb, cols, rows); }
                 };
                 Map<String, String> i = ser.kv("info");
-                SwingUtilities.invokeLater(() -> infoBar.setText("Connected: " + i.get("name") + ", firmware " + i.get("fw") + ", " + i.get("pages") + " pages, USB " + node));
+                SwingUtilities.invokeLater(() -> infoBar.setText("Connected: " + i.get("name") + ", firmware " + i.get("fw") + ", " + i.get("pages") + " pages"));
                 say("Connected. Pick a demo, or start the cycle.");
                 state("Ready", false);
             } catch (Exception e) {
@@ -312,7 +456,7 @@ public class DemoApp {
         FlatDarkLaf.setup();
         if (shot != null) {
             DemoApp app = new DemoApp();
-            app.infoBar.setText("Connected: NG-S3, firmware Nov 19 2026, 30 pages, USB /dev/hidraw0");
+            app.infoBar.setText("Connected: NG-S3, firmware Nov 19 2026, 30 pages");
             app.log.setText("Connected. Pick a demo, or start the cycle.\n=== Jules Verne to the SD card and back\nbook 618734 bytes, raw deflate 232700 bytes (38%)\nsent 232700 compressed bytes in 7,95 s = 28,6 kB/s\nloaded back 618734 bytes in 16,37 s = 36,9 kB/s over the gamepad\nSHA-256 of the received file equals the original\n");
             app.setEnabledActions(true);
             try {
@@ -344,7 +488,7 @@ public class DemoApp {
             f.setContentPane(app.root);
             f.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
             f.addWindowListener(new java.awt.event.WindowAdapter() {
-                public void windowClosing(java.awt.event.WindowEvent e) { app.stopRun(); if (app.sc != null) app.sc.release(); app.close(); f.dispose(); System.exit(0); }
+                public void windowClosing(java.awt.event.WindowEvent e) { app.stopRun(); app.closeCams(); if (app.sc != null) app.sc.release(); app.close(); f.dispose(); System.exit(0); }
             });
             f.setMinimumSize(new Dimension(980, 640)); f.setSize(1280, 820); f.setLocationByPlatform(true);
             // F11 toggles full screen, Escape leaves it; the window can also be maximised and resized freely, the layout follows
