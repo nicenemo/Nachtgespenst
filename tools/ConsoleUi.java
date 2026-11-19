@@ -234,9 +234,14 @@ final class ConsoleUi {
             for (int i = 0; i < n; i++) {
                 Object[] c = cells.get(i); double span = (i == 0 && talk >= 0) ? unit * 1.6 : unit; int x = (int) xx, cw = (int) span, mw = cw - pad; xx += span;
                 double frac = Math.max(0, Math.min(1, ((Double) c[0]) / ((Double) c[1]))); Color col = (Color) c[3]; String t = (String) c[2];
-                g.setFont(ConsoleTheme.sansRegular(11f)); g.setColor(ConsoleTheme.mix(ConsoleTheme.PEACH, ConsoleTheme.BLACK, 0.35)); g.drawString(names.get(i), x, 15);
                 g.setFont(ConsoleTheme.mono(15f)); FontMetrics fm = g.getFontMetrics();
                 int tx = x + mw - fm.stringWidth(t);
+                // the label gets the room the value leaves; if that is too little it is shortened, and if it does not fit at all it is left out (no text over text)
+                g.setFont(ConsoleTheme.sansRegular(11f)); FontMetrics lf = g.getFontMetrics(); int room = tx - x - 8;
+                java.util.List<String> forms = new java.util.ArrayList<>(java.util.Arrays.asList(names.get(i).split("\\|")));      // "long|shorter|shortest"
+                if (forms.size() == 1 && forms.get(0).contains(" ")) forms.add(forms.get(0).substring(0, forms.get(0).indexOf(' ')));
+                for (String label : forms) if (lf.stringWidth(label) <= room) { g.setColor(ConsoleTheme.mix(ConsoleTheme.PEACH, ConsoleTheme.BLACK, 0.35)); g.drawString(label, x, 15); break; }   // the first form that fits; none: no label
+                g.setFont(ConsoleTheme.mono(15f));
                 g.setColor(new Color(col.getRed(), col.getGreen(), col.getBlue(), 28)); g.drawString(t.replaceAll("[0-9A-Za-z]", "8"), tx, 17);    // the unlit digits of the display
                 g.setColor(col); g.drawString(t, tx, 17);
                 if (i == 0 && talk >= 0) {                                                    // the talk: the slide timer above the meter of the whole talk

@@ -458,7 +458,8 @@ public class DemoApp {
         Talk.Slide cur = player.index >= 0 ? player.slides.get(player.index) : null;
         long se = player.slideElapsedMs() / 1000, st = cur == null ? 0 : cur.seconds();
         final double sfr = st == 0 ? 0 : Math.min(1.0, (double) se / st);
-        final String label = "slide " + (player.index + 1) + "/" + player.slides.size() + "   " + Math.max(0, st - se) / 60 + ":" + String.format("%02d", Math.max(0, st - se) % 60) + " left";
+        final String left = Math.max(0, st - se) / 60 + ":" + String.format("%02d", Math.max(0, st - se) % 60), nr = (player.index + 1) + "/" + player.slides.size();
+        final String label = "slide " + nr + "   " + left + " left|" + nr + "  " + left + "|" + nr;
         SwingUtilities.invokeLater(() -> lcd.talk(fr, tt, sfr, label));
         if (player.index >= 0) slidePanel.show(player.slides.get(player.index), player.index, player.slides.size());
     }
@@ -620,10 +621,11 @@ public class DemoApp {
 
     // ---- main
     public static void main(String[] args) throws Exception {
-        String shot = null, scopeShot = null; final String[] camArg = new String[2];             // --tripod CAM and --laptop CAM: a camera number or /dev/videoN, switched on at the start
+        String shot = null, scopeShot = null; int shotW = 1280, shotH = 820; final String[] camArg = new String[2];             // --tripod CAM and --laptop CAM: a camera number or /dev/videoN, switched on at the start
         for (int i = 0; i < args.length; i++) {
             if (args[i].equals("--shot")) shot = args[++i];
             else if (args[i].equals("--scope-shot")) scopeShot = args[++i];
+            else if (args[i].equals("--size")) { String[] wh = args[++i].split("x"); shotW = Integer.parseInt(wh[0]); shotH = Integer.parseInt(wh[1]); }
             else if (args[i].equals("--tripod")) camArg[0] = args[++i];
             else if (args[i].equals("--laptop")) camArg[1] = args[++i];
         }
@@ -649,7 +651,7 @@ public class DemoApp {
             for (int i = 0; i < 2; i++) { app.camPanel[i].setVisible(true); app.camPanel[i].text = i == 0 ? "tripod camera" : "laptop camera"; }  // the layout with both camera panels
             app.camsFrame.setVisible(true);
             app.setEnabledActions(true);
-            app.lcd.talk(0.42, "4:12 / 10:10", 0.6, "slide 6/17   0:18 left"); app.lcd.set("send kB/s", 28.6, 60, "28.6", ConsoleTheme.AMBER); app.lcd.set("load kB/s", 36.9, 60, "36.9", ConsoleTheme.AMBER); app.lcd.set("SHA-256", 1, 1, "match", ConsoleTheme.PEACH);
+            app.lcd.talk(0.42, "4:12 / 10:10", 0.6, "slide 6/17   0:18 left|6/17  0:18|6/17"); app.lcd.set("send kB/s", 28.6, 60, "28.6", ConsoleTheme.AMBER); app.lcd.set("load kB/s", 36.9, 60, "36.9", ConsoleTheme.AMBER); app.lcd.set("SHA-256", 1, 1, "match", ConsoleTheme.PEACH);
             try {
                 BufferedImage sample = ImageIO.read(Boards.repoRoot().resolve("site/img/lamps/scope-880.png").toFile());
                 app.screenPanel.set(sample);                       // the board shows the oscilloscope the PC paints on its lamps
@@ -662,11 +664,11 @@ public class DemoApp {
                 app.lampPanel.setGrid(sc.pix.clone(), 80, 47);
                 app.lampPanel.setBar(new int[]{0x220000, 0x660500, 0xCC1000, 0xFF2000, 0xFF1000, 0x880800, 0x330300, 0x110100, 0, 0});
             } catch (Exception ignored) { }
-            app.root.setSize(1280, 820);
+            app.root.setSize(shotW, shotH);
             layout(app.root);
-            BufferedImage img = new BufferedImage(1280, 820, BufferedImage.TYPE_INT_RGB);
+            BufferedImage img = new BufferedImage(shotW, shotH, BufferedImage.TYPE_INT_RGB);
             Graphics2D g2 = img.createGraphics();
-            g2.setColor(UIManager.getColor("Panel.background")); g2.fillRect(0, 0, 1280, 820);
+            g2.setColor(UIManager.getColor("Panel.background")); g2.fillRect(0, 0, shotW, shotH);
             app.root.print(g2); g2.dispose();
             ImageIO.write(img, "png", new java.io.File(shot));
             System.out.println("wrote " + shot);

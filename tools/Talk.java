@@ -79,8 +79,6 @@ final class Talk {
                 if (draw(g, s, x, y, w, h, size, false)) break;
                 if (size <= 14f) draw(g, s, x, y, w, h, 14f, true);
             }
-            g.setColor(ConsoleTheme.mix(ConsoleTheme.LAVENDER, ConsoleTheme.BLACK, 0.4)); g.setFont(ConsoleTheme.mono(12f));
-            String n = (index + 1) + " / " + count; g.drawString(n, x + w - g.getFontMetrics().stringWidth(n), y + h - 2);
             g.dispose();
         }
 
