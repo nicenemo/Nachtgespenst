@@ -2,6 +2,7 @@
 seconds: 20
 ---
 # Nachtgespenst
-- A touch macro pad that learned to play
-- M5Stack CoreS3 and Core2, Bluetooth and USB
-> Welcome. Both cameras are on: the board lies under the tripod camera.
+- Firmware for the M5Stack Core2 and CoreS3
+- Touchscreen macro pad over USB and Bluetooth LE (HID)
+- The host can also drive the lamps and send data back
+> Both cameras on: the board lies under the tripod camera.
