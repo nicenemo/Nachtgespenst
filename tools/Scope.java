@@ -53,26 +53,29 @@ final class Scope {
             pix[y * cols + x] = g > 8 ? trace(glow[y * cols + x]) : bg;
         }
         String top = freq > 0 ? String.format("%dHZ", Math.round(freq)) : "NO TONE";
-        text(0, 1, top, 0x66FF88);
+        text(0, 1, top, 0xFFCC99);
         String right = String.format("%.1fMS", lastSpanMs);
-        text(cols - 4 * right.length() - 1, 1, right, 0x4DAA66);
+        text(cols - 4 * right.length() - 1, 1, right, 0x9999FF);
         if (c != null) c.setAll(pix);
     }
 
-    /** 8 x 8 divisions: dotted lines, brighter axes with a tick every four lamps. */
+    /** 8 x 8 divisions in the console colours: dotted lines, brighter lavender axes with a tick every four lamps, on black. */
     int graticule(int x, int y) {
         int cx = cols / 2, cy = rows / 2;
-        if (y == cy) return (x % 4 == 0) ? 0x3C6B3C : 0x2A4A2A;
-        if (x == cx) return (y % 4 == 0) ? 0x3C6B3C : 0x2A4A2A;
+        if (y == cy) return (x % 4 == 0) ? 0x4A4A8C : 0x2E2E58;
+        if (x == cx) return (y % 4 == 0) ? 0x4A4A8C : 0x2E2E58;
         boolean vline = x % (cols / 8) == 0, hline = y % Math.max(1, rows / 8) == 0;
-        if ((vline && y % 2 == 0) || (hline && x % 2 == 0)) return 0x142414;
-        return 0x020502;
+        if ((vline && y % 2 == 0) || (hline && x % 2 == 0)) return 0x16162C;
+        return 0x000000;
     }
 
+    /** The trace: amber where it is fading, through peach to a near white core where it is fresh. */
     static int trace(float g) {
         g = Math.min(1f, g);
-        int r = (int) (255 * Math.max(0, g - 0.75f) * 4), gr = (int) (255 * Math.min(1f, 0.25f + g * 0.9f)), b = (int) (255 * Math.max(0, g - 0.7f) * 2.5f);
-        return (Math.min(255, r) << 16) | (Math.min(255, gr) << 8) | Math.min(255, b);
+        float k = Math.max(0f, (g - 0.55f) / 0.45f);                              // 0 .. 1 from amber to the white core
+        float d = (float) Math.sqrt(g);                                            // fade to a dark amber, not to red
+        int r = (int) (255 * d), gr = (int) (153 * d + (240 - 153) * k * d), b = (int) (232 * k * k * d);
+        return (r << 16) | (Math.min(255, gr) << 8) | Math.min(255, b);
     }
 
     // ---- a 3 x 5 font for the readout

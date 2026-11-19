@@ -87,7 +87,7 @@ final class Talk {
         private boolean draw(Graphics2D g, Slide s, int x, int y, int w, int h, float size, boolean force) {
             Font tf = ConsoleTheme.sansBold(size * 1.25f), bf = ConsoleTheme.sansRegular(size);
             List<Object[]> items = new ArrayList<>();                      // {Font, Color, lines}
-            items.add(new Object[]{tf, ConsoleTheme.AMBER, wrap(s.title(), tf, w, g)});
+            items.add(new Object[]{tf, Color.WHITE, wrap(s.title(), tf, w, g)});
             for (String b : s.bullets()) items.add(new Object[]{bf, b.startsWith("• ") ? ConsoleTheme.PEACH : ConsoleTheme.LAVENDER, wrap(b, bf, w, g)});
             double total = 0;
             for (Object[] it : items) total += ((List<TextLayout>) it[2]).stream().mapToDouble(t -> t.getAscent() + t.getDescent() + t.getLeading()).sum() + size * 0.45;

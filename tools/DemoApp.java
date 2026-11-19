@@ -568,7 +568,8 @@ public class DemoApp {
             }
             BufferedImage im = new BufferedImage(c, r, BufferedImage.TYPE_INT_RGB);
             im.setRGB(0, 0, c, r, gr, 0, c);
-            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);         // smooth, not blocks: the lamps are a picture here
+            g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
             g.drawImage(im, px, py, pw, ph, null);
             g.setColor(Color.GRAY); g.setFont(ConsoleTheme.mono(11f));
             String cap = c + " x " + r + " lamps, bar 0-4 down the right, 5-9 up the left";
