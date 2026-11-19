@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LampArray bench · Nachtgespenst</title>
+<meta name="description" content="A HID LampArray test bench: the LED bar and the screen as lamps a computer can set, measured over USB and Bluetooth.">
+<link rel="canonical" href="https://hanskruse.eu/nachtgespenst/lamps.html">
+<meta name="theme-color" content="#0b0e14" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f6f7fb" media="(prefers-color-scheme: light)">
+<!-- icons: the ICO for old browsers and tools, the SVG for modern ones, PNGs for iOS, Android and Windows tiles -->
+<link rel="icon" href="favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" href="favicon.svg" type="image/svg+xml" sizes="any">
+<link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
+<link rel="mask-icon" href="safari-pinned-tab.svg" color="#8ea2ff">
+<link rel="manifest" href="site.webmanifest">
+<meta name="msapplication-config" content="browserconfig.xml">
+<meta name="msapplication-TileColor" content="#0b0e14">
+<!-- link previews -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="LampArray bench · Nachtgespenst">
+<meta property="og:description" content="A HID LampArray test bench: the LED bar and the screen as lamps a computer can set, measured over USB and Bluetooth.">
+<meta property="og:url" content="https://hanskruse.eu/nachtgespenst/lamps.html">
+<meta property="og:image" content="https://hanskruse.eu/nachtgespenst/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="A ghost with its hands on its cheeks, screaming under a crescent moon">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="style.css">
+<link rel="prev" href="camera.html">
+<link rel="next" href="setup.html">
+<link rel="index" href="index.html">
+<script src="menu.js" defer></script>
+</head>
+<body>
+<nav class="sitenav" aria-label="Site"><div class="wrap"><a class="brand" href="index.html"><img src="favicon.svg" width="28" height="28" alt="">Nachtgespenst</a><a class="key" href="pages.html">Pages</a><a class="key" href="setup.html">Set-up</a><details class="menu"><summary aria-label="Menu"><span class="burger" aria-hidden="true"></span><span class="label">Menu</span></summary><div class="panel"><div class="col"><h2>Pages</h2><ul><li><a href="pages.html">Overview</a></li><li><a href="pages-work.html">Work and editing</a></li><li><a href="pages-function.html">Function keys</a></li><li><a href="pages-typing.html">Typing and layout</a></li><li><a href="pages-media.html">Media and applications</a></li></ul></div><div class="col"><h2>Interfaces</h2><ul><li><a href="interfaces.html">LVGL or classic</a></li><li><a href="classic.html">Classic overview</a></li><li><a href="classic-work.html">Classic: Work and editing</a></li><li><a href="classic-function.html">Classic: Function keys</a></li><li><a href="classic-typing.html">Classic: Typing and layout</a></li><li><a href="classic-media.html">Classic: Media and applications</a></li></ul></div><div class="col"><h2>Project</h2><ul><li><a href="index.html">Home</a></li><li><a href="camera.html">Camera tests</a></li><li><a href="lamps.html" aria-current="page">LampArray bench</a></li><li><a href="setup.html">Set it up</a></li><li><a href="story.html">The story</a></li><li><a href="https://github.com/nicenemo/nachtgespenst">Source on GitHub</a></li><li><a href="https://github.com/nicenemo/nachtgespenst/blob/develop/CHANGELOG.md">Changelog</a></li></ul></div></div></details></div></nav>
+<header class="hero compact"><div class="wrap">
+<h1><img class="logo" src="favicon.svg" width="56" height="56" alt="">LampArray bench</h1>
+<p class="tag">The LED bar and the screen as lamps a computer can set, measured over USB and Bluetooth.</p>
+</div></header>
+<main class="wrap">
+<section id="lamps">
+<p>A <b>HID LampArray</b> is the standard way for a keyboard, a mouse or a light strip to tell a computer "these are my lamps, here is where they are, set their colours". Windows 11 uses it for Dynamic Lighting. For this project it turns the board's ten-LED bar and its screen into lamps that any computer can paint, with no driver and no serial cable. This page is the result of the first test bench, run on 19 November 2026.</p>
+<h2>What was built</h2>
+<ul>
+<li><b>One LampArray on both boards.</b> Lamps 0 to 9 are the LED bar; lamps 10 and up are a grid of screen lamps whose size can be changed at run time, from 8 &times; 6 up to 320 &times; 190, so one lamp can be a single pixel of the 320 &times; 240 screen.</li>
+<li><b>The standard reports.</b> Attributes, per-lamp position and colour depth, multi update (eight lamps in 51 bytes), range update (one colour for many lamps) and the autonomous-mode switch, in a 434-byte report descriptor that Linux accepts over USB and over Bluetooth.</li>
+<li><b>Two test pages</b> after the Locks page: one shows the screen lamps, one the ten bar lamps with their intensity. The other pages keep their layer colours.</li>
+<li><b><code>LampTest</code></b>, a JBang tool that talks to the board through the raw HID interface and checks the result three ways: by reading the lamp back over serial, by comparing a screenshot with the lamps, and by filming the bar with a webcam.</li>
+</ul>
+<h2>Results</h2>
+<p>Every functional check passes on all three links: CoreS3 over USB, CoreS3 over Bluetooth and Core2 over Bluetooth. Every sampled lamp on the screen matches its colour at every grid size.</p>
+<table>
+<tr><th></th><th>CoreS3, USB</th><th>CoreS3, Bluetooth</th><th>Core2, Bluetooth</th></tr>
+<tr><th>Reports per second</th><td>1,000</td><td>16 (multi), 30 (range)</td><td>29</td></tr>
+<tr><th>Lamps per second</th><td>8,000</td><td>126 to 300</td><td>231 to 288</td></tr>
+<tr><th>Enumerating a lamp</th><td>0.4 ms</td><td>61 ms</td><td>63 ms</td></tr>
+<tr><th>Draw a changed screen</th><td>about 45 ms</td><td>about 48 ms</td><td>about 80 ms</td></tr>
+</table>
+<p>What a frame rate of the whole screen looks like (every lamp changes in every frame):</p>
+<table>
+<tr><th>Grid</th><th>Lamps</th><th>USB</th><th>Bluetooth, CoreS3</th><th>Bluetooth, Core2</th></tr>
+<tr><td>8 &times; 6</td><td>48</td><td>166 fps</td><td>2.7 fps</td><td>4.7 fps</td></tr>
+<tr><td>16 &times; 12</td><td>192</td><td>42 fps</td><td>0.7 fps</td><td>1.2 fps</td></tr>
+<tr><td>32 &times; 24</td><td>768</td><td>10 fps</td><td>0.2 fps</td><td>0.3 fps</td></tr>
+<tr><td>64 &times; 48</td><td>3,072</td><td>2.6 fps</td><td>0.04 fps</td><td>0.1 fps</td></tr>
+<tr><td>128 &times; 96</td><td>12,288</td><td>0.7 fps</td><td>0.01 fps</td><td>&ndash;</td></tr>
+<tr><td>320 &times; 190, one lamp per pixel</td><td>60,800</td><td>0.1 fps</td><td>&ndash;</td><td>&ndash;</td></tr>
+</table>
+<h2>What it means</h2>
+<ul>
+<li><b>USB is the transport for lamps.</b> 8,000 lamps per second drives the bar at hundreds of frames per second and a 32 &times; 24 matrix at 10 fps. One lamp per pixel works too, but at one frame every eight seconds: pictures and video belong to a separate channel.</li>
+<li><b>Bluetooth carries the bar and slow effects.</b> About 30 range updates per second is a smooth 30 fps for the whole bar in one colour. The limit sits on the host: BlueZ delivers one queued write per 30 ms connection interval, and ignores the 7.5 to 15 ms the firmware asks for. Windows, with shorter intervals, is expected to do better and still has to be measured.</li>
+<li><b>Do not flood Bluetooth.</b> BlueZ queues output reports without a bound and drains them slowly, so a burst of 2,000 reports arrives over more than a minute, and short range updates start to be dropped once about 50 are queued. The test tool paces its sending and waits for the queue to drain.</li>
+<li><b>Enumeration is the hidden cost.</b> A host asks for every lamp's attributes when the device appears: 12 seconds for the 202 lamps of the default layout over Bluetooth, almost a minute for 768 lamps, minutes for more.</li>
+<li><b>Intensity needs a curve.</b> Each lamp has red, green, blue and an intensity of 0 to 255, but at the bar's global brightness of 40 of 255 the webcam sees no difference for the lowest 12 to 24 intensity steps. The curve from there up is smooth and rises monotonically.</li>
+</ul>
+<h2>Try it</h2>
+<pre>jbang tools/LampTest.java enum   --board S3 --via usb
+jbang tools/LampTest.java bar    --board S3 --via ble --crop x0,y0,x1,y1   # webcam intensity ramp
+jbang tools/LampTest.java screen --board C2 --via ble --tiers 8x6,16x12,32x24
+jbang tools/LampTest.java rate   --board S3 --via ble --pace-us 1          # how fast does the link deliver?</pre>
+<p>The method, the raw numbers and the limits are in the <a href="https://github.com/nicenemo/nachtgespenst/blob/feature/lamparray/docs/wiki/lamparray-testing.md">LampArray test bench</a> wiki page, the plan behind it is <a href="https://github.com/nicenemo/nachtgespenst/blob/feature/lamparray/docs/adr/0010-lamparray-lighting-and-picture-pages.md">ADR 0010</a>. Not tested yet: Windows Dynamic Lighting, which would show whether Windows accepts the device over Bluetooth and how fast it is there.</p>
+</section>
+<nav class="pager" aria-label="Previous and next page"><a class="prev" href="camera.html"><small>&larr; Previous</small><br>Camera tests</a><a class="next" href="setup.html"><small>Next &rarr;</small><br>Set-up</a></nav>
+
+</main>
+<footer><div class="wrap">
+<p>MIT licence. Third-party components are listed in the <a href="https://github.com/nicenemo/nachtgespenst/blob/develop/THIRD-PARTY-NOTICES.md">third-party notices</a>.</p>
+<p class="copyright">&copy; 2026 <a href="https://hanskruse.eu">Hans Kruse</a></p>
+</div></footer></body>
+</html>
