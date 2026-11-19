@@ -152,7 +152,13 @@ public class DemoApp {
             if (want != null) for (int j = 0; j < camPick[i].getItemCount(); j++) if (camPick[i].getItemAt(j).toString().equals(want)) camPick[i].setSelectedIndex(j);
             camBox[i].addActionListener(e -> camToggle(k));
             camPick[i].addActionListener(e -> { if (camBox[k].isSelected()) camToggle(k); });
-            side.add(camBox[i]); side.add(camPick[i]); side.add(Box.createVerticalStrut(gap));
+            camPanel[i].quarter = pr.getInt("rot" + i, 0); camPanel[i].mirror = pr.getBoolean("mir" + i, false);
+            JPanel row = new JPanel(new GridLayout(1, 4, 4, 0)); row.setOpaque(false); row.setAlignmentX(Component.LEFT_ALIGNMENT); row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+            row.add(turnButton("+90°", () -> { camPanel[k].quarter = (camPanel[k].quarter + 1) & 3; camSaved(k); }));
+            row.add(turnButton("-90°", () -> { camPanel[k].quarter = (camPanel[k].quarter + 3) & 3; camSaved(k); }));
+            row.add(turnButton("180°", () -> { camPanel[k].quarter = (camPanel[k].quarter + 2) & 3; camSaved(k); }));
+            row.add(turnButton("Mirror", () -> { camPanel[k].mirror = !camPanel[k].mirror; camSaved(k); }));
+            side.add(camBox[i]); side.add(camPick[i]); side.add(Box.createVerticalStrut(3)); side.add(row); side.add(Box.createVerticalStrut(gap));
         }
         JLabel camHint = new JLabel("<html>Unticking a camera frees it, for example for Teams.</html>");
         camHint.setFont(ConsoleTheme.sansRegular(11f)); camHint.setForeground(ConsoleTheme.mix(ConsoleTheme.PEACH, ConsoleTheme.BLACK, 0.4)); camHint.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -261,6 +267,18 @@ public class DemoApp {
         sideScroll.setVisible(show); root.elbow = show;
         southPane.setBorder(BorderFactory.createEmptyBorder(0, show ? ConsoleTheme.LEG_W + ConsoleTheme.ELBOW_W + ConsoleTheme.GAP : 0, 0, 0));
         root.revalidate(); root.repaint();
+    }
+
+    ConsoleUi.BlockButton turnButton(String label, Runnable r) {
+        ConsoleUi.BlockButton b = new ConsoleUi.BlockButton(label, ConsoleTheme.LAVENDER);
+        b.setFont(ConsoleTheme.sansBold(11f)); b.setPreferredSize(new Dimension(40, 30)); b.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+        b.addActionListener(e -> r.run());
+        return b;
+    }
+    void camSaved(int i) {
+        var pr = java.util.prefs.Preferences.userNodeForPackage(DemoApp.class);
+        pr.putInt("rot" + i, camPanel[i].quarter); pr.putBoolean("mir" + i, camPanel[i].mirror);
+        camPanel[i].refresh();
     }
 
     // ---- cameras: a camera is only open while its box is ticked
