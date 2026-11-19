@@ -44,6 +44,9 @@ Reading: the panel transfer is only about a tenth of a page; building and LVGL's
 - **Slide.** A frame of a slide is a full-screen push (about 30 ms at 40 MHz SPI, estimate), so 4 frames cost about 120 ms and 8 frames about 250 ms: slower than an instant switch. If a transition is wanted: 3 to 4 steps, only when the previous page change was more than about 400 ms ago, never during fast paging. For a macro pad whose job is fast key presses, instant switching is the better default.
 - The classic UI can do the same with `M5Canvas` sprites (its draw functions would target a canvas); at 92 ms per page it hardly needs it.
 
+## Stage 1 measured (2026-11-19, coalescing)
+`ui_set_layer()` now records the target and updates the header; the body is built once in `ui_loop()` after 25 ms, or earlier when a screenshot or an injected tap needs it. On the CoreS3: the `LAYER` acknowledgement went from 140 to 230 ms to 11 ms, the burst of ten changes 150 ms apart now has the last page on screen after 1,803 ms (was 2,009) and 303 ms after the last press (was 509). A single page costs the same as before (about 160 to 240 ms build and 290 to 320 ms render, also when the same page is shown a second time, so a cold glyph cache is not the cost): coalescing helps bursts, not the base cost. Next: compiler optimisation (-O2 instead of -Os) and taller strips (48 rows instead of 24), then fewer widgets per page.
+
 ## Recommendation
 Stage it and measure after each stage (`SerialTest --latency`, plus a quick-paging test: send `LAYER n+1` ten times at 150 ms intervals and time until the last page is on screen):
 1. **Coalesce** page changes (option 1). Cheap, helps fast paging immediately.

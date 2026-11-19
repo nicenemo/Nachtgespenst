@@ -1,6 +1,6 @@
 # 0014 A Settings page, switching the LEDs off, and persistent settings
 
-Status: Proposed. Nothing is implemented. This is the first, small step of the Settings page that [0009](0009-unicode-pages-and-host-os-awareness.md) plans for its fourth phase; the Unicode and host OS settings join it later.
+Status: Proposed; the backend is implemented (2026-11-19, see "Implemented so far"), the Settings page is not. This is the first, small step of the Settings page that [0009](0009-unicode-pages-and-host-os-awareness.md) plans for its fourth phase; the Unicode and host OS settings join it later.
 
 ## Context
 The LED bar cannot be switched off: the Locks page lights a segment per active lock and otherwise shows faint white (6, 6, 6), every layer page shows its colour at brightness 40 of 255, and the bar keeps its 5 V supply on (`M5.Power.setExtOutput(true)`). The backlight has a fixed schedule (dim after 60 s, off after 5 min). Routing (`PREFER`, `ONLY`) and brightness can only be changed with serial commands, which do not survive a reset. The owner asked for the LEDs to be switchable and asked whether a Settings page is wanted.
@@ -24,6 +24,13 @@ Later rows: host OS and Unicode mode ([0009](0009-unicode-pages-and-host-os-awar
 **Serial.** `LEDS OFF|LOCKS|ON` (and `LEDS?`), `SET <key> <value>` and `SET?` for the other rows, so the tests can set and check them without touching the screen, and `SerialTest` can verify that a setting survives a reboot (a `RESET` command).
 
 **LED off and the LampArray.** "Off" is a master switch: the bar stays dark on every page, including the host lamps, so the owner's choice is predictable. The lamp test pages of [0010](0010-lamparray-lighting-and-picture-pages.md) show a notice when the bar is off, and `LampTest.java` sets `LEDS ON` first.
+
+## Implemented so far (2026-11-19, branch `feature/lamparray`)
+- **Storage:** `Settings` (NVS namespace `ng`) with `led` (off, locks, on), `bright` (1 to 120), `ledidle` (minutes), `bl` (16 to 255), `dim`, `off` (seconds) and `prefer`; defaults reproduce the earlier behaviour. Verified across a hardware reset on the Core2.
+- **Serial:** `LEDS OFF|LOCKS|ON`, `LEDS?`, `SET key value`, `SET?`, `SET defaults 1`, plus `WAKE` (restart the idle timers) and `BL <16..255|AUTO>` (pin the backlight, for tests and photos). `LAMPS BRIGHT` stays a temporary override and is never stored.
+- **LED behaviour:** `off` makes the bar dark and switches the M-Bus 5 V rail off (it comes back with a 40 ms pause); `locks` shows only the host lock state on every page; the idle timer darkens the bar like the backlight.
+- **Tests:** `SerialTest` (settings round trip, ranges, WAKE, BL, defaults) on both boards; `LedCam dark` films the bar with LEDS ON, OFF (twice) and LOCKS: OFF measures 62 (CoreS3) and 70 (Core2) against camera noise of 0.2 to 0.3, and LOCKS follows the host lock state.
+- **Not built:** the Settings page itself (rows to tap). Decision 1 is open; the serial interface covers the same ground for now.
 
 ## Tests
 - `SerialTest`: `LEDS OFF` then `LEDS?` reports `off`, a settings round trip, a reboot keeps the value.
