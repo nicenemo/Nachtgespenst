@@ -74,6 +74,7 @@ Over the Bluetooth link the game pad descriptor means a new pairing is needed af
 | SHA-256 of the book on the board | 33 ms (hardware accelerated), equal to the PC's, shown with MATCH |
 | SAVE over USB with 1% of the lamp reports dropped on purpose | completes with the same SHA-256 at **13 kB/s** (77 errors, the block size jumps between 64 and 512 lamps) |
 | SAVE over Bluetooth | completes with the same SHA-256, but 0.4 kB/s (595 s): BlueZ delivers about 30 reports per second |
+| SAVE over Bluetooth on the Core2 (RAM only, no SD) | completes with the same SHA-256, 220 s = **1.0 kB/s** (2.7 kB/s of text), no errors; the Core2 is faster than the CoreS3 here because its 51-byte writes arrive at the full 30 per second |
 | LOAD over Bluetooth | does not work yet: the credits wait in the BlueZ queue and the resend requests pile up |
 | SD card | 32 GB SDHC, the file is written and read back |
 
