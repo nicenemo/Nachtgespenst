@@ -108,6 +108,9 @@ namespace HIDManager {
     class LampCallbacks : public NimBLECharacteristicCallbacks {
         void onWrite(NimBLECharacteristic* c, NimBLEConnInfo&) override {
             NimBLEAttValue v = c->getValue();
+#if NG_DEBUG_HEARTBEAT
+            Serial.printf("[lamp] write %u bytes\n", (unsigned)v.size());
+#endif
             for (uint8_t id = HID::Reports::LAMP_REQ; id <= HID::Reports::LAMP_CTRL; id++) {
                 if (lampChar[id] != c) continue;
                 if (id == HID::Reports::LAMP_REQ) Lamps::onSetFeature(id, v.data(), v.size());
@@ -116,6 +119,9 @@ namespace HIDManager {
             }
         }
         void onRead(NimBLECharacteristic* c, NimBLEConnInfo&) override {
+#if NG_DEBUG_HEARTBEAT
+            Serial.println("[lamp] read");
+#endif
             for (uint8_t id = HID::Reports::LAMP_ATTR; id <= HID::Reports::LAMP_RESP; id++) {
                 if (lampChar[id] != c || id == HID::Reports::LAMP_REQ) continue;
                 uint8_t buf[40];
@@ -129,6 +135,9 @@ namespace HIDManager {
     class MyServerCallbacks : public NimBLEServerCallbacks {
         void onConnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo) override {
             _bleConnected = true;
+#if NG_DEBUG_HEARTBEAT
+            Serial.printf("[HID] onConnect at %lu\n", (unsigned long)millis());
+#endif
             Serial.printf("[HID] BLE connected to %s\n", connInfo.getAddress().toString().c_str());
             // Short connection interval and long data packets: the LampArray test streams reports.
             pServer->updateConnParams(connInfo.getConnHandle(), 6, 12, 0, 400);

@@ -42,6 +42,7 @@ public class LampTest {
     static String boardName = "S3", via = null, shotDir = null, out = "lamptest-out", camera = "/dev/video0", tiers = "8x6,16x12,32x24,64x48,128x96,320x190";
     static int[] crop = null;
     static int frames = 0, enumMax = 200;
+    static int paceUs = -1;                    // microseconds between two output reports; -1 = automatic (0 for USB, 15000 for Bluetooth)
     static int pass = 0, fail = 0;
     static String tag;
     static Boards.Board board;
@@ -63,6 +64,7 @@ public class LampTest {
             case "--tiers" -> tiers = args[++i];
             case "--frames" -> frames = Integer.parseInt(args[++i]);
             case "--enum-max" -> enumMax = Integer.parseInt(args[++i]);
+            case "--pace-us" -> paceUs = Integer.parseInt(args[++i]);
             case "--crop" -> crop = Arrays.stream(args[++i].split(",")).mapToInt(Integer::parseInt).toArray();
             default -> { if (args[i].startsWith("--")) usage("unknown option " + args[i]); cmds.add(args[i]); }
         }
@@ -71,6 +73,7 @@ public class LampTest {
         tag = board.tag();
         if (via == null) via = tag.equals("C2") ? "ble" : "usb";
         boolean usb = via.equals("usb");
+        if (paceUs < 0) paceUs = usb ? 0 : 15000;
         if (usb && tag.equals("C2")) usage("the Core2 has no USB HID, use --via ble");
 
         Optional<SerialPort> sp = Boards.find(board);
@@ -92,7 +95,8 @@ public class LampTest {
                     case "enum" -> enumerate(s, h);
                     case "bar" -> bar(s, h);
                     case "screen" -> screen(s, h);
-                    case "all" -> { enumerate(s, h); bar(s, h); screen(s, h); }
+                    case "rate" -> rate(s, h);
+                    case "all" -> { enumerate(s, h); bar(s, h); rate(s, h); screen(s, h); }
                     default -> usage("unknown command " + c);
                 }
             }
@@ -251,6 +255,31 @@ public class LampTest {
         return p;
     }
 
+    /** Waits until nothing more arrives from an earlier test: BlueZ queues output reports and drains them at about 35 per second. */
+    static void drain(Ser s) throws Exception {
+        long end = System.currentTimeMillis() + 240000;
+        while (System.currentTimeMillis() < end) {
+            s.cmd("LAMPS RESET", 3000); Thread.sleep(1500);
+            if (num(s.kv("LAMPS?"), "reports") == 0) return;
+        }
+        info("the board kept receiving old reports for 4 minutes");
+    }
+
+    /** Waits until the report counter has not moved for 1.5 s (everything sent so far has arrived). */
+    static void settle(Ser s, long maxMs) throws Exception {
+        long end = System.currentTimeMillis() + maxMs, last = -1; int calm = 0;
+        while (System.currentTimeMillis() < end && calm < 3) {
+            Thread.sleep(500);
+            long r = num(s.kv("LAMPS?"), "reports");
+            if (r == last) calm++; else calm = 0;
+            last = r;
+        }
+    }
+
+    /** Sleeps between two output reports so a Bluetooth link is not flooded (BlueZ drops what it cannot queue). */
+    static void pace() { if (paceUs > 0) java.util.concurrent.locks.LockSupport.parkNanos(paceUs * 1000L); }
+    static void pace(int us) { if (us > 0) java.util.concurrent.locks.LockSupport.parkNanos(us * 1000L); }
+
     static int u16(byte[] b, int at) { return (b[at] & 255) | ((b[at + 1] & 255) << 8); }
     static long u32(byte[] b, int at) { return (u16(b, at) | ((long) u16(b, at + 2) << 16)); }
 
@@ -355,20 +384,54 @@ public class LampTest {
         }
 
         // D. update speed of the bar: range updates back to back
-        s.cmd("LAMPS RESET", 2000); h.write(control(false));
-        int n = 2000; long t0 = System.nanoTime(); int errs = 0;
-        for (int k = 0; k < n; k++) if (h.write(range(0, 9, k & 255, 255 - (k & 255), 128, 255, true)) < 0) errs++;
+        drain(s); h.write(control(false));
+        int n = paceUs > 0 ? 150 : 2000; long t0 = System.nanoTime(); int errs = 0;
+        for (int k = 0; k < n; k++) { if (h.write(range(0, 9, k & 255, 255 - (k & 255), 128, 255, true)) < 0) errs++; pace(); }
         double ms = (System.nanoTime() - t0) / 1e6;
-        Thread.sleep(500);
+        settle(s, 120000);
         Map<String, String> st = s.kv("LAMPS?");
         long got = num(st, "reports"), span = num(st, "span_us");
-        info(String.format("bar updates: %d range updates in %.0f ms on the host (%.0f/s), %d arrived (%.1f%%), the board saw them within %.0f ms (%.0f/s), %d write errors",
-                n, ms, n / (ms / 1000), got, 100.0 * got / n, span / 1000.0, got / (span / 1e6), errs));
+        info(String.format("bar updates: %d range updates in %.0f ms on the host (%.0f/s), the board counted %d reports (%d expected with the control report), within %.0f ms (%.0f/s), %d write errors",
+                n, ms, n / (ms / 1000), got, n + 1, span / 1000.0, got / (span / 1e6), errs));
         check("bar update burst: no write errors", errs == 0, errs + " errors");
-        check("bar update burst: every report arrived", got == n, got + " of " + n);
+        check("bar update burst: every report arrived", got == n + 1, got + " of " + n + " range updates plus the control report");
         h.write(control(true));
         s.cmd("LAMPS RESET", 2000);
         if (cam) deleteFrames();
+    }
+
+    /** How fast does a transport deliver output reports? Multi updates (51 bytes) and range updates (10 bytes) at several send intervals. */
+    static void rate(Ser s, Hid h) throws Exception {
+        s.cmd("LAYER " + barPage(s), 3000);
+        int[] paces = paceUs == 0 ? new int[]{0} : new int[]{0, 15000, 30000, 40000};
+        int n = paceUs == 0 ? 500 : 80;
+        for (String kind : new String[]{"multi", "range"}) {
+            StringBuilder tbl = new StringBuilder(); boolean lossless = true; double bestRate = 0;
+            for (int us : paces) {
+                drain(s); h.write(control(false)); Thread.sleep(200);
+                int errs = 0; long t0 = System.nanoTime();
+                int[] ids = new int[8]; int[][] c = new int[8][4];
+                for (int k = 0; k < n; k++) {
+                    byte[] p;
+                    if (kind.equals("multi")) { for (int j = 0; j < 8; j++) { ids[j] = j; c[j] = new int[]{k & 255, j * 30, 255 - (k & 255), 255}; } p = multi(ids, c, 8, true); }
+                    else p = range(0, 9, k & 255, 128, 64, 255, true);
+                    if (h.write(p) < 0) errs++;
+                    pace(us);
+                }
+                double hostMs = (System.nanoTime() - t0) / 1e6;
+                settle(s, 120000);
+                Map<String, String> st = s.kv("LAMPS?");
+                long got = num(st, "reports") - 1, span = num(st, "span_us");
+                double rateDev = got > 1 ? (got - 1) / (span / 1e6) : 0;
+                tbl.append(String.format("%n   send interval %5d us (host %6.0f/s): %3d of %d delivered, the board saw them over %6.0f ms = %5.1f reports/s%s",
+                        us, n / (hostMs / 1000), got, n, span / 1000.0, rateDev, errs > 0 ? ", write errors " + errs : ""));
+                if (got != n && (us >= 15000 || paceUs == 0)) lossless = false;      // flooding a Bluetooth link without any pause loses reports; that is a finding, not a failure
+                bestRate = Math.max(bestRate, rateDev);
+            }
+            info(kind + " updates (" + (kind.equals("multi") ? "51" : "10") + " bytes each), " + via + ":" + tbl);
+            check(kind + " updates: every report is delivered at a sensible send rate" + (paceUs == 0 ? "" : " (15 ms or slower)"), lossless, String.format("best delivery rate %.0f reports/s = %.0f lamps/s", bestRate, bestRate * (kind.equals("multi") ? 8 : 10)));
+        }
+        h.write(control(true)); s.cmd("LAMPS RESET", 2000);
     }
 
     static int barPage(Ser s) throws Exception { return Integer.parseInt(s.kv("INFO").get("pages")) - 1; }
@@ -424,11 +487,11 @@ public class LampTest {
             String[] cr = t.split("x"); int cols = Integer.parseInt(cr[0]), rows = Integer.parseInt(cr[1]);
             String r = s.cmd("LAMPS GRID " + cols + " " + rows, 3000);
             if (r == null || !r.startsWith("OK")) { check("grid " + t, false, String.valueOf(r)); continue; }
-            s.cmd("LAMPS RESET", 3000);
-            Thread.sleep(500);
+            drain(s);
             Grid g = Grid.of(cols, rows);
             int n = cols * rows, reportsPerFrame = (n + 7) / 8;
-            int nf = frames > 0 ? frames : (reportsPerFrame <= 30 ? 60 : reportsPerFrame <= 100 ? 20 : reportsPerFrame <= 400 ? 6 : 2);
+            int nf = frames > 0 ? frames : paceUs > 0 ? (reportsPerFrame <= 30 ? 15 : reportsPerFrame <= 100 ? 4 : reportsPerFrame <= 400 ? 2 : 1)
+                    : (reportsPerFrame <= 30 ? 60 : reportsPerFrame <= 100 ? 20 : reportsPerFrame <= 400 ? 6 : 2);
             check("control report: host takes over (" + t + ")", h.write(control(false)) > 0, "");
             long sent = 0, errs = 0; long t0 = System.nanoTime();
             byte[] pkt;
@@ -438,23 +501,18 @@ public class LampTest {
                     int cnt = Math.min(8, n - base); int[] ids = new int[8]; int[][] c = new int[8][];
                     for (int k = 0; k < cnt; k++) { ids[k] = 10 + base + k; c[k] = g.colour((base + k) % cols, (base + k) / cols, shift); }
                     pkt = multi(ids, c, cnt, base + cnt >= n);
-                    if (h.write(pkt) < 0) errs++; sent++;
+                    if (h.write(pkt) < 0) errs++; sent++; pace();
                 }
             }
             double ms = (System.nanoTime() - t0) / 1e6;
-            long deadline = System.currentTimeMillis() + 15000; Map<String, String> st = Map.of();
-            long lastR = -1;
-            while (System.currentTimeMillis() < deadline) {                // wait until the board stops receiving
-                Thread.sleep(400); st = s.kv("LAMPS?");
-                long rr = num(st, "reports");
-                if (rr == lastR) break; lastR = rr;
-            }
+            Map<String, String> st;
+            settle(s, 180000); st = s.kv("LAMPS?");
             long got = num(st, "reports"), span = num(st, "span_us"), drawn = num(st, "drawn"), fr = num(st, "frames");
-            info(String.format("%s: %d lamps, %d frames of %d reports: host %.0f ms = %.1f frames/s, %.0f lamps/s, %.0f reports/s; board got %d of %d (%.1f%%) in %.0f ms (%.1f frames/s), drew %d times (%d us each)",
-                    t, n, nf, reportsPerFrame, ms, nf / (ms / 1000), (double) n * nf / (ms / 1000), sent / (ms / 1000), got, sent, 100.0 * got / sent,
+            info(String.format("%s: %d lamps, %d frames of %d reports: host %.0f ms = %.1f frames/s, %.0f lamps/s, %.0f reports/s; board counted %d for %d sent plus one control report (%.1f%%) in %.0f ms (%.1f frames/s), drew %d times (%d us each)",
+                    t, n, nf, reportsPerFrame, ms, nf / (ms / 1000), (double) n * nf / (ms / 1000), sent / (ms / 1000), got, sent, 100.0 * (got - 1) / sent,
                     span / 1000.0, fr / (span / 1e6), drawn, num(st, "draw_us")));
             check("tier " + t + ": no write errors", errs == 0, errs + " errors");
-            check("tier " + t + ": every report arrived", got == sent, got + " of " + sent);
+            check("tier " + t + ": every report arrived", got == sent + 1, got + " counted, " + sent + " sent plus the control report");
             Thread.sleep(300);
             Ser.Shot sh = s.shot();
             if (sh == null) { check("tier " + t + ": screenshot", false, "no data"); continue; }

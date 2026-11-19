@@ -26,6 +26,10 @@ void setup() {
 void loop() {
     M5.update();
     serialcmd_poll();
+#if NG_DEBUG_HEARTBEAT
+    static uint32_t hb = 0;
+    if (millis() - hb >= 1000) { hb = millis(); Serial.printf("[hb] t=%lu heap=%u ble=%d\n", (unsigned long)millis(), (unsigned)ESP.getFreeHeap(), (int)HIDManager::isBleConnected()); }
+#endif
 
     HIDManager::handleAsyncEvents();
 

@@ -13,6 +13,10 @@
 #ifndef NG_PNP_VERSION
 #define NG_PNP_VERSION 0x0001
 #endif
+// Temporary diagnostics (see docs/OVERNIGHT.md): a heartbeat line every second and extra BLE logging.
+#ifndef NG_DEBUG_HEARTBEAT
+#define NG_DEBUG_HEARTBEAT 0
+#endif
 #define LED_COUNT       10
 // WS2812 data pin: Core2 side LED bar = GPIO25, CoreS3 M5GO base bar = GPIO5 (both M-Bus pin 8)
 #ifndef LED_PIN
