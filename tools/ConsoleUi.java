@@ -85,32 +85,30 @@ final class ConsoleUi {
     }
 
     /**
-     * One lamp of the LED bar as a small matrix of round LEDs, like the Braille dots in a terminal graph or the lamps of an old keyboard: unlit dots show as dim rings,
-     * the brightness of the lamp decides how many dots light up, filled from the bottom like a level meter, and every lit dot has a soft glow.
+     * One lamp of the LED bar as a vertical rectangle behind a fine lattice, like the diffuser over the LEDs in the keys of a keyboard: the lamp lights the whole
+     * rectangle in its colour, the lattice lines stay dark, and a soft glow spills over the edge. A lamp that is off shows the bare lattice.
      */
     static void ledCell(Graphics2D g, int x, int y, int w, int h, int rgb) {
-        int cols = 3, rows = Math.max(3, h / (Math.max(8, w / cols)));
-        double d = Math.min((double) w / cols, (double) h / rows), dot = d * 0.62;
-        double ox = x + (w - d * cols) / 2, oy = y + (h - d * rows) / 2;
-        int r = (rgb >> 16) & 255, gr = (rgb >> 8) & 255, b = rgb & 255;
-        double luma = Math.min(1.0, Math.max(r, Math.max(gr, b)) / 255.0), level = Math.pow(luma, 0.6) * rows;       // gamma: dim lamps still light a dot or two
-        Color on = luma < 0.02 ? Color.BLACK : new Color(Math.min(255, r * 255 / Math.max(1, Math.max(r, Math.max(gr, b)))), Math.min(255, gr * 255 / Math.max(1, Math.max(r, Math.max(gr, b)))), Math.min(255, b * 255 / Math.max(1, Math.max(r, Math.max(gr, b)))));
-        Color ring = new Color(0x2B2B33);
-        for (int row = 0; row < rows; row++) {
-            double lit = Math.max(0, Math.min(1, level - (rows - 1 - row)));                 // 0..1 for this dot, the bottom row first
-            for (int c = 0; c < cols; c++) {
-                double cx = ox + c * d + d / 2, cy = oy + row * d + d / 2;
-                if (lit > 0.02) {
-                    g.setColor(new Color(on.getRed(), on.getGreen(), on.getBlue(), (int) (60 * lit)));
-                    g.fill(new Ellipse2D.Double(cx - d * 0.5, cy - d * 0.5, d, d));         // glow
-                    g.setColor(ConsoleTheme.mix(ring, on, 0.25 + 0.75 * lit));
-                    g.fill(new Ellipse2D.Double(cx - dot / 2, cy - dot / 2, dot, dot));
-                } else {
-                    g.setColor(ring); g.setStroke(new BasicStroke(1f));
-                    g.draw(new Ellipse2D.Double(cx - dot / 2, cy - dot / 2, dot, dot));
-                }
+        int r = (rgb >> 16) & 255, gr = (rgb >> 8) & 255, b = rgb & 255, peak = Math.max(r, Math.max(gr, b));
+        double luma = peak / 255.0;
+        Color on = peak == 0 ? Color.BLACK : new Color(r * 255 / peak, gr * 255 / peak, b * 255 / peak);        // the hue at full strength; the brightness is applied below
+        RoundRectangle2D.Double box = new RoundRectangle2D.Double(x, y, w, h, 6, 6);
+        if (luma > 0.03) {                                                                                      // glow
+            for (int i = 3; i >= 1; i--) {
+                g.setColor(new Color(on.getRed(), on.getGreen(), on.getBlue(), (int) (28 * luma)));
+                g.fill(new RoundRectangle2D.Double(x - i * 2, y - i * 2, w + i * 4, h + i * 4, 6 + i * 3, 6 + i * 3));
             }
         }
+        g.setColor(new Color(0x0C0C10)); g.fill(box);
+        Shape old = g.getClip(); g.clip(box);
+        g.setColor(ConsoleTheme.mix(new Color(0x16161C), on, Math.pow(luma, 0.7)));                              // gamma: a dim lamp still shows its colour
+        g.fill(box);
+        g.setColor(new Color(0, 0, 0, 215)); g.setStroke(new BasicStroke(1.2f));
+        int step = Math.max(4, w / 6);
+        for (int gx = x + step; gx < x + w; gx += step) g.draw(new java.awt.geom.Line2D.Double(gx, y, gx, y + h));        // the lattice
+        for (int gy = y + step; gy < y + h; gy += step) g.draw(new java.awt.geom.Line2D.Double(x, gy, x + w, gy));
+        g.setClip(old);
+        g.setColor(new Color(0x3A3A44)); g.setStroke(new BasicStroke(1f)); g.draw(box);
     }
 
     /** A rounded block with its text at the bottom right, like the keys of a modular console. Lighter when hovered, darker and nudged when pressed. */

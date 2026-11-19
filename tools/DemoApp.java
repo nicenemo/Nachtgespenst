@@ -84,12 +84,8 @@ public class DemoApp {
             super.paintComponent(g0);
             Graphics2D g = (Graphics2D) g0.create(); ConsoleUi.quality(g);
             int gap = ConsoleTheme.GAP, w = getWidth(), h = getHeight();
-            // the banner: black, with the swirling waves of the site behind the ghost and the title
-            Shape band = new java.awt.geom.RoundRectangle2D.Double(gap, gap, w - gap - ConsoleTheme.PAD, ConsoleTheme.BAR_H - gap, 36, 36);
-            Graphics2D gb = (Graphics2D) g.create(); gb.clip(band);
-            ConsoleUi.waves(gb, gap, gap, w - gap - ConsoleTheme.PAD, ConsoleTheme.BAR_H - gap); gb.dispose();
             ConsoleUi.ghost(g, gap + 12, gap, ConsoleTheme.BAR_H - gap - 2);
-            g.setColor(new Color(0xF6E7A6)); g.setFont(ConsoleTheme.sansBold(26f));
+            g.setColor(Color.WHITE); g.setFont(ConsoleTheme.sansBold(26f));
             g.drawString("Nachtgespenst", gap + 12 + ConsoleTheme.BAR_H + 4, gap + (ConsoleTheme.BAR_H - gap) / 2 + 10);
             // the elbow frames the sidebar: a thin bar over it and a leg beside it, a large outer radius and a tight inner radius
             g.setColor(ConsoleTheme.AMBER);
