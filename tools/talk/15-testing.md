@@ -1,5 +1,5 @@
 ---
-seconds: 35
+seconds: 30
 ---
 # How it is tested
 - A small shell on the serial port: lower case commands, help for each

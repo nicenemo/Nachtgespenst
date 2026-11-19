@@ -1,5 +1,5 @@
 ---
-seconds: 35
+seconds: 30
 ---
 # The hardware
 - CoreS3: ESP32-S3, USB and Bluetooth LE, SD card, 320 x 240 touchscreen

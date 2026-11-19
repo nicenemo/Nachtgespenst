@@ -18,6 +18,7 @@ demo: disk         optional: a demo that starts with the slide
 ```
 
 * `# ` is the title, `- ` or `* ` a bullet, anything else a plain line. Only this subset is read.
+* `![alt](img/photo.jpg)` shows a picture, the path relative to the slide file (`../../site/img/camera/cores3-colours.jpg` reaches the colour test sheet of the site). With bullets the picture sits at the right (60 % of the width), without bullets it fills the slide. A missing file is reported on the slide instead of leaving a hole. Put your photos in `tools/talk/img/`; slide `02b-cores3.md` waits for `img/cores3.jpg`, for instance made with `jbang tools/CamTool.java snap tools/talk/img/cores3.jpg 1` (keep the room out of the frame: the repository is public).
 * The text is drawn as large as the panel allows, so a short slide is big and a long one shrinks to fit.
 * A slide with a `demo:` waits for its demo to end, even when the seconds are over; the next slide stops a demo that is still running.
 * The seconds add up to the length of the talk (now about ten minutes); the status bar shows the elapsed time against it.

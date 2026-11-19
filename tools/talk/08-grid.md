@@ -1,5 +1,5 @@
 ---
-seconds: 30
+seconds: 25
 demo: grid:raster bars
 ---
 # The screen as a lamp grid

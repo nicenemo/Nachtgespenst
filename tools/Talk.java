@@ -21,11 +21,12 @@ import java.util.function.Consumer;
  * - a bullet point
  * - another one
  * &gt; a line for the speaker (shown in the log, never on the slide)
+ * ![alt](img/photo.jpg)   a picture, relative to the slide file; with bullets it sits at the right, alone it fills the slide
  * </pre>
  * Plain lines are paragraphs. Only this small subset of Markdown is read, so the files stay readable everywhere.
  */
 final class Talk {
-    record Slide(String file, String title, List<String> bullets, List<String> notes, int seconds, String demo) { }
+    record Slide(String file, String title, List<String> bullets, List<String> notes, int seconds, String demo, List<Path> images) { }
 
     static List<Slide> load(Path dir) {
         List<Slide> out = new ArrayList<>();
@@ -39,7 +40,7 @@ final class Talk {
     static Slide parse(Path p) throws IOException {
         List<String> lines = Files.readAllLines(p);
         int seconds = 30; String demo = null, title = p.getFileName().toString(); int i = 0;
-        List<String> bullets = new ArrayList<>(), notes = new ArrayList<>();
+        List<String> bullets = new ArrayList<>(), notes = new ArrayList<>(); List<Path> images = new ArrayList<>();
         if (!lines.isEmpty() && lines.get(0).trim().equals("---")) {
             for (i = 1; i < lines.size() && !lines.get(i).trim().equals("---"); i++) {
                 String l = lines.get(i); int c = l.indexOf(':'); if (c < 0) continue;
@@ -55,9 +56,10 @@ final class Talk {
             if (l.startsWith("# ")) title = l.substring(2).trim();
             else if (l.startsWith("- ") || l.startsWith("* ")) bullets.add("• " + l.substring(2).trim());
             else if (l.startsWith(">")) notes.add(l.substring(1).trim());
+            else if (l.matches("!\\[.*\\]\\(.+\\)")) images.add(p.toAbsolutePath().getParent().resolve(l.substring(l.indexOf("](") + 2, l.lastIndexOf(")"))).normalize());   // an image, relative to the slide file
             else bullets.add(l);
         }
-        return new Slide(p.getFileName().toString(), title, bullets, notes, seconds, demo);
+        return new Slide(p.getFileName().toString(), title, bullets, notes, seconds, demo, images);
     }
 
     /** Draws a slide: the title in amber and the bullets in peach, in the largest size that fits the panel. */
@@ -75,11 +77,37 @@ final class Talk {
                 g.setColor(ConsoleTheme.mix(ConsoleTheme.PEACH, ConsoleTheme.BLACK, 0.5)); g.setFont(ConsoleTheme.sansBold(20f));
                 g.drawString("Start the talk, or pick a demo.", x, y + 30); g.dispose(); return;
             }
-            for (float size = 44f; size >= 14f; size -= 2f) {
-                if (draw(g, s, x, y, w, h, size, false)) break;
-                if (size <= 14f) draw(g, s, x, y, w, h, 14f, true);
+            int tw = w, iw = 0;
+            if (!s.images().isEmpty()) {                                                      // pictures: at the right of the text, or over the whole slide when there is no text
+                boolean text = !s.bullets().isEmpty();
+                iw = text ? (int) (w * 0.6) : w; tw = text ? w - iw - 20 : 0;
+                drawImages(g, s.images(), x + w - iw, y, iw, h);
+            }
+            if (tw > 0) for (float size = 44f; size >= 14f; size -= 2f) {
+                if (draw(g, s, x, y, tw, h, size, false)) break;
+                if (size <= 14f) draw(g, s, x, y, tw, h, 14f, true);
             }
             g.dispose();
+        }
+
+        private static final java.util.Map<Path, java.awt.image.BufferedImage> CACHE = new java.util.HashMap<>();
+        private static java.awt.image.BufferedImage load(Path p) {
+            return CACHE.computeIfAbsent(p, k -> { try { return javax.imageio.ImageIO.read(k.toFile()); } catch (IOException | RuntimeException e) { return null; } });
+        }
+        /** The pictures one above the other, each as large as fits, with rounded corners; a missing file is said so instead of leaving a hole. */
+        private void drawImages(Graphics2D g, List<Path> images, int x, int y, int w, int h) {
+            int n = images.size(), gap = 12, ch = (h - (n - 1) * gap) / n;
+            for (int i = 0; i < n; i++) {
+                int cy = y + i * (ch + gap); java.awt.image.BufferedImage im = load(images.get(i));
+                if (im == null) {
+                    g.setColor(ConsoleTheme.SLIDE_NOTE); g.setFont(ConsoleTheme.mono(13f)); g.drawString("picture not found: " + images.get(i).getFileName(), x, cy + 20);
+                    continue;
+                }
+                double k = Math.min((double) w / im.getWidth(), (double) ch / im.getHeight()); int pw = (int) (im.getWidth() * k), ph = (int) (im.getHeight() * k);
+                int px = x + (w - pw) / 2, py = cy + (ch - ph) / 2;
+                Graphics2D gi = (Graphics2D) g.create(); gi.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+                gi.setClip(new RoundRectangle2D.Double(px, py, pw, ph, 18, 18)); gi.drawImage(im, px, py, pw, ph, null); gi.dispose();
+            }
         }
 
         /** Lays the slide out at one size; returns whether it fits. Nothing is drawn unless it fits (or force is set). */

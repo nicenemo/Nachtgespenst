@@ -1,5 +1,5 @@
 ---
-seconds: 40
+seconds: 35
 ---
 # The firmware
 - PlatformIO, Arduino framework, C++17

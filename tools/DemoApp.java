@@ -621,11 +621,12 @@ public class DemoApp {
 
     // ---- main
     public static void main(String[] args) throws Exception {
-        String shot = null, scopeShot = null; int shotW = 1280, shotH = 820; final String[] camArg = new String[2];             // --tripod CAM and --laptop CAM: a camera number or /dev/videoN, switched on at the start
+        String shot = null, scopeShot = null; int shotW = 1280, shotH = 820, shotSlide = 0; final String[] camArg = new String[2];             // --tripod CAM and --laptop CAM: a camera number or /dev/videoN, switched on at the start
         for (int i = 0; i < args.length; i++) {
             if (args[i].equals("--shot")) shot = args[++i];
             else if (args[i].equals("--scope-shot")) scopeShot = args[++i];
             else if (args[i].equals("--size")) { String[] wh = args[++i].split("x"); shotW = Integer.parseInt(wh[0]); shotH = Integer.parseInt(wh[1]); }
+            else if (args[i].equals("--slide")) shotSlide = Integer.parseInt(args[++i]);
             else if (args[i].equals("--tripod")) camArg[0] = args[++i];
             else if (args[i].equals("--laptop")) camArg[1] = args[++i];
         }
@@ -653,17 +654,17 @@ public class DemoApp {
             app.setEnabledActions(true);
             app.lcd.talk(0.42, "4:12 / 10:10", 0.6, "slide 6/17   0:18 left|6/17  0:18|6/17"); app.lcd.set("send kB/s", 28.6, 60, "28.6", ConsoleTheme.AMBER); app.lcd.set("load kB/s", 36.9, 60, "36.9", ConsoleTheme.AMBER); app.lcd.set("SHA-256", 1, 1, "match", ConsoleTheme.PEACH);
             try {
-                BufferedImage sample = ImageIO.read(Boards.repoRoot().resolve("site/img/lamps/scope-880.png").toFile());
-                app.screenPanel.set(sample);                       // the board shows the oscilloscope the PC paints on its lamps
                 Scope sc = new Scope(80, 47); java.util.Random rnd = new java.util.Random(1);
                 for (int f = 0; f < 5; f++) {
                     int[] v = new int[512]; double ph = rnd.nextDouble() * 6.28;
                     for (int i = 0; i < 512; i++) v[i] = (int) (3000 * Math.sin(2 * Math.PI * 880 * i / 16000.0 + ph) + rnd.nextGaussian() * 120);
                     sc.frame(null, v);
                 }
+                app.screenPanel.set(previewOfBoard(sc.pix, 80, 47));       // what the board shows: the lamps the PC painted, and the bar with the page
                 app.lampPanel.setGrid(sc.pix.clone(), 80, 47);
                 app.lampPanel.setBar(new int[]{0x220000, 0x660500, 0xCC1000, 0xFF2000, 0xFF1000, 0x880800, 0x330300, 0x110100, 0, 0});
             } catch (Exception ignored) { }
+            if (shotSlide > 0 && shotSlide <= app.player.slides.size()) app.slidePanel.show(app.player.slides.get(shotSlide - 1), shotSlide - 1, app.player.slides.size());
             app.root.setSize(shotW, shotH);
             layout(app.root);
             BufferedImage img = new BufferedImage(shotW, shotH, BufferedImage.TYPE_INT_RGB);
@@ -767,6 +768,18 @@ public class DemoApp {
         f.dispose(); f.setUndecorated(to); f.setVisible(true); d.setFullScreenWindow(to ? f : null);
         if (!to) { f.setSize(1280, 820); f.setLocationByPlatform(true); }
         f.revalidate(); f.repaint();
+    }
+
+    /** A preview of the screen of the CoreS3 for the offline screenshot: the lamp picture on 320 x 190 and the bottom bar in the console style. */
+    static BufferedImage previewOfBoard(int[] lamps, int cols, int rows) {
+        BufferedImage im = new BufferedImage(320, 240, BufferedImage.TYPE_INT_RGB); Graphics2D g = im.createGraphics(); ConsoleUi.quality(g);
+        g.setColor(Color.BLACK); g.fillRect(0, 0, 320, 240);
+        BufferedImage grid = new BufferedImage(cols, rows, BufferedImage.TYPE_INT_RGB); grid.setRGB(0, 0, cols, rows, lamps, 0, cols);
+        g.drawImage(grid, 0, 0, 320, 202, null);
+        g.setColor(ConsoleTheme.LAVENDER); g.fillRoundRect(2, 203, 72, 34, 14, 14); g.fillRoundRect(246, 203, 72, 34, 14, 14);
+        g.setColor(ConsoleTheme.PEACH); g.fillRoundRect(78, 203, 164, 34, 14, 14);
+        g.setColor(Color.BLACK); g.setFont(ConsoleTheme.sansBold(15f)); g.drawString("Lamps: screen  29/30", 112, 226);
+        g.dispose(); return im;
     }
 
     static void layout(Container c) { c.doLayout(); for (Component k : c.getComponents()) if (k instanceof Container cc) layout(cc); }
