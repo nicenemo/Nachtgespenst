@@ -21,7 +21,7 @@ import java.util.List;
  *
  * <pre>
  * jbang tools/CamTool.java list                           the cameras: number, device and name
- * jbang tools/CamTool.java snap OUT.png [CAM...] [--turn N] [--mirror] [--flip] [--wait SECONDS]
+ * jbang tools/CamTool.java snap OUT.png [CAM...] [--turn N] [--mirror] [--flip] [--wait SECONDS] [--size WxH]
  *                                                         open one or two cameras (number or /dev/videoN; the same one twice is fine),
  *                                                         wait for a frame, write them side by side to OUT.png, release the cameras
  * </pre>
@@ -35,13 +35,14 @@ public class CamTool {
             for (int i = 0; i < d.size(); i++) System.out.println(i + "  " + d.get(i).node() + "  " + d.get(i).name());
             return;
         }
-        if (!args[0].equals("snap") || args.length < 2) { System.err.println("usage: CamTool.java list | snap OUT.png [CAM...] [--turn N] [--mirror] [--flip] [--wait S]"); System.exit(2); }
-        Path out = Path.of(args[1]); List<String> wants = new ArrayList<>(); int turn = 0; boolean mirror = false, flip = false; double wait = 6;
+        if (!args[0].equals("snap") || args.length < 2) { System.err.println("usage: CamTool.java list | snap OUT.png [CAM...] [--turn N] [--mirror] [--flip] [--wait S] [--size WxH]"); System.exit(2); }
+        Path out = Path.of(args[1]); List<String> wants = new ArrayList<>(); int turn = 0; boolean mirror = false, flip = false; double wait = 6; int capW = 640, capH = 360;
         for (int i = 2; i < args.length; i++) switch (args[i]) {
             case "--turn" -> turn = Integer.parseInt(args[++i]) & 3;
             case "--mirror" -> mirror = true;
             case "--flip" -> flip = true;
             case "--wait" -> wait = Double.parseDouble(args[++i]);
+            case "--size" -> { String[] wh = args[++i].split("x"); capW = Integer.parseInt(wh[0]); capH = Integer.parseInt(wh[1]); }
             default -> wants.add(args[i]);
         }
         List<Cams.Device> devs = Cams.list();
@@ -50,7 +51,7 @@ public class CamTool {
         for (String w : wants) {
             String node = w.startsWith("/dev/") ? w : (w.matches("\\d+") && Integer.parseInt(w) < devs.size() ? devs.get(Integer.parseInt(w)).node() : null);
             if (node == null) { System.out.println(w + ": no such camera"); cams.add(null); names.add(w); continue; }
-            cams.add(new Cams.Cam(node, () -> { })); names.add(node);
+            cams.add(new Cams.Cam(node, capW, capH, () -> { })); names.add(node);
         }
         long end = System.currentTimeMillis() + (long) (wait * 1000);
         boolean ok = true;

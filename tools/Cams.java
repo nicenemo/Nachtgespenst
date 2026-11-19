@@ -45,11 +45,11 @@ final class Cams {
         final String node; volatile BufferedImage frame; volatile String problem;
         final List<Runnable> listeners = new java.util.concurrent.CopyOnWriteArrayList<>();
         private final AtomicBoolean stop = new AtomicBoolean(); private Thread thread;
-        Shared(String node) {
+        Shared(String node, int w, int h) {
             this.node = node;
             thread = Thread.ofPlatform().daemon().name("cam " + node).start(() -> {          // a platform thread: the capture sits in native calls
                 try {
-                    V4l2 v = new V4l2(node, 640, 360);
+                    V4l2 v = new V4l2(node, w, h);
                     try {
                         while (!stop.get()) {
                             BufferedImage im = v.next(300, 60);
@@ -66,9 +66,10 @@ final class Cams {
     /** A handle on a camera. Opening never throws: a camera that is missing or busy only has a problem text. */
     static final class Cam implements AutoCloseable {
         final String node; private final Shared sh; private final Runnable onFrame; private boolean closed;
-        Cam(String node, Runnable onFrame) {
+        Cam(String node, Runnable onFrame) { this(node, 640, 360, onFrame); }
+        Cam(String node, int w, int h, Runnable onFrame) {
             this.node = node; this.onFrame = onFrame;
-            synchronized (OPEN) { sh = OPEN.computeIfAbsent(node, Shared::new); sh.listeners.add(onFrame); }
+            synchronized (OPEN) { sh = OPEN.computeIfAbsent(node, n -> new Shared(n, w, h)); sh.listeners.add(onFrame); }
         }
         BufferedImage frame() { return sh.frame; }
         String problem() { return sh.problem; }
