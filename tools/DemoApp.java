@@ -208,8 +208,8 @@ public class DemoApp {
         ConsoleUi.Frame slideFrame = new ConsoleUi.Frame("The talk", ConsoleTheme.AMBER); slideFrame.setLayout(new BorderLayout()); slideFrame.add(slidePanel);
                 camsFrame = new ConsoleUi.Frame("The cameras", ConsoleTheme.PEACH); camsFrame.setLayout(new Cams.CamLayout(gap)); camsFrame.setVisible(false);
         for (int i = 0; i < 2; i++) { camPanel[i].setPreferredSize(new Dimension(10, 10)); camPanel[i].setVisible(false); camsFrame.add(camPanel[i]); }
-        ConsoleUi.Frame boardFrame = new ConsoleUi.Frame("The board", ConsoleTheme.LAVENDER); boardFrame.setLayout(new BorderLayout()); boardFrame.add(screenPanel);
-        ConsoleUi.Frame lampFrame = new ConsoleUi.Frame("The lamps, worked out on the PC", ConsoleTheme.AMBER); lampFrame.setLayout(new BorderLayout()); lampFrame.add(lampPanel);
+        ConsoleUi.Frame boardFrame = new ConsoleUi.Frame("Board screenshot", ConsoleTheme.LAVENDER); boardFrame.setLayout(new BorderLayout()); boardFrame.add(screenPanel);
+        ConsoleUi.Frame lampFrame = new ConsoleUi.Frame("Lamps on PC", ConsoleTheme.AMBER); lampFrame.setLayout(new BorderLayout()); lampFrame.add(lampPanel);
         // the centre grows and shrinks with the window: two fifths for the slide and the log, three fifths for the pictures
         for (JComponent c : new JComponent[]{slideFrame, camsFrame, boardFrame, lampFrame, screenPanel, lampPanel, slidePanel}) c.setPreferredSize(new Dimension(10, 10));
         JPanel left = new JPanel(new BorderLayout()); left.setOpaque(false); left.add(slideFrame);
