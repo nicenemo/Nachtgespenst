@@ -236,8 +236,13 @@ public class DemoApp {
         loadSlides();
         // keys for the talk: space or right = next, left = previous, P = pause, H = hide the sidebar (a clean window to share), F11 = full screen
         JComponent r = root; var im = r.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW); var am = r.getActionMap();
-        bindKey(im, am, "SPACE", () -> { if (player != null) player.next(); }); bindKey(im, am, "RIGHT", () -> { if (player != null) player.next(); });
-        bindKey(im, am, "LEFT", () -> { if (player != null) player.prev(); }); bindKey(im, am, "P", () -> { if (player != null) player.pause(); });
+        // A presentation clicker types these keys (the Core2 as a clicker does too): PowerPoint and every third-party clicker use the same ones.
+        Runnable next = () -> { if (player != null) player.next(); }, prev = () -> { if (player != null) player.prev(); };
+        for (String k : new String[]{"SPACE", "RIGHT", "DOWN", "PAGE_DOWN", "ENTER"}) bindKey(im, am, k, next);
+        for (String k : new String[]{"LEFT", "UP", "PAGE_UP", "BACK_SPACE"}) bindKey(im, am, k, prev);
+        bindKey(im, am, "P", () -> { if (player != null) player.pause(); });
+        bindKey(im, am, "B", this::toggleBlank); bindKey(im, am, "PERIOD", this::toggleBlank);     // black screen, as in PowerPoint
+        bindKey(im, am, "F5", this::talkStart);
         bindKey(im, am, "H", this::toggleSidebar);
     }
 
@@ -259,6 +264,21 @@ public class DemoApp {
         ConsoleUi.BlockButton b = new ConsoleUi.BlockButton(label, colour);
         b.addActionListener(e -> r.run());
         return b;
+    }
+
+    // ---- the black screen (B or full stop) and the mouse pointer that hides itself while the talk runs and you do not move it
+    boolean blank; JFrame frame;
+    final JPanel blankPane = new JPanel() { @Override protected void paintComponent(Graphics g) { g.setColor(Color.BLACK); g.fillRect(0, 0, getWidth(), getHeight()); } };
+    void toggleBlank() {
+        blank = !blank;
+        if (frame != null) { blankPane.setOpaque(true); frame.setGlassPane(blankPane); blankPane.setVisible(blank); blankPane.setCursor(blank ? hiddenCursor() : Cursor.getDefaultCursor()); frame.repaint(); }
+    }
+    static Cursor hiddenCursor() { return Toolkit.getDefaultToolkit().createCustomCursor(new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB), new Point(0, 0), "none"); }
+    void autoHideCursor(JFrame f) {
+        final Cursor hidden = hiddenCursor();
+        javax.swing.Timer idle = new javax.swing.Timer(2500, e -> { if (player != null && player.running) f.setCursor(hidden); });
+        idle.setRepeats(false);
+        Toolkit.getDefaultToolkit().addAWTEventListener(ev -> { f.setCursor(Cursor.getDefaultCursor()); idle.restart(); }, AWTEvent.MOUSE_MOTION_EVENT_MASK | AWTEvent.MOUSE_EVENT_MASK);
     }
 
     void toggleSidebar() {
@@ -505,9 +525,10 @@ public class DemoApp {
             f.setMinimumSize(new Dimension(980, 640)); f.setSize(1280, 820); f.setLocationByPlatform(true);
             // F11 toggles full screen, Escape leaves it; the window can also be maximised and resized freely, the layout follows
             app.root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("F11"), "full");
-            app.root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("ESCAPE"), "unfull");
+            app.root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("ESCAPE"), "unfull");        // also what a clicker's end key types
             app.root.getActionMap().put("full", new AbstractAction() { public void actionPerformed(java.awt.event.ActionEvent e) { fullScreen(f, null); } });
-            app.root.getActionMap().put("unfull", new AbstractAction() { public void actionPerformed(java.awt.event.ActionEvent e) { fullScreen(f, false); } });
+            app.root.getActionMap().put("unfull", new AbstractAction() { public void actionPerformed(java.awt.event.ActionEvent e) { if (app.blank) app.toggleBlank(); else fullScreen(f, false); } });
+            app.frame = f; app.autoHideCursor(f);
             f.setVisible(true);
             app.connect();
         });
