@@ -20,3 +20,4 @@ One file per decision, numbered `NNNN-title.md`, with Status, Context, Decision,
 | [0014](0014-settings-page-and-leds-off.md) | A Settings page, switching the LEDs off, and persistent settings | Proposed |
 | [0015](0015-device-identity-names-and-usb-bluetooth-ids.md) | Device identity: short names, own USB ID and a Bluetooth PnP ID | Accepted (test ID) |
 | [0016](0016-secret-scanning-with-trufflehog-hooks.md) | Scan for secrets with trufflehog in git hooks | Accepted |
+| [0017](0017-disk-drive-data-channels.md) | Disk drive demo: lamps in, game pad buttons back, SHA-256 on both ends | Accepted |

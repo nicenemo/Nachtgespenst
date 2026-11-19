@@ -212,6 +212,7 @@ public class SerialTest {
         check(tag, "STATE? reports usb= and ble= next to conn=", s2.containsKey("usb") && s2.containsKey("ble") && s2.containsKey("conn"), String.valueOf(s2.keySet()));
         settingsChecks(tag, l);
         systemControlCheck(tag, l, info);
+        functionKeysCheck(tag, l, info);
         if ("S3".equals(tag)) testBle(tag, l, info, locks);
         l.cmd("LAYER 0", 2000);
     }
@@ -258,6 +259,31 @@ public class SerialTest {
         for (int[] k : keys) if (k[0] == 143) { if (k[1] == 1) down = true; if (k[1] == 0) up = true; }
         check(tag, "System Control: Wake Up tile reaches the host (KEY_WAKEUP down+up)", down && up, ev + " events=" + keys.size());
     }
+
+    /**
+     * F13 to F24 (HID usages 0x68 to 0x73, Linux KEY_F13 = 183 to KEY_F24 = 194) are what the Tape page uses to acknowledge data
+     * blocks: press each plain tile and check that the host sees exactly that key, down and up. F11 and F12 are left out because
+     * many applications react to them.
+     */
+    static void functionKeysCheck(String tag, Link l, Map<String, String> info) throws Exception {
+        boolean s3 = "S3".equals(tag);
+        String ev = findEvent(s3 ? info.get("name") + " Keyboard" : "-c2 Keyboard", s3);
+        if (ev == null) { report.add("SKIP [" + tag + "] function key check (no evdev device)"); return; }
+        int[][] tiles = {{7, 8, 13}, {7, 3, 14}, {7, 4, 15}, {7, 5, 16}, {7, 0, 17}, {7, 1, 18}, {7, 2, 19}, {7, 10, 20},
+                         {10, 2, 21}, {10, 3, 22}, {10, 0, 23}, {10, 1, 24}};   // {layer, tile, F number}
+        StringBuilder bad = new StringBuilder();
+        for (int[] t : tiles) {
+            int want = t[2] <= 12 ? 58 + t[2] : 170 + t[2];                       // KEY_F13 = 183 ... KEY_F24 = 194
+            List<int[]> keys = captureKeys(ev, () -> { try { l.cmd("KEY " + t[0] + " " + t[1], 1500); } catch (Exception e) { } }, 500);
+            boolean down = false, up = false; StringBuilder got = new StringBuilder();
+            for (int[] k : keys) { got.append(k[0]).append('/').append(k[1]).append(' '); if (k[0] == want) { if (k[1] == 1) down = true; if (k[1] == 0) up = true; } }
+            if (!(down && up)) bad.append(" F").append(t[2]).append(" (saw ").append(got.toString().trim()).append(")");
+            else info("F" + t[2] + " arrives as evdev code " + want);
+        }
+        check(tag, "F13 to F24 each reach the host as their own key", bad.length() == 0, bad.toString().trim());
+    }
+
+    static void info(String s) { report.add("INFO " + s); }
 
     /** Down+up of Scroll Lock (KEY_SCROLLLOCK=70) seen in an evdev capture. */
     static boolean scrollDownUp(List<int[]> keys) {

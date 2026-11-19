@@ -2,6 +2,13 @@
 //DEPS com.fazecast:jSerialComm:2.11.0
 //JAVA 27
 //SOURCES Boards.java
+//SOURCES Libc.java
+//SOURCES Hid.java
+//SOURCES HidReader.java
+//SOURCES Evdev.java
+//SOURCES Ser.java
+//SOURCES Proto.java
+//SOURCES DiskDrive.java
 //SOURCES LedCam.java
 //COMPILE_OPTIONS --add-modules=jdk.incubator.vector
 //JAVA_OPTIONS --add-modules=jdk.incubator.vector --enable-native-access=ALL-UNNAMED
@@ -18,7 +25,12 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.zip.CRC32;
+import java.util.zip.Deflater;
 import java.util.function.IntFunction;
 
 import static java.lang.foreign.ValueLayout.*;
@@ -44,6 +56,7 @@ public class LampTest {
     static String boardName = "S3", via = null, shotDir = null, out = "lamptest-out", camera = "/dev/video0", tiers = "8x6,16x12,32x24,64x48,128x96,320x190";
     static int[] crop = null;
     static int frames = 0, enumMax = 200;
+    static String diskFile = null; static int diskMax = 1024, diskMin = 16, diskInject = 0; static boolean diskGrab = true, diskFast = false, diskLoad = true; static String diskName = "pg164.txt";
     static String ownPort;                     // serial port of the board under test (the other board's LED bar is switched off during camera tests)
     static int paceUs = -1;                    // microseconds between two output reports; -1 = automatic (0 for USB, 15000 for Bluetooth)
     static int pass = 0, fail = 0;
@@ -68,6 +81,14 @@ public class LampTest {
             case "--frames" -> frames = Integer.parseInt(args[++i]);
             case "--enum-max" -> enumMax = Integer.parseInt(args[++i]);
             case "--pace-us" -> paceUs = Integer.parseInt(args[++i]);
+            case "--file" -> diskFile = args[++i];
+            case "--max-block" -> diskMax = Integer.parseInt(args[++i]);
+            case "--min-block" -> diskMin = Integer.parseInt(args[++i]);
+            case "--inject" -> diskInject = Integer.parseInt(args[++i]);
+            case "--no-grab" -> diskGrab = false;
+            case "--fast" -> diskFast = true;
+            case "--no-load" -> diskLoad = false;
+            case "--name" -> diskName = args[++i];
             case "--crop" -> crop = Arrays.stream(args[++i].split(",")).mapToInt(Integer::parseInt).toArray();
             default -> { if (args[i].startsWith("--")) usage("unknown option " + args[i]); cmds.add(args[i]); }
         }
@@ -83,7 +104,7 @@ public class LampTest {
         if (sp.isEmpty()) { System.err.println("no " + tag + " board found on USB"); System.exit(2); }
         if (!Boards.usable(sp.get())) { System.err.println(Boards.SANDBOX_HINT); System.exit(2); }
         ownPort = Boards.path(sp.get());
-        String node = findHid(usb);
+        String node = Hid.find(tag, usb);
         if (node == null && !cmds.contains("info")) { System.err.println("no " + (usb ? "USB" : "Bluetooth") + " HID node for " + tag + " (connected and paired? after a descriptor change remove and pair again)"); System.exit(2); }
 
         try (Ser s = new Ser(sp.get())) {
@@ -104,6 +125,7 @@ public class LampTest {
                     case "interference" -> interference(s, h);
                     case "latency" -> latency(s, h);
                     case "ingest" -> ingest(s, h);
+                    case "disk" -> disk(s, h);
                     case "all" -> { enumerate(s, h); bar(s, h); rate(s, h); screen(s, h); }
                     default -> usage("unknown command " + c);
                 }
@@ -115,194 +137,20 @@ public class LampTest {
     }
 
     static void usage(String why) {
-        System.err.println(why + "\nusage: LampTest.java info|enum|bar|screen|rate|speed|ingest|interference|latency|all [--board S3|C2] [--via usb|ble] [--tiers 8x6,16x12] [--frames N] [--shot DIR] [--crop x0,y0,x1,y1] [--camera DEV]");
+        System.err.println(why + "\nusage: LampTest.java info|enum|bar|screen|rate|speed|ingest|interference|latency|disk|all [--board S3|C2] [--via usb|ble] [--tiers 8x6,16x12] [--frames N] [--shot DIR] [--crop x0,y0,x1,y1] [--camera DEV]");
         System.exit(2);
     }
-
-    // ------------------------------------------------------------------ HID nodes
-    /** /dev/hidrawN of this board: bus 0003 = USB, 0005 = Bluetooth, matched on the device name. */
-    static String findHid(boolean usb) throws IOException {
-        String best = null; int bestN = -1;
-        try (var ds = Files.newDirectoryStream(Path.of("/sys/class/hidraw"), "hidraw*")) {
-            for (Path p : ds) {
-                Path ue = p.resolve("device/uevent");
-                if (!Files.exists(ue)) continue;
-                String id = "", name = "";
-                for (String l : Files.readAllLines(ue)) {
-                    if (l.startsWith("HID_ID=")) id = l.substring(7);
-                    if (l.startsWith("HID_NAME=")) name = l.substring(9);
-                }
-                boolean isUsb = id.startsWith("0003"), isBle = id.startsWith("0005");
-                String token = usb ? "NG-" + tag : (tag.equals("S3") ? "-cs3" : "-c2");   // USB product, or the end of the Bluetooth name
-                if (name.contains(token) && (usb ? isUsb : isBle)) {
-                    int n = Integer.parseInt(p.getFileName().toString().substring(6));
-                    if (n > bestN) { bestN = n; best = "/dev/" + p.getFileName(); }
-                }
-            }
-        }
-        return best;
-    }
-
-    // ------------------------------------------------------------------ libc through the foreign function API
-    static final Linker LINKER = Linker.nativeLinker();
-    static final SymbolLookup STD = LINKER.defaultLookup();
-    static final StructLayout CAP = Linker.Option.captureStateLayout();
-    static final long ERRNO_AT = CAP.byteOffset(MemoryLayout.PathElement.groupElement("errno"));
-    static final Arena ARENA = Arena.global();
-    static final MemorySegment CAPTURE = ARENA.allocate(CAP);
-    static final MemorySegment BUF = ARENA.allocate(1024);
-    static final MethodHandle OPEN = LINKER.downcallHandle(STD.find("open").orElseThrow(), FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT), Linker.Option.captureCallState("errno"));
-    static final MethodHandle WRITE = LINKER.downcallHandle(STD.find("write").orElseThrow(), FunctionDescriptor.of(JAVA_LONG, JAVA_INT, ADDRESS, JAVA_LONG), Linker.Option.captureCallState("errno"));
-    static final MethodHandle CLOSE = LINKER.downcallHandle(STD.find("close").orElseThrow(), FunctionDescriptor.of(JAVA_INT, JAVA_INT));
-    static final MethodHandle IOCTL = LINKER.downcallHandle(STD.find("ioctl").orElseThrow(), FunctionDescriptor.of(JAVA_INT, JAVA_INT, JAVA_LONG, ADDRESS),
-            Linker.Option.firstVariadicArg(2), Linker.Option.captureCallState("errno"));
-
-    static int errno() { return CAPTURE.get(JAVA_INT, ERRNO_AT); }
-
-    /** A /dev/hidrawN node: output reports with write(), feature reports with the HIDIOCSFEATURE and HIDIOCGFEATURE ioctls. */
-    static final class Hid implements AutoCloseable {
-        final int fd;
-        Hid(String path) throws IOException {
-            try {
-                fd = (int) OPEN.invoke(CAPTURE, ARENA.allocateFrom(path), 2);   // O_RDWR
-            } catch (Throwable t) { throw new IOException(t); }
-            if (fd < 0) throw new IOException("cannot open " + path + " (errno " + errno() + (errno() == 13 ? ": permission denied, see docs/wiki/hardware-testing.md for the hidraw access rule" : "") + ")");
-        }
-        /** Output report: byte 0 is the report ID. Returns bytes written or -errno. */
-        int write(byte[] b) {
-            try {
-                BUF.copyFrom(MemorySegment.ofArray(b));
-                long n = (long) WRITE.invoke(CAPTURE, fd, BUF, (long) b.length);
-                return n < 0 ? -errno() : (int) n;
-            } catch (Throwable t) { throw new RuntimeException(t); }
-        }
-        /** Feature report get: returns the report with the ID in byte 0, or null. */
-        byte[] getFeature(int id, int payloadLen) {
-            int len = payloadLen + 1;
-            try {
-                BUF.fill((byte) 0); BUF.set(JAVA_BYTE, 0, (byte) id);
-                int n = (int) IOCTL.invoke(CAPTURE, fd, 0xC0000000L | ((long) len << 16) | (0x48L << 8) | 0x07, BUF);
-                if (n < 0) return null;
-                return BUF.asSlice(0, len).toArray(JAVA_BYTE);
-            } catch (Throwable t) { throw new RuntimeException(t); }
-        }
-        boolean setFeature(byte[] b) {
-            try {
-                BUF.copyFrom(MemorySegment.ofArray(b));
-                return (int) IOCTL.invoke(CAPTURE, fd, 0xC0000000L | ((long) b.length << 16) | (0x48L << 8) | 0x06, BUF) >= 0;
-            } catch (Throwable t) { throw new RuntimeException(t); }
-        }
-        public void close() { try { int r = (int) CLOSE.invoke(fd); } catch (Throwable ignored) { } }
-    }
-
-    // ------------------------------------------------------------------ serial
-    static final class Ser implements AutoCloseable {
-        final SerialPort p;
-        Ser(SerialPort p) { this.p = p; p.setBaudRate(115200); p.setComPortTimeouts(SerialPort.TIMEOUT_NONBLOCKING, 0, 0); if (!p.openPort()) throw new IllegalStateException("cannot open " + p.getSystemPortPath()); }
-        void send(String s) { byte[] b = (s + "\n").getBytes(StandardCharsets.US_ASCII); p.writeBytes(b, b.length); }
-        void drain() throws InterruptedException { Thread.sleep(150); byte[] b = new byte[4096]; while (p.bytesAvailable() > 0) p.readBytes(b, Math.min(b.length, p.bytesAvailable())); }
-        String line(long ms) throws InterruptedException {
-            long end = System.currentTimeMillis() + ms; StringBuilder sb = new StringBuilder(); byte[] one = new byte[1];
-            while (System.currentTimeMillis() < end) {
-                if (p.bytesAvailable() > 0 && p.readBytes(one, 1) == 1) {
-                    if (one[0] == '\n') { String s = sb.toString().trim(); if (!s.isEmpty()) return s; sb.setLength(0); } else sb.append((char) one[0]);
-                } else Thread.sleep(1);
-            }
-            return null;
-        }
-        String cmd(String c, long ms) throws InterruptedException {
-            send(c); long end = System.currentTimeMillis() + ms;
-            while (System.currentTimeMillis() < end) {
-                String l = line(Math.max(1, end - System.currentTimeMillis()));
-                if (l == null) return null;
-                if (l.startsWith("OK") || l.startsWith("ERR")) return l;
-            }
-            return null;
-        }
-        byte[] bytes(int n, long ms) throws InterruptedException {
-            byte[] o = new byte[n]; int got = 0; long end = System.currentTimeMillis() + ms;
-            while (got < n && System.currentTimeMillis() < end) { int av = p.bytesAvailable(); if (av > 0) got += p.readBytes(o, Math.min(av, n - got), got); else Thread.sleep(2); }
-            return got == n ? o : null;
-        }
-        Map<String, String> kv(String c) throws InterruptedException {
-            Map<String, String> m = new LinkedHashMap<>(); String s = cmd(c, 3000);
-            if (s != null) for (String t : s.split("\\s+")) { int i = t.indexOf('='); if (i > 0) m.put(t.substring(0, i), t.substring(i + 1)); }
-            return m;
-        }
-        /** Screenshot as RGB888 w*h*3, or null. */
-        record Shot(int w, int h, byte[] px) {
-            int[] at(int x, int y) { int i = (y * w + x) * 3; return new int[]{px[i] & 255, px[i + 1] & 255, px[i + 2] & 255}; }
-        }
-        Shot shot() throws Exception {
-            drain(); send("SHOT"); String hdr = null; long end = System.currentTimeMillis() + 5000;
-            while (System.currentTimeMillis() < end) { String s = line(1000); if (s != null && s.startsWith("OK SHOT")) { hdr = s; break; } }
-            if (hdr == null) return null;
-            String[] t = hdr.split("\\s+"); int w = Integer.parseInt(t[2]), h = Integer.parseInt(t[3]);
-            byte[] px = bytes(w * h * 3, 90000); drain();
-            return px == null ? null : new Shot(w, h, px);
-        }
-        public void close() { p.closePort(); }
-    }
-
-    // ------------------------------------------------------------------ report builders (byte 0 = report ID)
-    static byte[] control(boolean autonomous) { return new byte[]{10, (byte) (autonomous ? 1 : 0)}; }
-
-    /** Range update: lamps first..last (inclusive) get one colour. */
-    static byte[] range(int first, int last, int r, int g, int b, int i, boolean complete) {
-        return new byte[]{9, (byte) (complete ? 1 : 0), (byte) first, (byte) (first >> 8), (byte) last, (byte) (last >> 8), (byte) r, (byte) g, (byte) b, (byte) i};
-    }
-
-    /** Multi update of up to 8 lamps: ids[k] gets rgbi[k]. */
-    static byte[] multi(int[] ids, int[][] rgbi, int count, boolean complete) {
-        byte[] p = new byte[51];
-        p[0] = 8; p[1] = (byte) count; p[2] = (byte) (complete ? 1 : 0);
-        for (int k = 0; k < count; k++) {
-            p[3 + 2 * k] = (byte) ids[k]; p[4 + 2 * k] = (byte) (ids[k] >> 8);
-            for (int c = 0; c < 4; c++) p[19 + 4 * k + c] = (byte) rgbi[k][c];
-        }
-        return p;
-    }
-
-    /** Waits until nothing more arrives from an earlier test: BlueZ queues output reports and drains them at about 35 per second. */
-    static void drain(Ser s) throws Exception {
-        long end = System.currentTimeMillis() + 240000;
-        while (System.currentTimeMillis() < end) {
-            s.cmd("LAMPS RESET", 3000); Thread.sleep(1500);
-            if (num(s.kv("LAMPS?"), "reports") == 0) return;
-        }
-        info("the board kept receiving old reports for 4 minutes");
-    }
-
-    /** Waits until the report counter has not moved for 1.5 s (everything sent so far has arrived). */
-    static void settle(Ser s, long maxMs) throws Exception {
-        long end = System.currentTimeMillis() + maxMs, last = -1; int calm = 0;
-        while (System.currentTimeMillis() < end && calm < 3) {
-            Thread.sleep(500);
-            long r = num(s.kv("LAMPS?"), "reports");
-            if (r == last) calm++; else calm = 0;
-            last = r;
-        }
-    }
-
-    /** Sleeps between two output reports so a Bluetooth link is not flooded (BlueZ drops what it cannot queue). */
-    static void pace() { if (paceUs > 0) java.util.concurrent.locks.LockSupport.parkNanos(paceUs * 1000L); }
-    static void pace(int us) { if (us > 0) java.util.concurrent.locks.LockSupport.parkNanos(us * 1000L); }
-
-    static int u16(byte[] b, int at) { return (b[at] & 255) | ((b[at + 1] & 255) << 8); }
-    static long u32(byte[] b, int at) { return (u16(b, at) | ((long) u16(b, at + 2) << 16)); }
-
-    static long num(Map<String, String> m, String k) { try { return Long.parseLong(m.get(k)); } catch (Exception e) { return -1; } }
 
     // ------------------------------------------------------------------ enum
     static void enumerate(Ser s, Hid h) throws Exception {
         s.cmd("LAMPS RESET", 2000);
         Map<String, String> st = s.kv("LAMPS?");
-        long count = num(st, "lamps");
+        long count = Proto.num(st, "lamps");
         byte[] a = h.getFeature(5, 22);
         check("attributes report readable (feature 5)", a != null, a == null ? "GET_FEATURE failed" : "");
         if (a == null) return;
-        int lamps = u16(a, 1);
-        info(String.format("LampArray: %d lamps, box %d x %d x %d um, kind %d, min update interval %d us", lamps, u32(a, 3), u32(a, 7), u32(a, 11), u32(a, 15), u32(a, 19)));
+        int lamps = Proto.u16(a, 1);
+        info(String.format("LampArray: %d lamps, box %d x %d x %d um, kind %d, min update interval %d us", lamps, Proto.u32(a, 3), Proto.u32(a, 7), Proto.u32(a, 11), Proto.u32(a, 15), Proto.u32(a, 19)));
         check("attributes lamp count equals the board's", lamps == count, lamps + " vs " + count);
         int n = (int) Math.min(count, enumMax);
         long t0 = System.nanoTime(); int ok = 0;
@@ -310,14 +158,14 @@ public class LampTest {
             int lid = n == count ? id : (int) ((long) id * (count - 1) / (n - 1));
             if (!h.setFeature(new byte[]{6, (byte) lid, (byte) (lid >> 8)})) continue;
             byte[] r = h.getFeature(7, 28);
-            if (r != null && u16(r, 1) == lid) ok++;
+            if (r != null && Proto.u16(r, 1) == lid) ok++;
         }
         double ms = (System.nanoTime() - t0) / 1e6;
         check("lamp attribute request/response (feature 6 and 7), " + n + " lamps", ok == n, ok + " ok");
         info(String.format("enumeration: %.1f ms per lamp, so %d lamps take about %.1f s", ms / n, count, ms / n * count / 1000));
         byte[] last = null;
         h.setFeature(new byte[]{6, 10, 0}); last = h.getFeature(7, 28);
-        if (last != null) info(String.format("lamp 10: position %d,%d,%d um, purposes 0x%x, latency %d us, levels %d/%d/%d/%d", u32(last, 3), u32(last, 7), u32(last, 11), u32(last, 15), u32(last, 19),
+        if (last != null) info(String.format("lamp 10: position %d,%d,%d um, purposes 0x%x, latency %d us, levels %d/%d/%d/%d", Proto.u32(last, 3), Proto.u32(last, 7), Proto.u32(last, 11), Proto.u32(last, 15), Proto.u32(last, 19),
                 last[23] & 255, last[24] & 255, last[25] & 255, last[26] & 255));
     }
 
@@ -326,7 +174,7 @@ public class LampTest {
         s.cmd("LAMPS RESET", 2000);
         s.cmd("LAMPS BRIGHT 40", 1000);
         s.cmd("LAYER " + barPage(s), 3000);                             // the bar lamp page is the last page
-        check("control report: host takes over", h.write(control(false)) > 0, "");
+        check("control report: host takes over", h.write(Proto.control(false)) > 0, "");
         Thread.sleep(300);
         check("LAMPS? shows host mode", "host".equals(s.kv("LAMPS?").get("mode")), "");
 
@@ -335,7 +183,7 @@ public class LampTest {
         for (int k = 0; k < 10; k += 8) {
             int cnt = Math.min(8, 10 - k); int[] ids = new int[8]; int[][] c = new int[8][4];
             for (int j = 0; j < cnt; j++) { ids[j] = k + j; c[j] = new int[]{pal[k + j][0], pal[k + j][1], pal[k + j][2], 255 - 20 * (k + j)}; }
-            h.write(multi(ids, c, cnt, k + 8 >= 10));
+            h.write(Proto.multi(ids, c, cnt, k + 8 >= 10));
         }
         Thread.sleep(300);
         int bad = 0;
@@ -355,10 +203,10 @@ public class LampTest {
         List<BufferedImage> crops = new ArrayList<>();
         LedCam.out = out; LedCam.camera = camera;
         LedCam.Frame base = null;
-        if (cam) { Files.createDirectories(Path.of(out)); h.write(range(0, 9, 0, 0, 0, 0, true)); Thread.sleep(700); base = LedCam.frame("base.jpg"); }
+        if (cam) { Files.createDirectories(Path.of(out)); h.write(Proto.range(0, 9, 0, 0, 0, 0, true)); Thread.sleep(700); base = LedCam.frame("base.jpg"); }
         int wrong = 0;
         for (int k = 0; k < levels.length; k++) {
-            h.write(range(0, 9, 255, 255, 255, levels[k], true));
+            h.write(Proto.range(0, 9, 255, 255, 255, levels[k], true));
             Thread.sleep(cam ? 700 : 120);
             String r = s.cmd("LAMPS GET 9", 1500);
             if (!("OK LAMP 9 255 255 255 " + levels[k]).equals(r)) wrong++;
@@ -386,25 +234,25 @@ public class LampTest {
         // C. the three colour channels
         String[] names = {"red", "green", "blue"};
         for (int c = 0; c < 3; c++) {
-            h.write(range(0, 9, c == 0 ? 255 : 0, c == 1 ? 255 : 0, c == 2 ? 255 : 0, 255, true));
+            h.write(Proto.range(0, 9, c == 0 ? 255 : 0, c == 1 ? 255 : 0, c == 2 ? 255 : 0, 255, true));
             Thread.sleep(150);
             String r = s.cmd("LAMPS GET 5", 1500);
             check("colour " + names[c], ("OK LAMP 5 " + (c == 0 ? 255 : 0) + " " + (c == 1 ? 255 : 0) + " " + (c == 2 ? 255 : 0) + " 255").equals(r), String.valueOf(r));
         }
 
         // D. update speed of the bar: range updates back to back
-        drain(s); h.write(control(false));
+        drain(s); h.write(Proto.control(false));
         int n = paceUs > 0 ? 150 : 2000; long t0 = System.nanoTime(); int errs = 0;
-        for (int k = 0; k < n; k++) { if (h.write(range(0, 9, k & 255, 255 - (k & 255), 128, 255, true)) < 0) errs++; pace(); }
+        for (int k = 0; k < n; k++) { if (h.write(Proto.range(0, 9, k & 255, 255 - (k & 255), 128, 255, true)) < 0) errs++; pace(); }
         double ms = (System.nanoTime() - t0) / 1e6;
         settle(s, 120000);
         Map<String, String> st = s.kv("LAMPS?");
-        long got = num(st, "reports"), span = num(st, "span_us");
+        long got = Proto.num(st, "reports"), span = Proto.num(st, "span_us");
         info(String.format("bar updates: %d range updates in %.0f ms on the host (%.0f/s), the board counted %d reports (%d expected with the control report), within %.0f ms (%.0f/s), %d write errors",
                 n, ms, n / (ms / 1000), got, n + 1, span / 1000.0, got / (span / 1e6), errs));
         check("bar update burst: no write errors", errs == 0, errs + " errors");
         check("bar update burst: every report arrived", got == n + 1, got + " of " + n + " range updates plus the control report");
-        h.write(control(true));
+        h.write(Proto.control(true));
         s.cmd("LAMPS RESET", 2000);
         if (cam) { deleteFrames(); LedCam.otherBars(ownPort, true); }
     }
@@ -417,20 +265,20 @@ public class LampTest {
         for (String kind : new String[]{"multi", "range"}) {
             StringBuilder tbl = new StringBuilder(); boolean lossless = true; double bestRate = 0;
             for (int us : paces) {
-                drain(s); h.write(control(false)); Thread.sleep(200);
+                drain(s); h.write(Proto.control(false)); Thread.sleep(200);
                 int errs = 0; long t0 = System.nanoTime();
                 int[] ids = new int[8]; int[][] c = new int[8][4];
                 for (int k = 0; k < n; k++) {
                     byte[] p;
-                    if (kind.equals("multi")) { for (int j = 0; j < 8; j++) { ids[j] = j; c[j] = new int[]{k & 255, j * 30, 255 - (k & 255), 255}; } p = multi(ids, c, 8, true); }
-                    else p = range(0, 9, k & 255, 128, 64, 255, true);
+                    if (kind.equals("multi")) { for (int j = 0; j < 8; j++) { ids[j] = j; c[j] = new int[]{k & 255, j * 30, 255 - (k & 255), 255}; } p = Proto.multi(ids, c, 8, true); }
+                    else p = Proto.range(0, 9, k & 255, 128, 64, 255, true);
                     if (h.write(p) < 0) errs++;
                     pace(us);
                 }
                 double hostMs = (System.nanoTime() - t0) / 1e6;
                 settle(s, 120000);
                 Map<String, String> st = s.kv("LAMPS?");
-                long got = num(st, "reports") - 1, span = num(st, "span_us");
+                long got = Proto.num(st, "reports") - 1, span = Proto.num(st, "span_us");
                 double rateDev = got > 1 ? (got - 1) / (span / 1e6) : 0;
                 tbl.append(String.format("%n   send interval %5d us (host %6.0f/s): %3d of %d delivered, the board saw them over %6.0f ms = %5.1f reports/s%s",
                         us, n / (hostMs / 1000), got, n, span / 1000.0, rateDev, errs > 0 ? ", write errors " + errs : ""));
@@ -440,7 +288,7 @@ public class LampTest {
             info(kind + " updates (" + (kind.equals("multi") ? "51" : "10") + " bytes each), " + via + ":" + tbl);
             check(kind + " updates: every report is delivered at a sensible send rate" + (paceUs == 0 ? "" : " (15 ms or slower)"), lossless, String.format("best delivery rate %.0f reports/s = %.0f lamps/s", bestRate, bestRate * (kind.equals("multi") ? 8 : 10)));
         }
-        h.write(control(true)); s.cmd("LAMPS RESET", 2000);
+        h.write(Proto.control(true)); s.cmd("LAMPS RESET", 2000);
     }
 
     // ------------------------------------------------------------------ speed and interference
@@ -452,7 +300,7 @@ public class LampTest {
      * often the board drew. With noise the serial port carries a PING every 10 ms during the flood.
      */
     static Burst burst(Ser s, Hid h, int n, IntFunction<byte[]> gen, int lampsPerReport, boolean noise) throws Exception {
-        drain(s); h.write(control(false)); Thread.sleep(150);
+        drain(s); h.write(Proto.control(false)); Thread.sleep(150);
         AtomicBoolean stop = new AtomicBoolean(false);
         Thread t = null;
         if (noise) { t = new Thread(() -> { while (!stop.get()) { s.send("PING"); try { Thread.sleep(10); } catch (InterruptedException e) { return; } } }); t.start(); }
@@ -463,9 +311,9 @@ public class LampTest {
         s.drain();
         settle(s, 180000);
         Map<String, String> st = s.kv("LAMPS?");
-        long got = num(st, "reports") - 1, span = num(st, "span_us");
+        long got = Proto.num(st, "reports") - 1, span = Proto.num(st, "span_us");
         double sec = Math.max(span / 1e6, 1e-6);
-        return new Burst(n / (hostMs / 1000), got, (got - 1) / sec, lampsPerReport * (got - 1) / sec, num(st, "lamps_set") / sec, num(st, "drawn"), num(st, "draw_us"), got == n);
+        return new Burst(n / (hostMs / 1000), got, (got - 1) / sec, lampsPerReport * (got - 1) / sec, Proto.num(st, "lamps_set") / sec, Proto.num(st, "drawn"), Proto.num(st, "draw_us"), got == n);
     }
 
     static String fmt(Burst b, int n) {
@@ -476,7 +324,7 @@ public class LampTest {
     static byte[] multiFrame(int k) {
         int[] ids = new int[8]; int[][] c = new int[8][4];
         for (int j = 0; j < 8; j++) { ids[j] = 10 + j; c[j] = new int[]{k & 255, j * 30, 255 - (k & 255), 255}; }
-        return multi(ids, c, 8, true);
+        return Proto.multi(ids, c, 8, true);
     }
 
     /** Lamps switched per second: multi updates (8 lamps) and range updates of growing size, on a lamp page (the board draws). */
@@ -502,11 +350,11 @@ public class LampTest {
             s.cmd("LAMPS GRID " + grids[i][0] + " " + grids[i][1], 3000);
             final int r = sizes[i];
             int n = paceUs > 0 ? 60 : (r >= 12288 ? 200 : 1500);
-            Burst b = burst(s, h, n, k -> range(10, 10 + r - 1, k & 255, 255 - (k & 255), 128, 255, true), r, false);
+            Burst b = burst(s, h, n, k -> Proto.range(10, 10 + r - 1, k & 255, 255 - (k & 255), 128, 255, true), r, false);
             info("range update of " + r + " lamp" + (r > 1 ? "s" : "") + ", " + via + ": " + fmt(b, n));
             check("range of " + r + " lamps: every report arrived", b.lossless, b.reports + " of " + n);
         }
-        s.cmd("LAMPS GRID 16 12", 3000); h.write(control(true)); s.cmd("LAMPS RESET", 2000);
+        s.cmd("LAMPS GRID 16 12", 3000); h.write(Proto.control(true)); s.cmd("LAMPS RESET", 2000);
     }
 
     static final IntFunction<byte[]> Lamp_multi = LampTest::multiFrame;
@@ -533,7 +381,7 @@ public class LampTest {
         for (int i = 1; i < names.length; i++) info(String.format("  %s: %+.1f%% against the baseline", names[i], 100 * (rate[i] - base) / base));
         check("serial traffic changes the rate by less than 5%", Math.abs(rate[1] - base) / base < 0.05 && Math.abs(rate[4] - rate[3]) / rate[3] < 0.05, String.format("%.1f vs %.1f and %.1f vs %.1f reports/s", rate[1], base, rate[4], rate[3]));
         check("drawing changes the rate by less than 5%", Math.abs(rate[2] - base) / base < 0.05 && Math.abs(rate[3] - base) / base < 0.05, String.format("screen page %.1f, layer page %.1f, bar page %.1f reports/s", rate[2], rate[3], base));
-        s.cmd("LAYER 0", 3000); h.write(control(true)); s.cmd("LAMPS RESET", 2000);
+        s.cmd("LAYER 0", 3000); h.write(Proto.control(true)); s.cmd("LAMPS RESET", 2000);
     }
 
     /**
@@ -551,12 +399,12 @@ public class LampTest {
             s.cmd("LAMPS WORKER " + (w == 1 ? "ON" : "OFF"), 2000);
             for (int i = 0; i < pages.length; i++) {
                 s.cmd("LAYER " + pages[i], 3000); Thread.sleep(800);
-                drain(s); h.write(control(false)); Thread.sleep(300);
+                drain(s); h.write(Proto.control(false)); Thread.sleep(300);
                 s.cmd("LAMPS RESET", 2000);
                 for (int k = 0; k < n; k++) {
-                    h.write(range(0, 9, k % 2 == 0 ? 255 : 0, k % 2 == 0 ? 0 : 255, 64, 255, false));
+                    h.write(Proto.range(0, 9, k % 2 == 0 ? 255 : 0, k % 2 == 0 ? 0 : 255, 64, 255, false));
                     pace(15000);
-                    h.write(range(10, 201, k % 2 == 0 ? 0 : 255, 128, k % 2 == 0 ? 255 : 0, 255, true));
+                    h.write(Proto.range(10, 201, k % 2 == 0 ? 0 : 255, 128, k % 2 == 0 ? 255 : 0, 255, true));
                     Thread.sleep(150);
                 }
                 Thread.sleep(1500);                                      // BLE: the last reports may still be queued on the host
@@ -565,10 +413,21 @@ public class LampTest {
                 for (int tries = 0; tries < 4 && st.get("bar_shows") == null; tries++) { Thread.sleep(500); st = s.kv("LAMPS?"); }
                 info(String.format("%s, worker %s: bar shown %s times, latency avg/max %s us; screen drawn %s times, latency avg/max %s us",
                         names[i], w == 1 ? "on " : "off", st.get("bar_shows"), st.get("bar_lat_us"), st.get("drawn"), st.get("scr_lat_us")));
-                check(names[i] + ", worker " + (w == 1 ? "on" : "off") + ": the bar was shown for the frames", num(st, "bar_shows") > 0, st.get("bar_shows"));
+                check(names[i] + ", worker " + (w == 1 ? "on" : "off") + ": the bar was shown for the frames", Proto.num(st, "bar_shows") > 0, st.get("bar_shows"));
             }
         }
-        s.cmd("LAMPS WORKER ON", 2000); s.cmd("LAYER 0", 3000); h.write(control(true)); s.cmd("LAMPS RESET", 2000);
+        s.cmd("LAMPS WORKER ON", 2000); s.cmd("LAYER 0", 3000); h.write(Proto.control(true)); s.cmd("LAMPS RESET", 2000);
+    }
+
+
+    static void disk(Ser s, Hid h) throws Exception {
+        DiskDrive.Options o = new DiskDrive.Options();
+        o.via = via; o.tag = tag; o.name = diskName; o.file = diskFile; o.fast = diskFast; o.load = diskLoad; o.grab = diskGrab;
+        o.inject = diskInject; o.min = diskMin; o.max = diskMax; o.paceUs = paceUs;
+        new DiskDrive(o, new DiskDrive.Reporter() {
+            public void check(String name, boolean ok, String detail) { LampTest.check(name, ok, detail); }
+            public void info(String msg) { LampTest.info(msg); }
+        }).disk(s, h);
     }
 
     static int barPage(Ser s) throws Exception { return Integer.parseInt(s.kv("INFO").get("pages")) - 1; }
@@ -597,8 +456,8 @@ public class LampTest {
     }
 
     static void savePng(Ser.Shot sh, Path f) throws IOException {
-        BufferedImage img = new BufferedImage(sh.w, sh.h, BufferedImage.TYPE_INT_RGB);
-        for (int y = 0; y < sh.h; y++) for (int x = 0; x < sh.w; x++) { int[] c = sh.at(x, y); img.setRGB(x, y, (c[0] << 16) | (c[1] << 8) | c[2]); }
+        BufferedImage img = new BufferedImage(sh.w(), sh.h(), BufferedImage.TYPE_INT_RGB);
+        for (int y = 0; y < sh.h(); y++) for (int x = 0; x < sh.w(); x++) { int[] c = sh.at(x, y); img.setRGB(x, y, (c[0] << 16) | (c[1] << 8) | c[2]); }
         Files.createDirectories(f.getParent()); ImageIO.write(img, "png", f.toFile());
         info("screenshot " + f);
     }
@@ -629,7 +488,7 @@ public class LampTest {
             int n = cols * rows, reportsPerFrame = (n + 7) / 8;
             int nf = frames > 0 ? frames : paceUs > 0 ? (reportsPerFrame <= 30 ? 15 : reportsPerFrame <= 100 ? 4 : reportsPerFrame <= 400 ? 2 : 1)
                     : (reportsPerFrame <= 30 ? 60 : reportsPerFrame <= 100 ? 20 : reportsPerFrame <= 400 ? 6 : 2);
-            check("control report: host takes over (" + t + ")", h.write(control(false)) > 0, "");
+            check("control report: host takes over (" + t + ")", h.write(Proto.control(false)) > 0, "");
             long sent = 0, errs = 0; long t0 = System.nanoTime();
             byte[] pkt;
             for (int f = 0; f < nf; f++) {
@@ -637,17 +496,17 @@ public class LampTest {
                 for (int base = 0; base < n; base += 8) {
                     int cnt = Math.min(8, n - base); int[] ids = new int[8]; int[][] c = new int[8][];
                     for (int k = 0; k < cnt; k++) { ids[k] = 10 + base + k; c[k] = g.colour((base + k) % cols, (base + k) / cols, shift); }
-                    pkt = multi(ids, c, cnt, base + cnt >= n);
+                    pkt = Proto.multi(ids, c, cnt, base + cnt >= n);
                     if (h.write(pkt) < 0) errs++; sent++; pace();
                 }
             }
             double ms = (System.nanoTime() - t0) / 1e6;
             Map<String, String> st;
             settle(s, 180000); st = s.kv("LAMPS?");
-            long got = num(st, "reports"), span = num(st, "span_us"), drawn = num(st, "drawn"), fr = num(st, "frames");
+            long got = Proto.num(st, "reports"), span = Proto.num(st, "span_us"), drawn = Proto.num(st, "drawn"), fr = Proto.num(st, "frames");
             info(String.format("%s: %d lamps, %d frames of %d reports: host %.0f ms = %.1f frames/s, %.0f lamps/s, %.0f reports/s; board counted %d for %d sent plus one control report (%.1f%%) in %.0f ms (%.1f frames/s), drew %d times (%d us each)",
                     t, n, nf, reportsPerFrame, ms, nf / (ms / 1000), (double) n * nf / (ms / 1000), sent / (ms / 1000), got, sent, 100.0 * (got - 1) / sent,
-                    span / 1000.0, fr / (span / 1e6), drawn, num(st, "draw_us")));
+                    span / 1000.0, fr / (span / 1e6), drawn, Proto.num(st, "draw_us")));
             check("tier " + t + ": no write errors", errs == 0, errs + " errors");
             check("tier " + t + ": every report arrived", got == sent + 1, got + " counted, " + sent + " sent plus the control report");
             Thread.sleep(300);
@@ -663,8 +522,36 @@ public class LampTest {
             check("tier " + t + ": screenshot matches the lamps", bad * 200 <= seen, bad + " of " + seen + " sampled lamps differ");
             if (shotDir != null) savePng(sh, Path.of(shotDir, tag + "-" + via + "-screen-" + t + ".png"));
         }
-        h.write(control(true));
+        h.write(Proto.control(true));
         s.cmd("LAMPS GRID 16 12", 2000);
         s.cmd("LAMPS RESET", 2000);
     }
+
+    /** Waits until nothing more arrives from an earlier test: BlueZ queues output reports and drains them at about 35 per second. */
+    static void drain(Ser s) throws Exception {
+        long end = System.currentTimeMillis() + 240000;
+        while (System.currentTimeMillis() < end) {
+            s.cmd("LAMPS RESET", 3000); Thread.sleep(1500);
+            if (Proto.num(s.kv("LAMPS?"), "reports") == 0) return;
+        }
+        info("the board kept receiving old reports for 4 minutes");
+    }
+
+    /** Waits until the report counter has not moved for 1.5 s (everything sent so far has arrived). */
+    static void settle(Ser s, long maxMs) throws Exception {
+        long end = System.currentTimeMillis() + maxMs, last = -1; int calm = 0;
+        while (System.currentTimeMillis() < end && calm < 3) {
+            Thread.sleep(500);
+            long r = Proto.num(s.kv("LAMPS?"), "reports");
+            if (r == last) calm++; else calm = 0;
+            last = r;
+        }
+    }
+
+    /** Sleeps between two output reports so a Bluetooth link is not flooded (BlueZ drops what it cannot queue). */
+    static void pace() { if (paceUs > 0) java.util.concurrent.locks.LockSupport.parkNanos(paceUs * 1000L); }
+    static void pace(int us) { if (us > 0) java.util.concurrent.locks.LockSupport.parkNanos(us * 1000L); }
+
+
+
 }

@@ -11,7 +11,7 @@ Nachtgespenst is firmware for an M5Stack Core2 (ESP32) that acts as a Bluetooth 
 - PlatformIO is project-local: call `.pio/venv/bin/pio ...` (the core directory is set by `core_dir` in `platformio.ini`; no environment prefix). Setup, JBang/SDKMAN and Java bumps: `docs/wiki/tooling.md`; decisions: `docs/adr/`.
 - Build: `.pio/venv/bin/pio run -e core2` / `-e cores3` (11 to 13 min each; run in the background, one at a time, no edits to `platformio.ini` meanwhile).
 - Flash a built image: `jbang tools/Flash.java core2|cores3` (finds the board, does the CoreS3 1200-baud touch, waits for the board, warns about stale images). A plain `pio ... -t upload` fails on the CoreS3 (TinyUSB, no auto-reset).
-- Serial one-liners: `jbang tools/Serial.java S3 "LAYER 26" "STATE?"`. Tests: `jbang tools/SerialTest.java [--board S3|C2] [--shot DIR] [--latency]`. Camera LED tests: `jbang tools/LedCam.java`. Details: `docs/wiki/hardware-testing.md`.
+- Serial one-liners: `jbang tools/Serial.java S3 "LAYER 26" "STATE?"`. Tests: `jbang tools/SerialTest.java [--board S3|C2] [--shot DIR] [--latency]`. Camera LED tests: `jbang tools/LedCam.java`. Lamp and Disk tests: `jbang tools/LampTest.java info|speed|ingest|latency|disk ...`. The demo window: `jbang tools/DemoApp.java` (CoreS3, over USB; `Demo.java` is the same without a window). Details: `docs/wiki/hardware-testing.md`, `docs/wiki/demo-app.md`, `docs/wiki/disk-drive.md`.
 - Serial monitor: `pio device monitor` (115200, esp32 exception decoder)
 - Tests run on the real boards (`jbang tools/SerialTest.java`); there are no unit tests or linter.
 - Update the HID spec data (rare): from inside `tools/`, run `jbang FetchHut.jsh` (downloads the HUT PDF into `tools/data/`, extracts `hut.json`).

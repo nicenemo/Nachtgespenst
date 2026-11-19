@@ -11,10 +11,13 @@ All notable changes to Nachtgespenst. The project has no tagged releases yet, so
 - **System Control report** (Power Down, Sleep, Wake Up) and tiles for it; the firmware refuses Power Down and Sleep over the serial port, so tests cannot suspend the host.
 - **Device identity:** pid.codes test ID 1209:0001, Bluetooth PnP ID, short names NG-S3 and NG-C2 on USB, and a moon and ghost emoji in the Bluetooth names (`...-c2`, `...-cs3`).
 - **Lamp bar worker task** on the second core with a FastLED mutex (`LAMPS WORKER ON|OFF`) and latency counters in `LAMPS?`: a lamp frame is on the bar 1.4 to 3 ms after its last report (6 ms and up to 40 ms from the main loop). `LampTest latency` and `LampTest ingest` (intake without drawing: 1.5 to 1.9 million lamps per second).
+- **Disk demo** (page "Disk", [wiki](docs/wiki/disk-drive.md), [ADR 0017](docs/adr/0017-disk-drive-data-channels.md)): a file from the PC over the lamps (blocks with CRC and byte offsets, acknowledged with F13 to F24), unpacked and written to the SD card of the CoreS3, and sent back over a new game pad with 384 buttons; credits through the lamps as pushback, variable bit rate, SHA-256 on both ends shown on the board with the speeds, modem-like sounds and a fast mode. 28.6 kB/s in, 37 kB/s back over USB.
+- **Demo window** `tools/DemoApp.java` (Swing, FlatLaf, virtual threads, the ghost of the site) and `tools/Demo.java`: the cycle or any part: pages, the file transfer, LED bar effects, C64 raster bars and sine scroller, and a photo slideshow with prime-modulo dissolves (five Wikimedia Commons photos). The shared code of `LampTest` moved into classes (`Hid`, `Ser`, `Evdev`, `Proto`, `DiskDrive`, `Canvas`, ...).
 - **Camera tests:** the Locks page colours (all seven states on the Core2 on a sheet of white paper, now on the site), a `dark` test for `LEDS OFF`, and the bar of the other board is switched off during a test.
 - **Site:** the page split into pages with a hamburger menu, a LampArray page, a banner with the moon and ghost.
 
 ### Changed
+- The USB HID descriptor has a game pad collection; the PnP versions are 0x0103 and 0x0203, so Bluetooth pairing has to be renewed once.
 - Page changes are coalesced (25 ms) and the firmware builds with `-O2`: a page switch takes about 320 ms on the CoreS3 (was 730) and 380 ms on the Core2 (was 840).
 - `SerialTest` has 43 checks on the CoreS3 and 25 on the Core2 (settings, System Control, serial guards).
 - The GitHub repository is `nicenemo/nachtgespenst`; `tools/Flash.java` also finds the bootloader IDs.
