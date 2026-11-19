@@ -330,24 +330,38 @@ public class DemoApp {
         void setBar(int[] rgb) { bar = rgb; touch(); }
         void setGrid(int[] rgb, int c, int r) { grid = rgb; cols = c; rows = r; touch(); }
         void clear() { bar = new int[10]; grid = null; touch(); }
+        /** Two vertical bars of five lamps left and right of the picture (lamps 0 to 4 on the left, 5 to 9 on the right, top to bottom). */
         @Override protected void paintComponent(Graphics g0) {
             super.paintComponent(g0);
             Graphics2D g = (Graphics2D) g0;
-            Insets in = getInsets(); int w = getWidth() - in.left - in.right - 8, x0 = in.left + 4, y = in.top + 6;
-            int[] b = bar; int cell = Math.min(34, w / 10);
-            for (int i = 0; i < 10; i++) {
-                g.setColor(new Color(b[i] & 0xFFFFFF)); g.fillRoundRect(x0 + i * (w / 10), y, cell - 4, 22, 8, 8);
-                g.setColor(new Color(0x555555)); g.drawRoundRect(x0 + i * (w / 10), y, cell - 4, 22, 8, 8);
+            Insets in = getInsets();
+            int barW = 30, gap = 10, x0 = in.left + 4, y0 = in.top + 6;
+            int w = getWidth() - in.left - in.right - 8, h = getHeight() - in.top - in.bottom - 34;
+            int availW = w - 2 * (barW + gap);
+            int[] gr = grid; int c = cols, r = rows;
+            double aspect = gr == null ? 320.0 / 190.0 : (double) c / r;                 // the lamp area of the device is 320 x 190
+            int pw = availW, ph = (int) (pw / aspect);
+            if (ph > h) { ph = h; pw = (int) (ph * aspect); }
+            int px = x0 + barW + gap + (availW - pw) / 2, py = y0 + (h - ph) / 2;
+            int[] b = bar;
+            for (int side = 0; side < 2; side++) {
+                int bx = side == 0 ? px - gap - barW : px + pw + gap;
+                for (int i = 0; i < 5; i++) {
+                    int cell = ph / 5, ly = py + i * cell + 3;
+                    g.setColor(new Color(b[side * 5 + i] & 0xFFFFFF)); g.fillRoundRect(bx, ly, barW, cell - 6, 10, 10);
+                    g.setColor(new Color(0x555555)); g.drawRoundRect(bx, ly, barW, cell - 6, 10, 10);
+                }
             }
-            int[] gr = grid; int top = y + 30;
-            if (gr == null) { g.setColor(Color.GRAY); g.drawString("bar lamps 0-9; the lamp grid appears here", x0, top + 16); return; }
-            int ch = getHeight() - in.bottom - top - 22; int c = cols, r = rows;
+            if (gr == null) {
+                g.setColor(new Color(0x2B2B2B)); g.fillRect(px, py, pw, ph); g.setColor(Color.GRAY);
+                g.drawRect(px, py, pw, ph); g.drawString("the lamp grid appears here", px + 12, py + ph / 2);
+                return;
+            }
             BufferedImage im = new BufferedImage(c, r, BufferedImage.TYPE_INT_RGB);
             im.setRGB(0, 0, c, r, gr, 0, c);
-            double k = Math.min((double) w / c, (double) ch / r); int pw = (int) (c * k), ph = (int) (r * k);
             g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
-            g.drawImage(im, x0 + (w - pw) / 2, top, pw, ph, null);
-            g.setColor(Color.GRAY); g.drawString(c + " x " + r + " lamps", x0, top + ph + 14);
+            g.drawImage(im, px, py, pw, ph, null);
+            g.setColor(Color.GRAY); g.drawString(c + " x " + r + " lamps, bar lamps 0-4 left, 5-9 right", x0, py + ph + 18);
         }
     }
 
