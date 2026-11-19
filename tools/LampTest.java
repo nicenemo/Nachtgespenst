@@ -102,6 +102,8 @@ public class LampTest {
                     case "rate" -> rate(s, h);
                     case "speed" -> speed(s, h);
                     case "interference" -> interference(s, h);
+                    case "latency" -> latency(s, h);
+                    case "ingest" -> ingest(s, h);
                     case "all" -> { enumerate(s, h); bar(s, h); rate(s, h); screen(s, h); }
                     default -> usage("unknown command " + c);
                 }
@@ -113,7 +115,7 @@ public class LampTest {
     }
 
     static void usage(String why) {
-        System.err.println(why + "\nusage: LampTest.java info|enum|bar|screen|all [--board S3|C2] [--via usb|ble] [--tiers 8x6,16x12] [--frames N] [--shot DIR] [--crop x0,y0,x1,y1] [--camera DEV]");
+        System.err.println(why + "\nusage: LampTest.java info|enum|bar|screen|rate|speed|ingest|interference|latency|all [--board S3|C2] [--via usb|ble] [--tiers 8x6,16x12] [--frames N] [--shot DIR] [--crop x0,y0,x1,y1] [--camera DEV]");
         System.exit(2);
     }
 
@@ -478,8 +480,16 @@ public class LampTest {
     }
 
     /** Lamps switched per second: multi updates (8 lamps) and range updates of growing size, on a lamp page (the board draws). */
-    static void speed(Ser s, Hid h) throws Exception {
-        int screenPage = barPage(s) - 1;
+    static void speed(Ser s, Hid h) throws Exception { speedOn(s, h, barPage(s) - 1, "screen lamp page"); }
+
+    /**
+     * The same on an ordinary layer page: nothing is drawn and the bar does not follow the lamps, so this is the pure intake
+     * of the board (the HID task stores the lamps, the main loop and the other core do nothing for them).
+     */
+    static void ingest(Ser s, Hid h) throws Exception { speedOn(s, h, 0, "layer page, no drawing, bar untouched"); }
+
+    static void speedOn(Ser s, Hid h, int screenPage, String what) throws Exception {
+        info("page: " + what);
         s.cmd("LAYER " + screenPage, 3000);
         int[][] grids = {{16, 12}, {16, 12}, {32, 24}, {64, 48}, {128, 96}, {320, 190}};
         int[] sizes = {1, 192, 768, 3072, 12288, 60800};
@@ -524,6 +534,41 @@ public class LampTest {
         check("serial traffic changes the rate by less than 5%", Math.abs(rate[1] - base) / base < 0.05 && Math.abs(rate[4] - rate[3]) / rate[3] < 0.05, String.format("%.1f vs %.1f and %.1f vs %.1f reports/s", rate[1], base, rate[4], rate[3]));
         check("drawing changes the rate by less than 5%", Math.abs(rate[2] - base) / base < 0.05 && Math.abs(rate[3] - base) / base < 0.05, String.format("screen page %.1f, layer page %.1f, bar page %.1f reports/s", rate[2], rate[3], base));
         s.cmd("LAYER 0", 3000); h.write(control(true)); s.cmd("LAMPS RESET", 2000);
+    }
+
+    /**
+     * How long does a lamp frame take to become visible? The board stamps the report that completes a frame and measures until the bar
+     * has been shown (bar_lat_us) and until the screen has been drawn (scr_lat_us). Frames are sent 150 ms apart (a slow, steady
+     * stream: no queueing on the host), once with the bar worker on the other core and once with the bar shown by the main loop.
+     */
+    static void latency(Ser s, Hid h) throws Exception {
+        int screenPage = barPage(s) - 1, barPg = barPage(s);
+        s.cmd("LAMPS GRID 16 12", 3000);
+        int n = frames > 0 ? frames : 40;
+        int[] pages = {barPg, screenPage};
+        String[] names = {"bar page", "screen lamp page (16 x 12)"};
+        for (int w = 1; w >= 0; w--) {
+            s.cmd("LAMPS WORKER " + (w == 1 ? "ON" : "OFF"), 2000);
+            for (int i = 0; i < pages.length; i++) {
+                s.cmd("LAYER " + pages[i], 3000); Thread.sleep(800);
+                drain(s); h.write(control(false)); Thread.sleep(300);
+                s.cmd("LAMPS RESET", 2000);
+                for (int k = 0; k < n; k++) {
+                    h.write(range(0, 9, k % 2 == 0 ? 255 : 0, k % 2 == 0 ? 0 : 255, 64, 255, false));
+                    pace(15000);
+                    h.write(range(10, 201, k % 2 == 0 ? 0 : 255, 128, k % 2 == 0 ? 255 : 0, 255, true));
+                    Thread.sleep(150);
+                }
+                Thread.sleep(1500);                                      // BLE: the last reports may still be queued on the host
+                settle(s, 20000);
+                Map<String, String> st = s.kv("LAMPS?");
+                for (int tries = 0; tries < 4 && st.get("bar_shows") == null; tries++) { Thread.sleep(500); st = s.kv("LAMPS?"); }
+                info(String.format("%s, worker %s: bar shown %s times, latency avg/max %s us; screen drawn %s times, latency avg/max %s us",
+                        names[i], w == 1 ? "on " : "off", st.get("bar_shows"), st.get("bar_lat_us"), st.get("drawn"), st.get("scr_lat_us")));
+                check(names[i] + ", worker " + (w == 1 ? "on" : "off") + ": the bar was shown for the frames", num(st, "bar_shows") > 0, st.get("bar_shows"));
+            }
+        }
+        s.cmd("LAMPS WORKER ON", 2000); s.cmd("LAYER 0", 3000); h.write(control(true)); s.cmd("LAMPS RESET", 2000);
     }
 
     static int barPage(Ser s) throws Exception { return Integer.parseInt(s.kv("INFO").get("pages")) - 1; }

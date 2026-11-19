@@ -23,7 +23,12 @@ namespace Lamps {
 
     bool autonomous();                              // host has not taken control (default true)
     CRGB barColor(uint8_t i);                       // lamp i (0..9) with its intensity applied
-    bool barChanged();                              // true once after a frame touched the bar lamps
+    bool barChanged();                              // main-loop path: true once after a frame touched the bar lamps (only while the worker is off)
+    void barShown();                                // the main loop has shown the bar: records the latency of that frame
+    void setBarSink(void (*fn)());                  // what the worker task calls to put lamps 0..9 on the LED bar (thread-safe, set by ui.cpp)
+    void setWorker(bool on);                        // LAMPS WORKER ON|OFF: bar updates on their own task (the other core) or in the main loop
+    bool workerOn();
+    bool pending();                                 // a screen frame is waiting to be drawn: the main loop should not sleep
     void getLamp(uint16_t id, uint8_t rgbi[4]);
 
     void resetCounters();                           // also clears all lamp colours

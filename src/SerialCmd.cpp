@@ -89,6 +89,11 @@ void handle(char* line) {
             uint8_t v[4]; Lamps::getLamp(x < 0 ? 65535 : x, v);
             Serial.printf("OK LAMP %d %u %u %u %u\n", x, v[0], v[1], v[2], v[3]);
         }
+        else if (!strcmp(a, "WORKER") && b && !extra) {
+            for (char* p = b; *p; p++) *p = toupper((unsigned char)*p);
+            if (!strcmp(b, "ON")) Lamps::setWorker(true); else if (!strcmp(b, "OFF")) Lamps::setWorker(false); else { Serial.println("ERR lamps"); return; }
+            Serial.printf("OK LAMPS WORKER %s\n", Lamps::workerOn() ? "ON" : "OFF");
+        }
         else if (!strcmp(a, "BRIGHT") && num(b, x) && !extra) { Lamps::setBarBrightness(x < 1 ? 1 : x > 255 ? 255 : x); ui_leds_refresh(); Serial.printf("OK LAMPS BRIGHT %u\n", (unsigned)Lamps::barBrightness()); }
         else Serial.println("ERR lamps");
     }

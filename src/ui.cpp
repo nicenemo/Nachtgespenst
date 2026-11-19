@@ -107,7 +107,14 @@ void readCb(lv_indev_t*, lv_indev_data_t* d) {
 
 // ---------- LED bar ----------
 // The bar follows the setting "led": off (dark, 5 V rail off), locks (only the host lock state) or layers (layer colours).
+SemaphoreHandle_t g_ledMutex = nullptr;   // FastLED is used by the main loop and by the lamp worker task on the other core
+void updateLedsLocked();
 void updateLeds() {
+    if (g_ledMutex) xSemaphoreTake(g_ledMutex, portMAX_DELAY);
+    updateLedsLocked();
+    if (g_ledMutex) xSemaphoreGive(g_ledMutex);
+}
+void updateLedsLocked() {
 #if NG_HAS_LEDBAR
     using LM = Settings::LedMode;
     LM mode = Settings::ledMode();
@@ -350,6 +357,8 @@ void ui_begin() {
 #if NG_HAS_LEDBAR
     FastLED.addLeds<WS2812, LED_PIN, GRB>(g_leds, LED_COUNT);   // the 5 V rail and the brightness follow the settings (updateLeds)
 #endif
+    g_ledMutex = xSemaphoreCreateMutex();
+    Lamps::setBarSink(updateLeds);   // the lamp worker task puts lamps 0..9 on the bar without waiting for the main loop
     HIDManager::setEventListener(onHid);
     g_hostLed = HIDManager::getLedStatus();
 
@@ -529,11 +538,13 @@ uint32_t ui_loop() {
         uint8_t l = HIDManager::getLedStatus();
         if (l != g_hostLed) { g_hostLed = l; g_ledDirty = true; }
     }
-    if (g_page > LAYER_COUNT && Lamps::barChanged()) g_ledDirty = true; // a LampArray frame touched lamps 0..9
+    bool lampBar = g_page > LAYER_COUNT && Lamps::barChanged();   // worker off: a LampArray frame touched lamps 0..9
+    if (lampBar) g_ledDirty = true;
     if (g_ledDirty) {
         g_ledDirty = false;
         if (g_page == LAYER_COUNT) refreshLocks();
         updateLeds();
+        if (lampBar) Lamps::barShown();
     }
     uint32_t perfT0 = micros(), perfStrips0 = g_perfStrips;
     uint32_t next = lv_timer_handler();
@@ -545,6 +556,6 @@ uint32_t ui_loop() {
                          M5.Display.width(), M5.Display.height() - HEADER_H);
     }
     Lamps::tick();
-    if (g_pageDirty) return 1;                       // a page is waiting for its coalescing window
+    if (g_pageDirty || Lamps::pending()) return 1;                       // a page is waiting for its coalescing window
     return next < 1 ? 1 : (next > 10 ? 10 : next);
 }

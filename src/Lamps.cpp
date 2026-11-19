@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <esp_heap_caps.h>
 #include <esp_timer.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 
 // HID LampArray test bench: storage, report handling and the two lamp pages. See Lamps.h and ADR 0010.
 // The screen lamps are drawn straight to the panel (no LVGL widgets): a RGB565 copy of the lamp area lives in
@@ -30,6 +32,16 @@ int g_brightOverride = -1;                 // LAMPS BRIGHT (a test command): cle
 volatile uint32_t c_reports, c_multi, c_range, c_ctrl, c_short, c_bad, c_lampsSet, c_frames, c_bytes, c_featGet, c_featSet;
 volatile int64_t c_t0, c_t1;
 volatile bool g_barTouched, g_barReady;
+// Latency from the report that completes a frame to what the user sees (microseconds): the bar on the worker task or the main
+// loop, and the screen. Average and maximum since LAMPS RESET.
+struct Lat { uint32_t n = 0, max = 0; uint64_t sum = 0; };
+Lat g_latBar, g_latScr;
+inline void latAdd(Lat& l, int64_t us) { uint32_t u = us < 0 ? 0 : (uint32_t)us; l.n++; l.sum += u; if (u > l.max) l.max = u; }
+volatile int64_t g_barStampUs = 0, g_pendingSinceUs = 0, g_mainBarStamp = 0;
+volatile uint32_t c_barShows = 0;
+TaskHandle_t g_worker = nullptr;
+volatile bool g_workerOn = true;
+void (*g_sink)() = nullptr;
 uint32_t g_drawn, g_drawnFrames, g_drawUs;
 
 // page state
@@ -57,8 +69,26 @@ void store(uint16_t id, uint8_t r, uint8_t g, uint8_t b, uint8_t i) {
 }
 
 void frameComplete() {
+    int64_t now = esp_timer_get_time();
     c_frames++;
-    if (g_barTouched) { g_barTouched = false; g_barReady = true; }
+    if (g_pendingSinceUs == 0) g_pendingSinceUs = now;
+    if (g_barTouched) {
+        g_barTouched = false; g_barStampUs = now;
+        if (g_workerOn && g_worker && g_sink && g_page != Page::None) xTaskNotifyGive(g_worker);   // the worker shows it at once, on its own core
+        else g_barReady = true;                                                                       // the main loop shows it
+    }
+}
+
+// Runs on the core the main loop does not use: puts the bar lamps on the LED bar as soon as a frame has changed them, so neither the
+// screen drawing nor the main loop's sleep delays the bar.
+void workerTask(void*) {
+    for (;;) {
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        if (!g_workerOn || g_page == Page::None || !g_sink) continue;
+        int64_t stamp = g_barStampUs;
+        g_sink();
+        if (stamp) { latAdd(g_latBar, esp_timer_get_time() - stamp); c_barShows++; }
+    }
 }
 
 void note(uint16_t len) {
@@ -165,6 +195,7 @@ void begin() {
     g_lamp = (Lamp*)heap_caps_calloc(n, sizeof(Lamp), psram ? MALLOC_CAP_SPIRAM : MALLOC_CAP_8BIT);
     g_dirty = (uint8_t*)heap_caps_calloc((n + 7) / 8, 1, MALLOC_CAP_8BIT);
     if (!g_lamp || !g_dirty) { g_maxGrid = 0; g_cols = g_rows = 0; }
+    xTaskCreatePinnedToCore(workerTask, "lamp-bar", 3072, nullptr, 2, &g_worker, ARDUINO_RUNNING_CORE == 0 ? 1 : 0);
     Serial.printf("[Lamps] %u lamps (bar %u + grid %ux%u), max grid %lu, psram=%d\n", (unsigned)lampTotal(), BAR_LAMPS,
                   g_cols, g_rows, (unsigned long)g_maxGrid, (int)psram);
 }
@@ -253,7 +284,12 @@ CRGB barColor(uint8_t i) {
     return CRGB(scale(l.r, l.i), scale(l.g, l.i), scale(l.b, l.i));
 }
 
-bool barChanged() { bool v = g_barReady; g_barReady = false; return v; }
+bool barChanged() { bool v = g_barReady; g_barReady = false; if (v) g_mainBarStamp = g_barStampUs; return v; }
+void barShown() { if (g_mainBarStamp) { latAdd(g_latBar, esp_timer_get_time() - g_mainBarStamp); c_barShows++; g_mainBarStamp = 0; } }
+void setBarSink(void (*fn)()) { g_sink = fn; }
+void setWorker(bool on) { g_workerOn = on; }
+bool workerOn() { return g_workerOn; }
+bool pending() { return g_page != Page::None && c_frames != g_drawnFrames; }
 
 void getLamp(uint16_t id, uint8_t rgbi[4]) {
     if (!g_lamp || id >= lampTotal()) { memset(rgbi, 0, 4); return; }
@@ -264,6 +300,7 @@ void resetCounters() {
     c_reports = c_multi = c_range = c_ctrl = c_short = c_bad = c_lampsSet = c_frames = c_bytes = c_featGet = c_featSet = 0;
     c_t0 = c_t1 = 0;
     g_drawn = g_drawnFrames = g_drawUs = 0;
+    g_latBar = Lat(); g_latScr = Lat(); c_barShows = 0; g_pendingSinceUs = g_mainBarStamp = g_barStampUs = 0;
     g_auto = true;
     g_brightOverride = -1;
     if (g_lamp) { memset(g_lamp, 0, (size_t)lampTotal() * sizeof(Lamp)); memset(g_dirty, 0, ((size_t)lampTotal() + 7) / 8); }
@@ -275,15 +312,17 @@ void setBarBrightness(uint8_t level) { g_brightOverride = level < 1 ? 1 : (level
 uint8_t barBrightness() { return g_brightOverride >= 0 ? (uint8_t)g_brightOverride : Settings::ledBright(); }
 
 String status() {
-    char b[400];
+    char b[560];
     int64_t span = c_t1 > c_t0 ? c_t1 - c_t0 : 0;
     snprintf(b, sizeof(b),
              "LAMPS mode=%s lamps=%u grid=%ux%u max=%u reports=%lu multi=%lu range=%lu ctrl=%lu short=%lu bad=%lu lamps_set=%lu frames=%lu "
-             "bytes=%lu featget=%lu featset=%lu span_us=%lld drawn=%lu draw_us=%lu bright=%u",
+             "bytes=%lu featget=%lu featset=%lu span_us=%lld drawn=%lu draw_us=%lu bright=%u bar_shows=%lu bar_lat_us=%lu/%lu scr_lat_us=%lu/%lu worker=%d",
              g_auto ? "auto" : "host", (unsigned)lampTotal(), g_cols, g_rows, (unsigned)maxGridLamps(), (unsigned long)c_reports,
              (unsigned long)c_multi, (unsigned long)c_range, (unsigned long)c_ctrl, (unsigned long)c_short, (unsigned long)c_bad,
              (unsigned long)c_lampsSet, (unsigned long)c_frames, (unsigned long)c_bytes, (unsigned long)c_featGet,
-             (unsigned long)c_featSet, (long long)span, (unsigned long)g_drawn, (unsigned long)g_drawUs, (unsigned)barBrightness());
+             (unsigned long)c_featSet, (long long)span, (unsigned long)g_drawn, (unsigned long)g_drawUs, (unsigned)barBrightness(),
+             (unsigned long)c_barShows, (unsigned long)(g_latBar.n ? g_latBar.sum / g_latBar.n : 0), (unsigned long)g_latBar.max,
+             (unsigned long)(g_latScr.n ? g_latScr.sum / g_latScr.n : 0), (unsigned long)g_latScr.max, (int)g_workerOn);
     return String(b);
 }
 
@@ -304,6 +343,7 @@ void tick() {
         if (g_full) { fullScreenRedraw(); drawStrip(true); }
         else if (fr != g_drawnFrames && g_fb) {
             uint32_t t0 = micros();
+            int64_t since = g_pendingSinceUs; g_pendingSinceUs = 0;
             g_drawnFrames = fr;
             g_dirtyMin = g_gh; g_dirtyMax = -1;
             uint32_t bytes = ((uint32_t)lampTotal() + 7) / 8;
@@ -317,11 +357,14 @@ void tick() {
             }
             pushRows(std::max(0, g_dirtyMin), std::min(g_gh - 1, g_dirtyMax));
             g_drawUs = micros() - t0; g_drawn++;
+            if (since) latAdd(g_latScr, esp_timer_get_time() - since);
         }
     } else if (fr != g_drawnFrames) {
+        int64_t since = g_pendingSinceUs; g_pendingSinceUs = 0;
         g_drawnFrames = fr;
         drawBarPage();
         g_drawn++;
+        if (since) latAdd(g_latScr, esp_timer_get_time() - since);
     }
     drawStrip(false);
 }
