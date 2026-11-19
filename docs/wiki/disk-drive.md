@@ -51,6 +51,8 @@ In the normal mode the page shows the progress and the board plays modem sounds:
 
 After the file is saved the board computes the **SHA-256** of the document and shows it. The PC computes the same hash and sends it back through the lamps (a hash block), the screen shows both and says MATCH or DIFFERENT. After the LOAD the PC sends the hash of what it received. The screen also shows the speeds: the save speed measured by the board, the load speed measured by the board while sending, and the speed the PC measured.
 
+![The Disk page after a transfer](../../site/img/lamps/disk-page.png)
+
 ## Testing
 
 ```

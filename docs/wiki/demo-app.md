@@ -2,6 +2,8 @@
 
 `jbang tools/DemoApp.java` opens a window (Swing, FlatLaf dark theme) with the Nachtgespenst ghost of the site. Everything is painted by the **PC** through the HID LampArray of a **CoreS3 over USB**; nothing is uploaded to the board. Every demo runs on a virtual thread (Java 27), and **Stop** interrupts it. Start it as one plain command (it needs the serial port and `/dev/hidraw`); `jbang tools/Demo.java` does the same without a window (`--cycles 0` loops until Ctrl-C, `--only pages,disk,bar,grid,photos`, `--shots DIR` saves the board's screen after every photo).
 
+The window has the controls on the left, the log in the middle and on the right the **screenshot of the board** (grabbed for every page of the walk, and after every lamp part) above the **lamps as the PC has worked them out**: the ten bar lamps and the lamp grid, drawn the way the device draws them (hard pixel edges), so what the PC computes can be compared with what the board shows.
+
 ![The demo window](../../site/img/lamps/demo-window.png)
 
 ## The buttons
@@ -22,9 +24,9 @@ Lamp `i` gets the rank `(i * p) mod m`, with `m` the first prime above the numbe
 
 The grids are chosen so that the lamps fill the 320 x 190 pixel lamp area with whole pixels: **160 x 95** (2 x 2 pixels per lamp, 15,200 lamps, the default), 64 x 38 (5 x 5) and 320 x 190 (every pixel, 60,800 lamps). A transition writes every lamp once, as multi updates of eight lamps with a full 24-bit colour, so its duration is the number of lamps divided by about 8,000 lamps per second: 160 x 95 takes **1.9 s** (measured), 320 x 190 about 8 s. Colours cost nothing extra. The 16-colour look belongs to the C64 effects, not to the photos.
 
-![Deventer on the lamps](../../site/img/lamps/deventer-lamps.png)
+![The Eiffel Tower on the lamps](../../site/img/lamps/eiffel-lamps.png)
 
-Photos (fetched once from Wikimedia Commons at 640 pixels into `tools/data/photos`, not committed): *The Blue Marble* (NASA, public domain), *Earthrise* (Apollo 8, NASA, public domain), *Statue of Liberty* (public domain), *Pillars of Creation* (Hubble, NASA/ESA, public domain) and *Deventer seen from across the IJssel* by Smiley.toerist (CC BY-SA 4.0, https://commons.wikimedia.org/wiki/File:Deventer_aan_de_IJssel_2024.jpg).
+Photos of five European places, fetched once from Wikimedia Commons at 640 pixels into `tools/data/photos` (not committed): the *Eiffel Tower and the Pont des Invalides* (CC0), *Tower Bridge* by Colin (CC BY-SA 4.0), the *Brandenburg Gate* by Thomas Wolf (CC BY-SA 3.0), the *Colosseum* by FeaturedPics (CC BY-SA 4.0) and *Deventer seen from across the IJssel* by Smiley.toerist (CC BY-SA 4.0). The file names are in `Photos.java` (and on the site); credit the authors wherever the photos are shown.
 
 ## How the code is organised
 

@@ -7,12 +7,20 @@ import java.util.*;
 final class Scenarios {
     interface Log { void say(String s); }
 
+    /** What the window shows next to the log: the screen of the board, and the lamps as the PC has worked them out. */
+    interface Preview {
+        void screen(java.awt.image.BufferedImage deviceScreen);
+        void bar(int[] rgb);
+        void grid(int[] rgb, int cols, int rows);
+    }
+
     static final String[] BAR_EFFECTS = {"nightrider", "breath", "rainbow", "comet", "sparkle"};
     static final String[] GRID_EFFECTS = {"raster bars", "sine scroller"};
 
     final Ser s; final Hid h; final Log log; final String tag; final int pages;
     volatile double seconds = 8;
     volatile String photoGrid = "160x95";
+    volatile Preview preview = null;
     volatile String shotDir = null;                  // when set, the screen of the board is saved here after every photo
     volatile int pass = 0, fail = 0;
 
@@ -29,6 +37,7 @@ final class Scenarios {
             String r = s.cmd("LAYER " + p, 3000);
             Map<String, String> st = s.kv("STATE?");
             say(String.format("page %2d/%d  %s", p + 1, pages, st.getOrDefault("title", "?")));
+            grabScreen();
             if (r == null || !r.startsWith("OK")) { fail++; say("LAYER " + p + " failed: " + r); }
             Thread.sleep(p >= pages - 2 ? 300 : 1100);
         }
@@ -52,7 +61,25 @@ final class Scenarios {
                 "1".equals(st.get("match")) ? "match" : "DIFFERENT", f[0], f[1] > 0 ? ", " + f[1] + " FAILED" : "");
     }
 
-    void goBarPage() throws Exception { s.cmd("LAYER " + (pages - 1), 3000); Thread.sleep(400); h.write(Proto.control(false)); }
+    void goBarPage() throws Exception {
+        s.cmd("LAYER " + (pages - 1), 3000); Thread.sleep(400); h.write(Proto.control(false));
+        Preview pv = preview; BarEffects.listener = pv == null ? null : pv::bar;
+    }
+
+    /** One screenshot of the board for the window (the picture the lamps or the page make on the device). */
+    void grabScreen() throws Exception {
+        Preview pv = preview; if (pv == null) return;
+        Ser.Shot sh = s.shot(); if (sh == null) return;
+        java.awt.image.BufferedImage img = new java.awt.image.BufferedImage(sh.w(), sh.h(), java.awt.image.BufferedImage.TYPE_INT_RGB);
+        for (int y = 0; y < sh.h(); y++) for (int x = 0; x < sh.w(); x++) { int[] c = sh.at(x, y); img.setRGB(x, y, (c[0] << 16) | (c[1] << 8) | c[2]); }
+        pv.screen(img);
+    }
+
+    Canvas canvas(int cols, int rows) throws Exception {
+        Canvas c = new Canvas(s, h, cols, rows);
+        Preview pv = preview; if (pv != null) c.listener = px -> pv.grid(px, cols, rows);
+        return c;
+    }
     void goGridPage() throws Exception { s.cmd("LAYER " + (pages - 2), 3000); Thread.sleep(400); }
 
     String barEffect(String name) throws Exception {
@@ -65,6 +92,7 @@ final class Scenarios {
             case "comet" -> BarEffects.comet(h, seconds);
             default -> BarEffects.sparkle(h, seconds);
         }
+        BarEffects.listener = null; grabScreen();
         pass++;
         return name;
     }
@@ -73,7 +101,7 @@ final class Scenarios {
 
     String gridEffect(String name) throws Exception {
         goGridPage();
-        Canvas c = new Canvas(s, h, 40, 25);
+        Canvas c = canvas(40, 25);
         say("grid 40 x 25, the 16 C64 colours: " + name);
         long t0 = System.nanoTime();
         if (name.startsWith("raster")) GridEffects.rasterBars(c, seconds);
@@ -83,6 +111,7 @@ final class Scenarios {
         }
         double sec = (System.nanoTime() - t0) / 1e9;
         say(String.format("%.0f reports per second, %d lamps painted", c.reports / sec, c.lamps));
+        grabScreen();
         pass++;
         return String.format("%s: %d reports", name, c.reports);
     }
@@ -93,7 +122,7 @@ final class Scenarios {
     String photos() throws Exception {
         goGridPage();
         String[] gp = photoGrid.split("x"); int cols = Integer.parseInt(gp[0]), rows = Integer.parseInt(gp[1]);
-        Canvas c = new Canvas(s, h, cols, rows);
+        Canvas c = canvas(cols, rows);
         int n = Photos.LIST.length; int[][] pic = new int[n][];
         for (int i = 0; i < n; i++) { pic[i] = Photos.toGrid(Photos.load(i), cols, rows); say("photo " + (i + 1) + ": " + Photos.LIST[i][1]); }
         long lamps = (long) cols * rows, m = GridEffects.nextPrime(lamps + 1);
@@ -108,6 +137,7 @@ final class Scenarios {
             say(String.format("photo %d -> %d, p = %d: %.2f s (%.0f lamps/s)", ((i - 1) % n) + 1, (i % n) + 1, p, sec, lamps / sec));
             note.append(String.format("p=%d %.1fs ", p, sec));
             if (shotDir != null) shot("photo" + (i % n + 1));
+            grabScreen();
             Thread.sleep(1800);
         }
         pass++;

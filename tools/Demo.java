@@ -51,6 +51,18 @@ public class Demo {
         try (Ser s = new Ser(sp.get()); Hid h = new Hid(node)) {
             Scenarios sc = new Scenarios(s, h, "S3", System.out::println);
             sc.seconds = seconds; sc.photoGrid = photoGrid; sc.shotDir = shots;
+            final String shotsDir = shots;
+            if (shots != null) {                                    // the screen of the board after every page and part, as files
+                java.nio.file.Files.createDirectories(java.nio.file.Path.of(shots));
+                int[] n = {0};
+                sc.preview = new Scenarios.Preview() {
+                    public void screen(java.awt.image.BufferedImage img) {
+                        try { javax.imageio.ImageIO.write(img, "png", java.nio.file.Path.of(shotsDir, String.format("screen-%03d.png", n[0]++)).toFile()); } catch (java.io.IOException e) { }
+                    }
+                    public void bar(int[] rgb) { }
+                    public void grid(int[] rgb, int cols, int rows) { }
+                };
+            }
             System.out.println("Demo runner on " + s.kv("INFO"));
             List<String[]> all = new ArrayList<>();
             try {

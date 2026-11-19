@@ -9,6 +9,7 @@ final class Canvas {
     final Hid h; final int cols, rows;
     final int[] cur, next;                     // 0xRRGGBB per lamp; cur is what the board shows (-1 = not known yet)
     long reports = 0, lamps = 0;
+    volatile java.util.function.Consumer<int[]> listener;    // gets a copy of the picture (0xRRGGBB per lamp) after every present()
 
     Canvas(Ser s, Hid h, int cols, int rows) throws Exception {
         this.h = h; this.cols = cols; this.rows = rows;
@@ -54,6 +55,7 @@ final class Canvas {
         for (byte[] r : out) h.write(r);
         System.arraycopy(next, 0, cur, 0, n);
         reports += out.size();
+        java.util.function.Consumer<int[]> l = listener; if (l != null) l.accept(next.clone());
         return out.size();
     }
 }

@@ -9,17 +9,17 @@ import java.util.regex.*;
 import javax.imageio.ImageIO;
 
 /**
- * Five photos from Wikimedia Commons, chosen to be recognisable and not upsetting: the Blue Marble, Earthrise, the Statue of Liberty and the Pillars of
- * Creation (all public domain) and Deventer seen from across the IJssel (CC BY-SA 4.0, Smiley.toerist: credit it wherever it is shown). They are fetched once (640 pixels wide) into tools/data/photos
- * (not committed) and cut to the grid with a box filter.
+ * Five photos of European places from Wikimedia Commons, recognisable and not upsetting: the Eiffel Tower (Paris), Tower Bridge (London), the Brandenburg
+ * Gate (Berlin), the Colosseum (Rome) and Deventer seen from across the IJssel. All are open licences (CC0, CC BY-SA 3.0 and 4.0): credit the authors
+ * wherever they are shown. They are fetched once (640 pixels wide) into tools/data/photos (not committed) and cut to the grid with a box filter.
  */
 final class Photos {
     static final String[][] LIST = {
-        {"File:The_Blue_Marble_(remastered).jpg", "The Blue Marble (NASA)"},
-        {"File:NASA-Apollo8-Dec24-Earthrise.jpg", "Earthrise (Apollo 8, NASA)"},
-        {"File:Deventer_aan_de_IJssel_2024.jpg", "Deventer seen from across the IJssel (Smiley.toerist, CC BY-SA 4.0)"},
-        {"File:Statue_of_Liberty_7.jpg", "Statue of Liberty"},
-        {"File:Pillars_of_creation_2014_HST_WFC3-UVIS_full-res_denoised.jpg", "Pillars of Creation (Hubble, NASA/ESA)"}};
+        {"File:Pont_des_Invalides_and_the_Eiffel_Tower,_Paris_31_August_2019.jpg", "Eiffel Tower and the Pont des Invalides, Paris (CC0)"},
+        {"File:Tower_Bridge_from_Shad_Thames.jpg", "Tower Bridge, London (Colin, CC BY-SA 4.0)"},
+        {"File:Brandenburger_Tor_abends.jpg", "Brandenburg Gate, Berlin (Thomas Wolf, CC BY-SA 3.0)"},
+        {"File:Colosseo_2020.jpg", "Colosseum, Rome (FeaturedPics, CC BY-SA 4.0)"},
+        {"File:Deventer_aan_de_IJssel_2024.jpg", "Deventer seen from across the IJssel (Smiley.toerist, CC BY-SA 4.0)"}};
     static final String UA = "nachtgespenst-demo/1.0 (public domain test images)";
     static final Path DIR = Path.of("tools/data/photos");
 
@@ -29,7 +29,7 @@ final class Photos {
         if (!Files.exists(f)) {
             HttpClient hc = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
             String api = "https://commons.wikimedia.org/w/api.php?action=query&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&titles="
-                    + URI.create("x:" + LIST[n][0].replace(" ", "_")).getRawSchemeSpecificPart().replace("(", "%28").replace(")", "%29");
+                    + java.net.URLEncoder.encode(LIST[n][0], StandardCharsets.UTF_8);
             String js = hc.send(HttpRequest.newBuilder(URI.create(api)).header("User-Agent", UA).build(), HttpResponse.BodyHandlers.ofString()).body();
             Matcher m = Pattern.compile("\"thumburl\":\"([^\"]+)\"").matcher(js);
             if (!m.find()) throw new IOException("no thumbnail for " + LIST[n][0]);

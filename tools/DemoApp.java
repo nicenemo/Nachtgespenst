@@ -58,6 +58,8 @@ public class DemoApp {
     final JCheckBox repeat = new JCheckBox("repeat until Stop", false), withFast = new JCheckBox("include the fast disk run", true);
     final JButton stop = new JButton("■  Stop"), reconnect = new JButton("Connect");
     final List<JButton> actions = new ArrayList<>();
+    final ScreenPanel screenPanel = new ScreenPanel();
+    final LampPanel lampPanel = new LampPanel();
     volatile Scenarios sc; volatile Ser ser; volatile Hid hid;
     volatile Thread worker;
 
@@ -138,6 +140,13 @@ public class DemoApp {
         JScrollPane logPane = new JScrollPane(log);
         logPane.setBorder(BorderFactory.createTitledBorder("What is happening"));
         root.add(logPane, BorderLayout.CENTER);
+        // right: the screen of the board and the lamps as the PC has worked them out
+        JPanel right = new JPanel(new GridLayout(2, 1, 8, 8));
+        right.setPreferredSize(new Dimension(420, 100));
+        screenPanel.setBorder(BorderFactory.createTitledBorder("The board (screenshot)"));
+        lampPanel.setBorder(BorderFactory.createTitledBorder("The lamps, worked out on the PC"));
+        right.add(screenPanel); right.add(lampPanel);
+        root.add(right, BorderLayout.EAST);
         JPanel south = new JPanel(new BorderLayout(10, 0));
         busy.setPreferredSize(new Dimension(160, 8)); busy.setIndeterminate(false);
         south.add(status, BorderLayout.CENTER); south.add(busy, BorderLayout.EAST);
@@ -188,6 +197,11 @@ public class DemoApp {
                 if (node == null) throw new IllegalStateException("no USB HID node for the CoreS3 (udev rule installed? see docs/wiki/hardware-testing.md)");
                 ser = new Ser(sp.get()); hid = new Hid(node);
                 sc = new Scenarios(ser, hid, "S3", this::say);
+                sc.preview = new Scenarios.Preview() {
+                    public void screen(BufferedImage img) { screenPanel.set(img); }
+                    public void bar(int[] rgb) { lampPanel.setBar(rgb); }
+                    public void grid(int[] rgb, int cols, int rows) { lampPanel.setGrid(rgb, cols, rows); }
+                };
                 Map<String, String> i = ser.kv("INFO");
                 SwingUtilities.invokeLater(() -> info.setText("connected: " + i.get("name") + ", firmware " + i.get("fw") + ", " + i.get("pages") + " pages, USB " + node));
                 say("Connected. Pick a demo, or start the cycle.");
@@ -212,6 +226,7 @@ public class DemoApp {
         sc.seconds = ((Number) seconds.getValue()).doubleValue();
         state("Running: " + name, true);
         say("=== " + name);
+        lampPanel.clear();
         worker = Thread.ofVirtual().name("demo").start(() -> {
             String note;
             try { note = body.call(); }
@@ -229,6 +244,7 @@ public class DemoApp {
         sc.photoGrid = (String) photoGrid.getSelectedItem();
         boolean again = repeat.isSelected(), fast = withFast.isSelected();
         state("Cycle running", true);
+        lampPanel.clear();
         worker = Thread.ofVirtual().name("cycle").start(() -> {
             try {
                 int n = 0;
@@ -258,11 +274,19 @@ public class DemoApp {
             app.info.setText("connected: NG-S3, firmware Nov 19 2026, 30 pages, USB /dev/hidraw0 (preview)");
             app.log.setText("Connected. Pick a demo, or start the cycle.\n=== Jules Verne to the SD card and back\nbook 618734 bytes, raw deflate 232700 bytes (38%)\nsent 232700 compressed bytes in 7,95 s = 28,6 kB/s\nloaded back 618734 bytes in 16,37 s = 36,9 kB/s over the gamepad\nSHA-256 of the received file equals the original\n");
             app.setEnabledActions(true);
-            app.root.setSize(1000, 780);
+            try {
+                BufferedImage sample = ImageIO.read(Boards.repoRoot().resolve("site/img/lamps/deventer-lamps.png").toFile());
+                app.screenPanel.set(sample);
+                int cols = 160, rows = 95; int[] px = new int[cols * rows];
+                for (int y = 0; y < rows; y++) for (int x = 0; x < cols; x++) px[y * cols + x] = sample.getRGB(x * 2, y * 2) & 0xFFFFFF;
+                app.lampPanel.setGrid(px, cols, rows);
+                app.lampPanel.setBar(new int[]{0x220000, 0x660500, 0xCC1000, 0xFF2000, 0xFF1000, 0x880800, 0x330300, 0x110100, 0, 0});
+            } catch (Exception ignored) { }
+            app.root.setSize(1450, 780);
             layout(app.root);
-            BufferedImage img = new BufferedImage(1000, 780, BufferedImage.TYPE_INT_RGB);
+            BufferedImage img = new BufferedImage(1450, 780, BufferedImage.TYPE_INT_RGB);
             Graphics2D g2 = img.createGraphics();
-            g2.setColor(UIManager.getColor("Panel.background")); g2.fillRect(0, 0, 1000, 780);
+            g2.setColor(UIManager.getColor("Panel.background")); g2.fillRect(0, 0, 1450, 780);
             app.root.print(g2); g2.dispose();
             ImageIO.write(img, "png", new java.io.File(shot));
             System.out.println("wrote " + shot);
@@ -277,9 +301,54 @@ public class DemoApp {
             f.addWindowListener(new java.awt.event.WindowAdapter() {
                 public void windowClosing(java.awt.event.WindowEvent e) { app.stopRun(); if (app.sc != null) app.sc.release(); app.close(); f.dispose(); System.exit(0); }
             });
-            f.setSize(1000, 780); f.setLocationByPlatform(true); f.setVisible(true);
+            f.setSize(1450, 780); f.setLocationByPlatform(true); f.setVisible(true);
             app.connect();
         });
+    }
+
+    /** The screenshot of the board, scaled to fit. */
+    static final class ScreenPanel extends JPanel {
+        private volatile BufferedImage img; private final java.util.concurrent.atomic.AtomicBoolean pending = new java.util.concurrent.atomic.AtomicBoolean();
+        void set(BufferedImage i) { img = i; if (!pending.getAndSet(true)) SwingUtilities.invokeLater(() -> { pending.set(false); repaint(); }); }
+        @Override protected void paintComponent(Graphics g0) {
+            super.paintComponent(g0);
+            BufferedImage i = img; if (i == null) { g0.setColor(Color.GRAY); g0.drawString("no screenshot yet", 20, 40); return; }
+            Graphics2D g = (Graphics2D) g0;
+            Insets in = getInsets(); int w = getWidth() - in.left - in.right - 8, h = getHeight() - in.top - in.bottom - 8;
+            double k = Math.min((double) w / i.getWidth(), (double) h / i.getHeight());
+            int pw = (int) (i.getWidth() * k), ph = (int) (i.getHeight() * k);
+            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g.drawImage(i, in.left + (w - pw) / 2 + 4, in.top + 4, pw, ph, null);
+        }
+    }
+
+    /** The lamps the way the device draws them: the ten bar lamps in a row and the grid scaled to the lamp area, with hard pixel edges. */
+    static final class LampPanel extends JPanel {
+        private volatile int[] bar = new int[10]; private volatile int[] grid; private volatile int cols, rows;
+        private final java.util.concurrent.atomic.AtomicBoolean pending = new java.util.concurrent.atomic.AtomicBoolean();
+        void touch() { if (!pending.getAndSet(true)) SwingUtilities.invokeLater(() -> { pending.set(false); repaint(); }); }
+        void setBar(int[] rgb) { bar = rgb; touch(); }
+        void setGrid(int[] rgb, int c, int r) { grid = rgb; cols = c; rows = r; touch(); }
+        void clear() { bar = new int[10]; grid = null; touch(); }
+        @Override protected void paintComponent(Graphics g0) {
+            super.paintComponent(g0);
+            Graphics2D g = (Graphics2D) g0;
+            Insets in = getInsets(); int w = getWidth() - in.left - in.right - 8, x0 = in.left + 4, y = in.top + 6;
+            int[] b = bar; int cell = Math.min(34, w / 10);
+            for (int i = 0; i < 10; i++) {
+                g.setColor(new Color(b[i] & 0xFFFFFF)); g.fillRoundRect(x0 + i * (w / 10), y, cell - 4, 22, 8, 8);
+                g.setColor(new Color(0x555555)); g.drawRoundRect(x0 + i * (w / 10), y, cell - 4, 22, 8, 8);
+            }
+            int[] gr = grid; int top = y + 30;
+            if (gr == null) { g.setColor(Color.GRAY); g.drawString("bar lamps 0-9; the lamp grid appears here", x0, top + 16); return; }
+            int ch = getHeight() - in.bottom - top - 22; int c = cols, r = rows;
+            BufferedImage im = new BufferedImage(c, r, BufferedImage.TYPE_INT_RGB);
+            im.setRGB(0, 0, c, r, gr, 0, c);
+            double k = Math.min((double) w / c, (double) ch / r); int pw = (int) (c * k), ph = (int) (r * k);
+            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+            g.drawImage(im, x0 + (w - pw) / 2, top, pw, ph, null);
+            g.setColor(Color.GRAY); g.drawString(c + " x " + r + " lamps", x0, top + ph + 14);
+        }
     }
 
     static void layout(Container c) { c.doLayout(); for (Component k : c.getComponents()) if (k instanceof Container cc) layout(cc); }

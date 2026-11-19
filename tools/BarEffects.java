@@ -1,6 +1,10 @@
 /** Effects for the ten bar lamps (lamps 0 to 9), painted by the PC while the bar lamp page is shown. */
 final class BarEffects {
+    /** Called with the colours of the ten bar lamps for every frame (the window shows them as the PC has worked them out). */
+    static volatile java.util.function.Consumer<int[]> listener;
+
     static void frame(Hid h, int[] rgb) {
+        java.util.function.Consumer<int[]> l = listener; if (l != null) l.accept(rgb.clone());
         int[] ids = new int[8]; int[][] c = new int[8][4];
         for (int k = 0; k < 8; k++) { ids[k] = k; c[k] = new int[]{(rgb[k] >> 16) & 255, (rgb[k] >> 8) & 255, rgb[k] & 255, 255}; }
         h.write(Proto.multi(ids, c, 8, false));
