@@ -83,30 +83,40 @@ final class Talk {
             g.dispose();
         }
 
-        /** Lays the slide out at one size; returns whether it fits. With paint=false nothing is drawn unless it fits. */
+        /** Lays the slide out at one size; returns whether it fits. Nothing is drawn unless it fits (or force is set). */
         private boolean draw(Graphics2D g, Slide s, int x, int y, int w, int h, float size, boolean force) {
-            Font tf = ConsoleTheme.sansBold(size * 1.25f), bf = ConsoleTheme.sansRegular(size);
-            List<Object[]> items = new ArrayList<>();                      // {Font, Color, lines}
-            items.add(new Object[]{tf, Color.WHITE, wrap(s.title(), tf, w, g)});
-            for (String b : s.bullets()) items.add(new Object[]{bf, b.startsWith("• ") ? ConsoleTheme.PEACH : ConsoleTheme.LAVENDER, wrap(b, bf, w, g)});
+            Font tf = ConsoleTheme.sansBold(size * 1.2f), bf = ConsoleTheme.sansRegular(size);
+            int indent = (int) (size * 0.95);
+            record Item(Font font, Color colour, List<TextLayout> lines, boolean bullet, double gap) { }
+            List<Item> items = new ArrayList<>();
+            items.add(new Item(tf, ConsoleTheme.SLIDE_TITLE, wrap(s.title(), tf, w, g), false, size * 0.8));
+            for (String b : s.bullets()) {
+                boolean bullet = b.startsWith("• "); String t = bullet ? b.substring(2) : b;
+                items.add(new Item(bf, bullet ? ConsoleTheme.SLIDE_TEXT : ConsoleTheme.SLIDE_NOTE, wrap(t, bf, w - (bullet ? indent : 0), g), bullet, size * 0.5));
+            }
             double total = 0;
-            for (Object[] it : items) total += ((List<TextLayout>) it[2]).stream().mapToDouble(t -> t.getAscent() + t.getDescent() + t.getLeading()).sum() + size * 0.45;
+            for (Item it : items) total += it.lines().stream().mapToDouble(t -> t.getAscent() + t.getDescent() + t.getLeading() * 1.25).sum() + it.gap();
             if (total > h && !force) return false;
             double yy = y;
-            for (Object[] it : items) {
-                g.setColor((Color) it[1]);
-                for (TextLayout t : (List<TextLayout>) it[2]) { yy += t.getAscent(); t.draw(g, (float) x, (float) yy); yy += t.getDescent() + t.getLeading(); }
-                yy += size * 0.45;
+            for (Item it : items) {
+                g.setColor(it.colour());
+                boolean first = true;
+                for (TextLayout t : it.lines()) {
+                    yy += t.getAscent();
+                    if (it.bullet() && first) { g.setColor(ConsoleTheme.SLIDE_BULLET); double d = size * 0.3; g.fill(new java.awt.geom.Ellipse2D.Double(x + size * 0.12, yy - size * 0.36 - d / 2, d, d)); g.setColor(it.colour()); }
+                    t.draw(g, (float) (x + (it.bullet() ? indent : 0)), (float) yy);
+                    yy += t.getDescent() + t.getLeading() * 1.25; first = false;
+                }
+                yy += it.gap();
             }
             return true;
         }
 
         private static List<TextLayout> wrap(String text, Font f, int width, Graphics2D g) {
             List<TextLayout> out = new ArrayList<>();
-            boolean bullet = text.startsWith("• ");
             AttributedString as = new AttributedString(text.isEmpty() ? " " : text); as.addAttribute(TextAttribute.FONT, f);
             LineBreakMeasurer m = new LineBreakMeasurer(as.getIterator(), g.getFontRenderContext());
-            while (m.getPosition() < text.length()) out.add(m.nextLayout(Math.max(40, width - (bullet && !out.isEmpty() ? (int) (f.getSize2D() * 0.9) : 0))));
+            while (m.getPosition() < text.length()) out.add(m.nextLayout(Math.max(40, width)));
             return out;
         }
     }

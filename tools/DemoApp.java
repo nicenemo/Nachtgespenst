@@ -70,7 +70,7 @@ public class DemoApp {
     final JComboBox<?>[] camPick = {camPick0, camPick1};
     ConsoleUi.Frame camsFrame; JComponent sideScroll; JPanel southPane;
     final JPanel demoPane = new JPanel(), camPane = new JPanel(), logPaneOuter = new JPanel();
-    final ConsoleUi.PillBar metricsBar = new ConsoleUi.PillBar(ConsoleTheme.PEACH);
+    final ConsoleUi.Lcd lcd = new ConsoleUi.Lcd();
     JDialog openDialog;
     String statusBase = "Ready";
     final ScreenPanel screenPanel = new ScreenPanel();
@@ -224,10 +224,10 @@ public class DemoApp {
         root.add(centre, BorderLayout.CENTER);
 
         statusBar.setText("Ready");
-        statusBar.setPreferredSize(new Dimension(100, 30)); metricsBar.setPreferredSize(new Dimension(100, 30)); metricsBar.setText("");
+        statusBar.setPreferredSize(new Dimension(100, 30)); statusBar.setFill(ConsoleTheme.mix(ConsoleTheme.LAVENDER, ConsoleTheme.BLACK, 0.2));
         JPanel south = southPane = new JPanel(new GridBagLayout()); south.setOpaque(false);
-        GridBagConstraints sc2 = new GridBagConstraints(); sc2.fill = GridBagConstraints.HORIZONTAL; sc2.weightx = 0.45; sc2.gridx = 0; sc2.insets = new Insets(0, 0, 0, gap); south.add(statusBar, sc2);
-        sc2.weightx = 0.55; sc2.gridx = 1; sc2.insets = new Insets(0, 0, 0, 0); south.add(metricsBar, sc2);
+        GridBagConstraints sc2 = new GridBagConstraints(); sc2.fill = GridBagConstraints.HORIZONTAL; sc2.weightx = 0.25; sc2.gridx = 0; sc2.insets = new Insets(0, 0, 0, gap); south.add(statusBar, sc2);
+        sc2.weightx = 0.75; sc2.gridx = 1; sc2.insets = new Insets(0, 0, 0, 0); south.add(lcd, sc2);
         root.add(south, BorderLayout.SOUTH);
 
         screenPanel.setOpaque(false); lampPanel.setOpaque(false);
@@ -450,9 +450,12 @@ public class DemoApp {
         });
     }
     void showProgress() {
-        if (player == null || !player.running) { setStatus(statusBase); return; }
+        if (player == null || !player.running) { setStatus(statusBase); SwingUtilities.invokeLater(() -> lcd.talk(-1, "")); return; }
         long e = player.elapsedMs() / 1000, t = player.totalMs() / 1000;
-        setStatus(statusBase + "   |   talk " + (player.index + 1) + "/" + player.slides.size() + "  " + e / 60 + ":" + String.format("%02d", e % 60) + " of " + t / 60 + ":" + String.format("%02d", t % 60) + (player.paused ? "  (paused)" : ""));
+        final String tt = e / 60 + ":" + String.format("%02d", e % 60) + " / " + t / 60 + ":" + String.format("%02d", t % 60) + (player.paused ? " ||" : "");
+        final double fr = t == 0 ? 0 : (double) e / t;
+        setStatus(statusBase + (player.paused ? "  (paused)" : ""));
+        SwingUtilities.invokeLater(() -> lcd.talk(fr, tt));
         if (player.index >= 0) slidePanel.show(player.slides.get(player.index), player.index, player.slides.size());
     }
     void setStatus(String t) { SwingUtilities.invokeLater(() -> statusBar.setText(t)); }
@@ -493,9 +496,22 @@ public class DemoApp {
 
     // ---- log and status (called from any thread)
     void say(String s) {
-        boolean metric = s.matches("(?is).*(kB/s|MB/s|\\bHz\\b|\\bms\\b|bytes|sha-256|pass=|crc|blocks).*");
-        SwingUtilities.invokeLater(() -> { log.append(s + "\n"); log.setCaretPosition(log.getDocument().getLength()); if (metric) metricsBar.setText(s.strip()); });
+        SwingUtilities.invokeLater(() -> { log.append(s + "\n"); log.setCaretPosition(log.getDocument().getLength()); lcdFeed(s); });
     }
+    /** Reads the numbers of a log line into the readouts of the bottom bar: speeds, tones, rates and the hash check. */
+    void lcdFeed(String s) {
+        java.util.regex.Matcher m;
+        if ((m = java.util.regex.Pattern.compile("sent .*= ([0-9.,]+) kB/s").matcher(s)).find()) lcd.set("send kB/s", num(m.group(1)), 60, fmt(m.group(1)), ConsoleTheme.AMBER);
+        if ((m = java.util.regex.Pattern.compile("loaded back .*= ([0-9.,]+) kB/s").matcher(s)).find()) lcd.set("load kB/s", num(m.group(1)), 60, fmt(m.group(1)), ConsoleTheme.AMBER);
+        if ((m = java.util.regex.Pattern.compile("([0-9.,]+) reports per second").matcher(s)).find()) lcd.set("reports/s", num(m.group(1)), 250, fmt(m.group(1)), ConsoleTheme.PEACH);
+        if ((m = java.util.regex.Pattern.compile("hears (?:about )?([0-9.,]+) Hz|measured: ([0-9.,]+) Hz").matcher(s)).find()) { String v = m.group(1) != null ? m.group(1) : m.group(2); lcd.set("tone Hz", num(v), 2000, fmt(v), ConsoleTheme.LAVENDER); }
+        if ((m = java.util.regex.Pattern.compile("\\(([0-9.,]+) lamps/s\\)").matcher(s)).find()) lcd.set("lamps/s", num(m.group(1)), 20000, fmt(m.group(1)), ConsoleTheme.PEACH);
+        if (s.contains("SHA-256") && s.contains("equals")) lcd.set("SHA-256", 1, 1, "match", ConsoleTheme.PEACH);
+        else if (s.contains("SHA-256") && (s.contains("differ") || s.contains("not equal"))) lcd.set("SHA-256", 1, 1, "differs", ConsoleTheme.CORAL);
+    }
+    static double num(String v) { try { return Double.parseDouble(v.replace(',', '.')); } catch (NumberFormatException e) { return 0; } }
+    static String fmt(String v) { double d = num(v); return d >= 100 ? String.valueOf(Math.round(d)) : String.format(java.util.Locale.ROOT, "%.1f", d); }
+
     void state(String s, boolean running) {
         statusBase = s; SwingUtilities.invokeLater(() -> { statusBar.setText(s); statusBar.setBusy(running); statusBar.setFill(running ? ConsoleTheme.AMBER : ConsoleTheme.LAVENDER); stop.setEnabled(running); setEnabledActions(!running && sc != null); reconnect.setEnabled(!running); });
     }
@@ -611,7 +627,8 @@ public class DemoApp {
             app.log.setText("Connected. Pick a demo, or start the cycle.\n=== Jules Verne to the SD card and back\nbook 618734 bytes, raw deflate 232700 bytes (38%)\nsent 232700 compressed bytes in 7,95 s = 28,6 kB/s\nloaded back 618734 bytes in 16,37 s = 36,9 kB/s over the gamepad\nSHA-256 of the received file equals the original\n");
             for (int i = 0; i < 2; i++) { app.camPanel[i].setVisible(true); app.camPanel[i].text = i == 0 ? "tripod camera" : "laptop camera"; }  // the layout with both camera panels
             app.camsFrame.setVisible(true);
-            app.setEnabledActions(true); app.metricsBar.setText("loaded back 618734 bytes in 16,37 s = 36,9 kB/s over the gamepad");
+            app.setEnabledActions(true);
+            app.lcd.talk(0.42, "4:12 / 10:10"); app.lcd.set("send kB/s", 28.6, 60, "28.6", ConsoleTheme.AMBER); app.lcd.set("load kB/s", 36.9, 60, "36.9", ConsoleTheme.AMBER); app.lcd.set("SHA-256", 1, 1, "match", ConsoleTheme.PEACH);
             try {
                 BufferedImage sample = ImageIO.read(Boards.repoRoot().resolve("site/img/lamps/scope-880.png").toFile());
                 app.screenPanel.set(sample);                       // the board shows the oscilloscope the PC paints on its lamps

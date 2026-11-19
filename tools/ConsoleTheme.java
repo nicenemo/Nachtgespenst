@@ -18,6 +18,8 @@ final class ConsoleTheme {
     static final Color CORAL = new Color(0xCC6666);        // alerts and status
     static final Color DIM = new Color(0x1B1208);          // a block that is switched off
     static final Color TEXT_ON_BLOCK = BLACK;
+    // the slides: calm and readable. A soft lavender heading, near-white text, amber bullets (contrast on black above 7:1)
+    static final Color SLIDE_TITLE = new Color(0xB8B8FF), SLIDE_TEXT = new Color(0xECECF6), SLIDE_BULLET = AMBER, SLIDE_NOTE = new Color(0xB4B4CC);
     static final Color TEXT = PEACH;                       // live data on black
 
     // spacing and shapes for the desktop (the device uses half of these, see the design system)
