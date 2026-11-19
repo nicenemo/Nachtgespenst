@@ -63,8 +63,9 @@ final class Talk {
     /** Draws a slide: the title in amber and the bullets in peach, in the largest size that fits the panel. */
     static final class SlidePanel extends JPanel {
         private volatile Slide slide; private volatile int index, count;
+        java.util.function.Consumer<String> onTitle;                  // the title of the slide is shown by the window (in its header), not on the slide
         SlidePanel() { setOpaque(false); setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12)); }
-        void show(Slide s, int i, int n) { slide = s; index = i; count = n; repaint(); }
+        void show(Slide s, int i, int n) { slide = s; index = i; count = n; if (onTitle != null) onTitle.accept(s.title()); repaint(); }
 
         @Override protected void paintComponent(Graphics g0) {
             Graphics2D g = (Graphics2D) g0.create(); ConsoleUi.quality(g);
@@ -89,7 +90,6 @@ final class Talk {
             int indent = (int) (size * 0.95);
             record Item(Font font, Color colour, List<TextLayout> lines, boolean bullet, double gap) { }
             List<Item> items = new ArrayList<>();
-            items.add(new Item(tf, ConsoleTheme.SLIDE_TITLE, wrap(s.title(), tf, w, g), false, size * 0.8));
             for (String b : s.bullets()) {
                 boolean bullet = b.startsWith("• "); String t = bullet ? b.substring(2) : b;
                 items.add(new Item(bf, bullet ? ConsoleTheme.SLIDE_TEXT : ConsoleTheme.SLIDE_NOTE, wrap(t, bf, w - (bullet ? indent : 0), g), bullet, size * 0.5));

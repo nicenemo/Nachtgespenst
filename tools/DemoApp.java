@@ -57,7 +57,9 @@ public class DemoApp {
     // ---- state
     final Root root = new Root();
     final JTextArea log = new JTextArea();
-    final ConsoleUi.PillBar infoBar = new ConsoleUi.PillBar(ConsoleTheme.PEACH), statusBar = new ConsoleUi.PillBar(ConsoleTheme.LAVENDER);
+    final ConsoleUi.PillBar infoBar = new ConsoleUi.PillBar(ConsoleTheme.PEACH);
+    volatile String connText = "not connected", busyText;                     // the info bar: the connection, or what is running
+    final SlideTitle slideTitle = new SlideTitle();
     final JSpinner seconds = new JSpinner(new SpinnerNumberModel(8, 2, 60, 1));
     final JComboBox<String> photoGrid = new JComboBox<>(new String[]{"64x38", "160x95", "320x190"});
     final JCheckBox repeat = check("Repeat until stopped", false), withFast = check("Include the fast disk run", true), withMic = check("Include the microphone parts", false);
@@ -73,7 +75,6 @@ public class DemoApp {
     final JPanel demoPane = new JPanel(), camPane = new JPanel(), logPaneOuter = new JPanel();
     final ConsoleUi.Lcd lcd = new ConsoleUi.Lcd();
     JDialog openDialog;
-    String statusBase = "Ready";
     final ScreenPanel screenPanel = new ScreenPanel();
     final LampPanel lampPanel = new LampPanel();
     volatile Scenarios sc; volatile Ser ser; volatile Hid hid;
@@ -89,8 +90,8 @@ public class DemoApp {
             Graphics2D g = (Graphics2D) g0.create(); ConsoleUi.quality(g);
             int gap = ConsoleTheme.GAP, w = getWidth(), h = getHeight();
             ConsoleUi.ghost(g, gap + 12, gap, ConsoleTheme.BAR_H - gap - 2);
-            g.setColor(Color.WHITE); g.setFont(ConsoleTheme.sansBold(26f));
-            g.drawString("Nachtgespenst", gap + 12 + ConsoleTheme.BAR_H + 4, gap + (ConsoleTheme.BAR_H - gap) / 2 + 10);
+            g.setColor(new Color(0xD8D8E8)); g.setFont(ConsoleTheme.sansBold(17f));
+            g.drawString("Nachtgespenst", gap + 12 + ConsoleTheme.BAR_H + 2, gap + (ConsoleTheme.BAR_H - gap) / 2 + 6);
             g.dispose();
         }
     }
@@ -116,7 +117,7 @@ public class DemoApp {
         head.setPreferredSize(new Dimension(100, ConsoleTheme.BAR_H));
         JPanel infoWrap = new JPanel(new BorderLayout()); infoWrap.setOpaque(false);
         infoWrap.setBorder(BorderFactory.createEmptyBorder(ConsoleTheme.BAR_H / 2 - 12, 0, ConsoleTheme.BAR_H / 2 - 12, 0)); infoWrap.add(infoBar);
-        JPanel west = new JPanel(); west.setOpaque(false); west.setPreferredSize(new Dimension(ConsoleTheme.BAR_H + 12 + 4 + 215, ConsoleTheme.BAR_H));
+        JPanel west = new JPanel(); west.setOpaque(false); west.setPreferredSize(new Dimension(ConsoleTheme.BAR_H + 12 + 2 + 140, ConsoleTheme.BAR_H));
         reconnect.setPreferredSize(new Dimension(130, ConsoleTheme.BLOCK_H)); reconnect.setMaximumSize(new Dimension(130, ConsoleTheme.BLOCK_H));
         JPanel conn = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, ConsoleTheme.BAR_H / 2 - ConsoleTheme.BLOCK_H / 2)); conn.setOpaque(false); conn.add(reconnect);
         head.add(west, BorderLayout.WEST); head.add(infoWrap, BorderLayout.CENTER); head.add(conn, BorderLayout.EAST);
@@ -125,7 +126,7 @@ public class DemoApp {
 
         // toolbar: icon buttons for the talk and the popups (demos, cameras, microphone, speaker, log); every button has a tooltip
         stop.setEnabled(false); stop.addActionListener(e -> stopRun());
-        JPanel tools = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, ConsoleTheme.BAR_H / 2 - 17)); tools.setOpaque(false);
+        JPanel tools = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 7)); tools.setOpaque(false);
         tools.add(tb(ConsoleUi.IconButton.Kind.PLAY, "Start the talk (F5)", ConsoleTheme.AMBER, this::talkStart));
         tools.add(tb(ConsoleUi.IconButton.Kind.PAUSE, "Pause or resume the talk (P)", ConsoleTheme.PEACH, () -> { if (player != null) player.pause(); }));
         tools.add(tb(ConsoleUi.IconButton.Kind.PREV, "Previous slide (left, up, Page Up)", ConsoleTheme.LAVENDER, () -> { if (player != null) player.prev(); }));
@@ -138,8 +139,11 @@ public class DemoApp {
         tools.add(tb(ConsoleUi.IconButton.Kind.MIC, "Microphone: device, gain and level", ConsoleTheme.LAVENDER, this::micPopup));
         tools.add(tb(ConsoleUi.IconButton.Kind.SPEAKER, "Speaker: device and volume", ConsoleTheme.LAVENDER, () -> popup("Speaker", speakerPane)));
         tools.add(tb(ConsoleUi.IconButton.Kind.LOG, "What is happening: the log", ConsoleTheme.LAVENDER, () -> popup("What is happening", logPaneOuter)));
-        JPanel mid = new JPanel(new BorderLayout(gap, 0)); mid.setOpaque(false); mid.add(tools, BorderLayout.WEST); mid.add(infoWrap, BorderLayout.CENTER);
+        // the header: the title of the slide in the middle, the info bar (connection, or what is running) at the right; the toolbar sits at the bottom
+        infoWrap.setPreferredSize(new Dimension(300, ConsoleTheme.BAR_H));
+        JPanel mid = new JPanel(new BorderLayout(gap, 0)); mid.setOpaque(false); mid.add(slideTitle, BorderLayout.CENTER); mid.add(infoWrap, BorderLayout.EAST);
         head.remove(infoWrap); head.add(mid, BorderLayout.CENTER);
+        slidePanel.onTitle = slideTitle::set;
         sideScroll = tools;
 
         // popup: the demos, in three columns
@@ -224,11 +228,9 @@ public class DemoApp {
         cc.gridx = 1; cc.weightx = 0.30; cc.insets = new Insets(0, 0, 0, 0); centre.add(right, cc);
         root.add(centre, BorderLayout.CENTER);
 
-        statusBar.setText("Ready");
-        statusBar.setPreferredSize(new Dimension(100, 30)); statusBar.setFill(ConsoleTheme.mix(ConsoleTheme.LAVENDER, ConsoleTheme.BLACK, 0.2));
         JPanel south = southPane = new JPanel(new GridBagLayout()); south.setOpaque(false);
-        GridBagConstraints sc2 = new GridBagConstraints(); sc2.fill = GridBagConstraints.HORIZONTAL; sc2.weightx = 0.25; sc2.gridx = 0; sc2.insets = new Insets(0, 0, 0, gap); south.add(statusBar, sc2);
-        sc2.weightx = 0.75; sc2.gridx = 1; sc2.insets = new Insets(0, 0, 0, 0); south.add(lcd, sc2);
+        GridBagConstraints sc2 = new GridBagConstraints(); sc2.fill = GridBagConstraints.NONE; sc2.anchor = GridBagConstraints.WEST; sc2.weightx = 0; sc2.gridx = 0; south.add(tools, sc2);
+        sc2.fill = GridBagConstraints.HORIZONTAL; sc2.weightx = 1; sc2.gridx = 1; sc2.insets = new Insets(0, gap, 0, 0); south.add(lcd, sc2);
         root.add(south, BorderLayout.SOUTH);
 
         screenPanel.setOpaque(false); lampPanel.setOpaque(false);
@@ -451,15 +453,31 @@ public class DemoApp {
         });
     }
     void showProgress() {
-        if (player == null || !player.running) { setStatus(statusBase); SwingUtilities.invokeLater(() -> lcd.talk(-1, "")); return; }
+        if (player == null || !player.running) { SwingUtilities.invokeLater(() -> lcd.talk(-1, "")); return; }
         long e = player.elapsedMs() / 1000, t = player.totalMs() / 1000;
         final String tt = e / 60 + ":" + String.format("%02d", e % 60) + " / " + t / 60 + ":" + String.format("%02d", t % 60) + (player.paused ? " ||" : "");
         final double fr = t == 0 ? 0 : (double) e / t;
-        setStatus(statusBase + (player.paused ? "  (paused)" : ""));
         SwingUtilities.invokeLater(() -> lcd.talk(fr, tt));
         if (player.index >= 0) slidePanel.show(player.slides.get(player.index), player.index, player.slides.size());
     }
-    void setStatus(String t) { SwingUtilities.invokeLater(() -> statusBar.setText(t)); }
+    void setInfo() {
+        SwingUtilities.invokeLater(() -> { String b = busyText; infoBar.setText(b != null ? b : connText); infoBar.setBusy(b != null); infoBar.setFill(b != null ? ConsoleTheme.AMBER : ConsoleTheme.PEACH); });
+    }
+
+    /** The title of the slide, large, in the header. */
+    static final class SlideTitle extends JComponent {
+        private volatile String text = "";
+        SlideTitle() { setOpaque(false); }
+        void set(String t) { text = t; repaint(); }
+        @Override protected void paintComponent(Graphics g0) {
+            Graphics2D g = (Graphics2D) g0.create(); ConsoleUi.quality(g);
+            g.setFont(ConsoleTheme.sansBold(30f)); g.setColor(ConsoleTheme.SLIDE_TITLE);
+            FontMetrics fm = g.getFontMetrics(); String t = text;
+            while (t.length() > 1 && fm.stringWidth(t) > getWidth()) t = t.substring(0, t.length() - 2) + "…";
+            g.drawString(t, 0, (getHeight() + fm.getAscent() - fm.getDescent()) / 2);
+            g.dispose();
+        }
+    }
 
     /** The demos a slide can start: pages, disk, diskfast, bars, bar:name, board:name, grid:name, scope, vu, miccheck, photos. */
     Callable<String> demoFor(String id) {
@@ -514,7 +532,7 @@ public class DemoApp {
     static String fmt(String v) { double d = num(v); return d >= 100 ? String.valueOf(Math.round(d)) : String.format(java.util.Locale.ROOT, "%.1f", d); }
 
     void state(String s, boolean running) {
-        statusBase = s; SwingUtilities.invokeLater(() -> { statusBar.setText(s); statusBar.setBusy(running); statusBar.setFill(running ? ConsoleTheme.AMBER : ConsoleTheme.LAVENDER); stop.setEnabled(running); setEnabledActions(!running && sc != null); reconnect.setEnabled(!running); });
+        busyText = running ? s : null; setInfo(); SwingUtilities.invokeLater(() -> { stop.setEnabled(running); setEnabledActions(!running && sc != null); reconnect.setEnabled(!running); });
     }
 
     // ---- the board
@@ -537,12 +555,12 @@ public class DemoApp {
                     public void grid(int[] rgb, int cols, int rows) { lampPanel.setGrid(rgb, cols, rows); }
                 };
                 Map<String, String> i = ser.kv("info");
-                SwingUtilities.invokeLater(() -> infoBar.setText("Connected: " + i.get("name") + ", firmware " + i.get("fw") + ", " + i.get("pages") + " pages"));
+                connText = "Connected: " + i.get("name") + ", " + i.get("pages") + " pages"; setInfo();
                 say("Connected. Pick a demo, or start the cycle.");
                 state("Ready", false);
             } catch (Exception e) {
                 say("Cannot connect: " + e.getMessage());
-                SwingUtilities.invokeLater(() -> infoBar.setText("Not connected"));
+                connText = "Not connected"; setInfo();
                 state("Not connected", false);
             }
         });
@@ -624,7 +642,7 @@ public class DemoApp {
         FlatDarkLaf.setup();
         if (shot != null) {
             DemoApp app = new DemoApp();
-            app.infoBar.setText("Connected: NG-S3, firmware Nov 19 2026, 30 pages");
+            app.infoBar.setText("Connected: NG-S3, 30 pages");
             app.log.setText("Connected. Pick a demo, or start the cycle.\n=== Jules Verne to the SD card and back\nbook 618734 bytes, raw deflate 232700 bytes (38%)\nsent 232700 compressed bytes in 7,95 s = 28,6 kB/s\nloaded back 618734 bytes in 16,37 s = 36,9 kB/s over the gamepad\nSHA-256 of the received file equals the original\n");
             for (int i = 0; i < 2; i++) { app.camPanel[i].setVisible(true); app.camPanel[i].text = i == 0 ? "tripod camera" : "laptop camera"; }  // the layout with both camera panels
             app.camsFrame.setVisible(true);
