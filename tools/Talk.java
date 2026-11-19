@@ -125,6 +125,8 @@ final class Talk {
     static final class Player {
         final List<Slide> slides; final Consumer<Slide> onSlide; final Runnable onTick; final java.util.function.BooleanSupplier demoRunning;
         int index = -1; long slideStart, pausedAt; boolean running, paused; private final javax.swing.Timer timer;
+        /** Time on the current slide, in milliseconds (frozen while paused). */
+        long slideElapsedMs() { return index < 0 ? 0 : (paused ? pausedAt : System.currentTimeMillis()) - slideStart; }
         long totalMs() { return slides.stream().mapToLong(s -> s.seconds() * 1000L).sum(); }
 
         Player(List<Slide> slides, Consumer<Slide> onSlide, Runnable onTick, java.util.function.BooleanSupplier demoRunning) {

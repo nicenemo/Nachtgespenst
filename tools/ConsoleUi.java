@@ -211,14 +211,15 @@ final class ConsoleUi {
  /** The readouts of the bottom bar, like the display of a measuring instrument: dark glass, amber digits with faint unlit digits behind them and a meter of small squares under each. */
     static class Lcd extends JComponent {
         private final java.util.LinkedHashMap<String, Object[]> readings = new java.util.LinkedHashMap<>();    // label -> {value, max, text, colour}
-        private double talk = -1; private String talkText = "";
+        private double talk = -1, slideFrac; private String talkText = "", talkLabel = "talk";
         Lcd() { setOpaque(false); setPreferredSize(new Dimension(100, 48)); }
         void set(String label, double value, double max, String text, Color colour) {
             readings.remove(label); readings.put(label, new Object[]{value, max, text, colour});
             while (readings.size() > 3) readings.remove(readings.keySet().iterator().next());
             repaint();
         }
-        void talk(double fraction, String text) { talk = fraction; talkText = text; repaint(); }
+        /** The talk: the whole talk as a meter (fraction, text) and above it the current slide (slideFraction, label). */
+        void talk(double fraction, String text, double slideFraction, String label) { talk = fraction; talkText = text; slideFrac = slideFraction; talkLabel = label.isEmpty() ? "talk" : label; repaint(); }
         void clearAll() { readings.clear(); talk = -1; repaint(); }
         @Override protected void paintComponent(Graphics g0) {
             Graphics2D g = (Graphics2D) g0.create(); quality(g);
@@ -226,25 +227,28 @@ final class ConsoleUi {
             g.setColor(new Color(0x0C0C14)); g.fill(new RoundRectangle2D.Double(0, 0, w, h, 16, 16));
             g.setColor(ConsoleTheme.mix(ConsoleTheme.LAVENDER, ConsoleTheme.BLACK, 0.75)); g.setStroke(new BasicStroke(1.2f)); g.draw(new RoundRectangle2D.Double(0.6, 0.6, w - 1.2, h - 1.2, 16, 16));
             java.util.List<Object[]> cells = new java.util.ArrayList<>(); java.util.List<String> names = new java.util.ArrayList<>();
-            if (talk >= 0) { cells.add(new Object[]{talk, 1.0, talkText, ConsoleTheme.LAVENDER}); names.add("talk"); }
+            if (talk >= 0) { cells.add(new Object[]{talk, 1.0, talkText, ConsoleTheme.LAVENDER}); names.add(talkLabel); }
             for (var e : readings.entrySet()) { cells.add(e.getValue()); names.add(e.getKey()); }
-            if (cells.isEmpty()) { drawMeter(g, 14, h - 20, w - 28, 12, 0, ConsoleTheme.PEACH); g.dispose(); return; }
-            int n = cells.size(), pad = 14, cw = (w - pad) / n;
+            if (cells.isEmpty()) { drawMeter(g, 14, h - 20, w - 28, 3, 0, ConsoleTheme.PEACH); g.dispose(); return; }
+            int n = cells.size(), pad = 14; double unit = (w - pad) / (n + (talk >= 0 ? 0.6 : 0)); double xx = pad;     // the talk cell is wider: it holds two meters and two texts
             for (int i = 0; i < n; i++) {
-                Object[] c = cells.get(i); int x = pad + i * cw, mw = cw - pad;
+                Object[] c = cells.get(i); double span = (i == 0 && talk >= 0) ? unit * 1.6 : unit; int x = (int) xx, cw = (int) span, mw = cw - pad; xx += span;
                 double frac = Math.max(0, Math.min(1, ((Double) c[0]) / ((Double) c[1]))); Color col = (Color) c[3]; String t = (String) c[2];
                 g.setFont(ConsoleTheme.sansRegular(11f)); g.setColor(ConsoleTheme.mix(ConsoleTheme.PEACH, ConsoleTheme.BLACK, 0.35)); g.drawString(names.get(i), x, 15);
                 g.setFont(ConsoleTheme.mono(15f)); FontMetrics fm = g.getFontMetrics();
                 int tx = x + mw - fm.stringWidth(t);
                 g.setColor(new Color(col.getRed(), col.getGreen(), col.getBlue(), 28)); g.drawString(t.replaceAll("[0-9A-Za-z]", "8"), tx, 17);    // the unlit digits of the display
                 g.setColor(col); g.drawString(t, tx, 17);
-                drawMeter(g, x, h - 19, mw, 12, frac, col);
+                if (i == 0 && talk >= 0) {                                                    // the talk: the slide timer above the meter of the whole talk
+                    drawMeter(g, x, 24, mw, 1, slideFrac, ConsoleTheme.PEACH);
+                    drawMeter(g, x, 32, mw, 2, frac, col);
+                } else drawMeter(g, x, h - 19, mw, 3, frac, col);
             }
             g.dispose();
         }
         /** Three rows of small squares: the lit ones in the colour, the others as faint cells. */
-        private static void drawMeter(Graphics2D g, int x, int y, int w, int h, double frac, Color col) {
-            int cell = 4, step = 5, cols = Math.max(1, w / step), rows = Math.max(1, h / step), lit = (int) Math.round(frac * cols);
+        private static void drawMeter(Graphics2D g, int x, int y, int w, int rows, double frac, Color col) {
+            int cell = 4, step = 5, cols = Math.max(1, w / step), lit = (int) Math.round(frac * cols);
             for (int c = 0; c < cols; c++) for (int r = 0; r < rows; r++) {
                 g.setColor(c < lit ? ConsoleTheme.mix(col, ConsoleTheme.BLACK, 0.12 + 0.2 * r / Math.max(1, rows - 1) * 0) : ConsoleTheme.mix(col, ConsoleTheme.BLACK, 0.9));
                 g.fillRect(x + c * step, y + r * step, cell, cell);

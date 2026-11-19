@@ -90,8 +90,6 @@ public class DemoApp {
             Graphics2D g = (Graphics2D) g0.create(); ConsoleUi.quality(g);
             int gap = ConsoleTheme.GAP, w = getWidth(), h = getHeight();
             ConsoleUi.ghost(g, gap + 12, gap, ConsoleTheme.BAR_H - gap - 2);
-            g.setColor(new Color(0xD8D8E8)); g.setFont(ConsoleTheme.sansBold(17f));
-            g.drawString("Nachtgespenst", gap + 12 + ConsoleTheme.BAR_H + 2, gap + (ConsoleTheme.BAR_H - gap) / 2 + 6);
             g.dispose();
         }
     }
@@ -117,7 +115,7 @@ public class DemoApp {
         head.setPreferredSize(new Dimension(100, ConsoleTheme.BAR_H));
         JPanel infoWrap = new JPanel(new BorderLayout()); infoWrap.setOpaque(false);
         infoWrap.setBorder(BorderFactory.createEmptyBorder(ConsoleTheme.BAR_H / 2 - 12, 0, ConsoleTheme.BAR_H / 2 - 12, 0)); infoWrap.add(infoBar);
-        JPanel west = new JPanel(); west.setOpaque(false); west.setPreferredSize(new Dimension(ConsoleTheme.BAR_H + 12 + 2 + 140, ConsoleTheme.BAR_H));
+        JPanel west = new JPanel(); west.setOpaque(false); west.setPreferredSize(new Dimension(ConsoleTheme.BAR_H + 12 + 8, ConsoleTheme.BAR_H));
         reconnect.setPreferredSize(new Dimension(130, ConsoleTheme.BLOCK_H)); reconnect.setMaximumSize(new Dimension(130, ConsoleTheme.BLOCK_H));
         JPanel conn = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, ConsoleTheme.BAR_H / 2 - ConsoleTheme.BLOCK_H / 2)); conn.setOpaque(false); conn.add(reconnect);
         head.add(west, BorderLayout.WEST); head.add(infoWrap, BorderLayout.CENTER); head.add(conn, BorderLayout.EAST);
@@ -453,11 +451,15 @@ public class DemoApp {
         });
     }
     void showProgress() {
-        if (player == null || !player.running) { SwingUtilities.invokeLater(() -> lcd.talk(-1, "")); return; }
+        if (player == null || !player.running) { SwingUtilities.invokeLater(() -> lcd.talk(-1, "", 0, "")); return; }
         long e = player.elapsedMs() / 1000, t = player.totalMs() / 1000;
         final String tt = e / 60 + ":" + String.format("%02d", e % 60) + " / " + t / 60 + ":" + String.format("%02d", t % 60) + (player.paused ? " ||" : "");
         final double fr = t == 0 ? 0 : (double) e / t;
-        SwingUtilities.invokeLater(() -> lcd.talk(fr, tt));
+        Talk.Slide cur = player.index >= 0 ? player.slides.get(player.index) : null;
+        long se = player.slideElapsedMs() / 1000, st = cur == null ? 0 : cur.seconds();
+        final double sfr = st == 0 ? 0 : Math.min(1.0, (double) se / st);
+        final String label = "slide " + (player.index + 1) + "/" + player.slides.size() + "   " + Math.max(0, st - se) / 60 + ":" + String.format("%02d", Math.max(0, st - se) % 60) + " left";
+        SwingUtilities.invokeLater(() -> lcd.talk(fr, tt, sfr, label));
         if (player.index >= 0) slidePanel.show(player.slides.get(player.index), player.index, player.slides.size());
     }
     void setInfo() {
@@ -647,7 +649,7 @@ public class DemoApp {
             for (int i = 0; i < 2; i++) { app.camPanel[i].setVisible(true); app.camPanel[i].text = i == 0 ? "tripod camera" : "laptop camera"; }  // the layout with both camera panels
             app.camsFrame.setVisible(true);
             app.setEnabledActions(true);
-            app.lcd.talk(0.42, "4:12 / 10:10"); app.lcd.set("send kB/s", 28.6, 60, "28.6", ConsoleTheme.AMBER); app.lcd.set("load kB/s", 36.9, 60, "36.9", ConsoleTheme.AMBER); app.lcd.set("SHA-256", 1, 1, "match", ConsoleTheme.PEACH);
+            app.lcd.talk(0.42, "4:12 / 10:10", 0.6, "slide 6/17   0:18 left"); app.lcd.set("send kB/s", 28.6, 60, "28.6", ConsoleTheme.AMBER); app.lcd.set("load kB/s", 36.9, 60, "36.9", ConsoleTheme.AMBER); app.lcd.set("SHA-256", 1, 1, "match", ConsoleTheme.PEACH);
             try {
                 BufferedImage sample = ImageIO.read(Boards.repoRoot().resolve("site/img/lamps/scope-880.png").toFile());
                 app.screenPanel.set(sample);                       // the board shows the oscilloscope the PC paints on its lamps
