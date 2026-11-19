@@ -13,7 +13,7 @@ final class Canvas {
 
     Canvas(Ser s, Hid h, int cols, int rows) throws Exception {
         this.h = h; this.cols = cols; this.rows = rows;
-        String r = s.cmd("LAMPS GRID " + cols + " " + rows, 3000);
+        String r = s.cmd("lamps grid " + cols + " " + rows, 3000);
         if (r == null || !r.startsWith("OK")) throw new IllegalStateException("the board refused a grid of " + cols + " x " + rows + ": " + r);
         h.write(Proto.control(false));
         cur = new int[cols * rows]; next = new int[cols * rows];

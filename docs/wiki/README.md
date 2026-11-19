@@ -8,6 +8,8 @@ How-to and reference notes that do not belong in `README.md` or `CLAUDE.md`. Kee
 - [lamparray-testing](lamparray-testing.md): the LampArray test bench, speed limits, latency and the bar worker task
 - [disk-drive](disk-drive.md): the Disk demo, a file over the lamps and back over the game pad buttons, with the reasons for the sizes
 - [demo-app](demo-app.md): the demo window with buttons, the effects and the photo slideshow with prime moduli
+- [shell](shell.md): the commands of the boards (generated from `docs/shell/commands.txt`; the same text is `help.txt` on the SD card)
+- [microphone-and-effects](microphone-and-effects.md): the bar effects on the board, the microphone, telemetry over the game pad and the oscilloscope on the lamps
 - [troubleshooting](troubleshooting.md): symptom, cause, fix
 - [unicode-input-methods](unicode-input-methods.md): how to type Unicode from a HID keyboard on Linux, macOS and Windows, and how a host OS can be detected
 - [zmk-comparison](zmk-comparison.md): how Nachtgespenst relates to the owner's ZMK Cornish ZEN configuration and header generator

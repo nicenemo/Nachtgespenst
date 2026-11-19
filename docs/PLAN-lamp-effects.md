@@ -1,5 +1,7 @@
 # Plan: lamp positions, LED bar effects, the microphone demo and the C64 grid demos
 
+**Status 2026-11-19: sections 1 to 4 are built and tested on the CoreS3** ([microphone-and-effects](wiki/microphone-and-effects.md), [demo-app](wiki/demo-app.md)); the Core2 is open.
+
 Separate plan, written 2026-11-19 at the owner's request. Nothing here is built yet. It builds on the LampArray bench ([ADR 0010](adr/0010-lamparray-lighting-and-picture-pages.md), [wiki](wiki/lamparray-testing.md)) and the Disk demo ([ADR 0017](adr/0017-disk-drive-data-channels.md)).
 
 ## 1. Lamp positions: a logical grid with depth

@@ -29,7 +29,7 @@ final class Scenarios {
 
     Scenarios(Ser s, Hid h, String tag, Log log) throws Exception {
         this.s = s; this.h = h; this.tag = tag; this.log = log;
-        this.pages = Integer.parseInt(s.kv("INFO").get("pages"));
+        this.pages = Integer.parseInt(s.kv("info").get("pages"));
     }
 
     void say(String m) { log.say(m); }
@@ -37,8 +37,8 @@ final class Scenarios {
     /** Every page of the board, about a second each; no key or tap is ever sent (Power Down and Sleep are tiles on some pages). */
     String walkPages() throws Exception {
         for (int p = 0; p < pages; p++) {
-            String r = s.cmd("LAYER " + p, 3000);
-            Map<String, String> st = s.kv("STATE?");
+            String r = s.cmd("layer " + p, 3000);
+            Map<String, String> st = s.kv("state");
             say(String.format("page %2d/%d  %s", p + 1, pages, st.getOrDefault("title", "?")));
             grabScreen();
             if (r == null || !r.startsWith("OK")) { fail++; say("LAYER " + p + " failed: " + r); }
@@ -50,8 +50,8 @@ final class Scenarios {
 
     /** The Jules Verne file to the board (and the SD card) and back over the game pad buttons, with SHA-256 on both ends. */
     String disk(boolean fast) throws Exception {
-        s.cmd("LAYER " + (pages - 3), 3000); Thread.sleep(600);
-        s.cmd("DISK RESET", 2000);
+        s.cmd("layer " + (pages - 3), 3000); Thread.sleep(600);
+        s.cmd("disk reset", 2000);
         DiskDrive.Options o = new DiskDrive.Options();
         o.via = "usb"; o.tag = tag; o.fast = fast;
         int[] f = {0, 0};
@@ -59,13 +59,13 @@ final class Scenarios {
             public void check(String name, boolean ok, String detail) { if (ok) { pass++; f[0]++; } else { fail++; f[1]++; say("FAIL " + name + " " + detail); } }
             public void info(String msg) { if (!msg.startsWith("  ")) say(msg); }
         }).disk(s, h);
-        Map<String, String> st = s.kv("DISK?");
+        Map<String, String> st = s.kv("disk");
         return String.format("save %.1f kB/s, back %.1f kB/s, SHA-256 %s, %d checks ok%s", Proto.num(st, "kbps10") / 10.0, Proto.num(st, "txkbps10") / 10.0,
                 "1".equals(st.get("match")) ? "match" : "DIFFERENT", f[0], f[1] > 0 ? ", " + f[1] + " FAILED" : "");
     }
 
     void goBarPage() throws Exception {
-        s.cmd("LAYER " + (pages - 1), 3000); Thread.sleep(400); h.write(Proto.control(false));
+        s.cmd("layer " + (pages - 1), 3000); Thread.sleep(400); h.write(Proto.control(false));
         Preview pv = preview; BarEffects.listener = pv == null ? null : pv::bar;
     }
 
@@ -83,7 +83,7 @@ final class Scenarios {
         Preview pv = preview; if (pv != null) c.listener = px -> pv.grid(px, cols, rows);
         return c;
     }
-    void goGridPage() throws Exception { s.cmd("LAYER " + (pages - 2), 3000); Thread.sleep(400); }
+    void goGridPage() throws Exception { s.cmd("layer " + (pages - 2), 3000); Thread.sleep(400); }
 
     String barEffect(String name) throws Exception {
         goBarPage();
@@ -127,10 +127,10 @@ final class Scenarios {
                 public void wave(int[] samples) { lastWave = samples; waveSeq++; }
             });
         }
-        s.cmd("TELEM " + (bar && wave ? "BOTH" : wave ? "WAVE" : bar ? "BAR" : "OFF"), 1500);
+        s.cmd("telem " + (bar && wave ? "BOTH" : wave ? "WAVE" : bar ? "BAR" : "OFF"), 1500);
     }
     synchronized void telemetryOff() {
-        try { s.cmd("TELEM OFF", 1500); } catch (Exception ignored) { }
+        try { s.cmd("telem off", 1500); } catch (Exception ignored) { }
         if (telemetry != null) { telemetry.close(); telemetry = null; }
     }
 
@@ -141,21 +141,21 @@ final class Scenarios {
 
     /** An effect that runs on the board itself (SET effect ...), in the colour of the layer; no lamp updates are sent. */
     String boardEffect(String name) throws Exception {
-        s.cmd("LAYER 0", 3000); Thread.sleep(300);
+        s.cmd("layer 0", 3000); Thread.sleep(300);
         say("the board runs " + name + " on its own (the lamps are not used)");
         if (preview != null) telemetryOn(true, false);
-        s.cmd("SET effect " + name, 2000);
-        try { mirrorBar((long) (seconds * 1000)); } finally { s.cmd("SET effect none", 2000); telemetryOff(); }
+        s.cmd("set effect " + name, 2000);
+        try { mirrorBar((long) (seconds * 1000)); } finally { s.cmd("set effect none", 2000); telemetryOff(); }
         pass++;
         return name + " on the board";
     }
 
     /** The vu effect: the board listens with its microphone while the PC plays tones, and the bar follows the level. */
     String micDemo() throws Exception {
-        s.cmd("LAYER 0", 3000); Thread.sleep(300);
+        s.cmd("layer 0", 3000); Thread.sleep(300);
         say("the vu meter on the bar follows the microphone; the PC plays tones of 440, 1000 and 2000 Hz");
         telemetryOn(true, true);
-        s.cmd("SET effect vu", 2000); mirrorBar(1500);
+        s.cmd("set effect vu", 2000); mirrorBar(1500);
         StringBuilder note = new StringBuilder();
         Scope probe = new Scope(160, 95);
         try {
@@ -168,10 +168,37 @@ final class Scenarios {
                 t.join();
                 mirrorBar(600);
             }
-        } finally { s.cmd("SET effect none", 2000); telemetryOff(); }
+        } finally { s.cmd("set effect none", 2000); telemetryOff(); }
         pass++;
         return "microphone: " + note.toString().trim();
     }
+
+    /** The microphone check: the PC plays 440, 1000 and 2000 Hz; the frequency the board works out from its waveform (read over the game pad) must be within 10%. */
+    String micCheck() throws Exception {
+        s.cmd("layer 0", 3000); Thread.sleep(300);
+        s.cmd("mic on", 2000);
+        telemetryOn(preview != null, true);
+        Thread.sleep(1200);
+        say("microphone check: the PC plays tones, the board has to hear the same frequencies");
+        Scope probe = new Scope(80, 47);
+        int ok = 0, total = 0; StringBuilder note = new StringBuilder();
+        try {
+            for (int hz : new int[]{440, 1000, 2000}) {
+                Thread t = Tones.playAsync(hz, 2.2, 0.6);
+                Thread.sleep(1100);
+                int[] w = lastWave; double f = 0; int peak = 0;
+                if (w != null) { probe.frame(null, w); f = probe.lastFreq; peak = probe.lastPeak; }
+                boolean pass = Math.abs(f - hz) <= hz * 0.10 && peak > 80;
+                say(String.format("%s  %d Hz -> the board hears %.0f Hz (peak %d)", pass ? "PASS" : "FAIL", hz, f, peak));
+                total++; if (pass) { ok++; pass(); } else fail++;
+                note.append(hz).append("->").append(Math.round(f)).append(' ');
+                t.join(); Thread.sleep(300);
+            }
+        } finally { s.cmd("mic off", 2000); telemetryOff(); }
+        return ok + " of " + total + " tones heard right: " + note.toString().trim();
+    }
+
+    private void pass() { pass++; }
 
     /**
      * The microphone as an oscilloscope on the lamps: the PC asks the board for the waveform it hears (WAVE?) and paints it on the 160 x 95 lamp
@@ -181,7 +208,7 @@ final class Scenarios {
         goGridPage();
         Canvas c = canvas(80, 47);                         // 4 x 4 pixels per lamp: a scope that the lamp updates can keep up with
         Scope scope = new Scope(80, 47);
-        s.cmd("MIC ON", 2000);
+        s.cmd("mic on", 2000);
         telemetryOn(preview != null, true);
         mirrorWait(1200);
         Thread tones = Thread.ofVirtual().name("tones").start(() -> {
@@ -199,7 +226,7 @@ final class Scenarios {
                 long el = System.currentTimeMillis() - t0;
                 if (!shotA && el > 4500) { shotA = true; grabScreen(); } else if (!shotB && el > 7800) { shotB = true; grabScreen(); }
             }
-        } finally { s.cmd("MIC OFF", 2000); telemetryOff(); }
+        } finally { s.cmd("mic off", 2000); telemetryOff(); }
         say(frames + " frames; the last frequency measured: " + Math.round(lastFreq) + " Hz");
         grabScreen();
         pass++;
@@ -249,12 +276,16 @@ final class Scenarios {
     }
 
     /** One round of everything. */
-    List<String[]> cycle(boolean withFast) throws Exception {
+    List<String[]> cycle(boolean withFast) throws Exception { return cycle(withFast, false); }
+
+    /** One round of everything; with withMic also the oscilloscope and the microphone check (the PC plays tones, so it is loud). */
+    List<String[]> cycle(boolean withFast, boolean withMic) throws Exception {
         List<String[]> out = new ArrayList<>();
         record Step(String name, java.util.concurrent.Callable<String> run) { }
         List<Step> steps = new ArrayList<>(List.of(new Step("pages", this::walkPages), new Step("disk", () -> disk(false))));
         if (withFast) steps.add(new Step("disk (fast)", () -> disk(true)));
         steps.addAll(List.of(new Step("bar", this::bar), new Step("grid", this::grid), new Step("photos", this::photos)));
+        if (withMic) steps.addAll(List.of(new Step("scope", this::micScope), new Step("microphone", this::micCheck)));
         for (Step st : steps) {
             say("--- " + st.name());
             long t0 = System.nanoTime();
@@ -267,6 +298,6 @@ final class Scenarios {
 
     /** Gives the lamps back to the board and goes to the first page. */
     void release() {
-        try { telemetryOff(); s.cmd("SET effect none", 1500); s.cmd("MIC OFF", 1500); h.write(Proto.control(true)); s.cmd("LAMPS RESET", 2000); s.cmd("LAYER 0", 3000); s.cmd("WAKE", 1000); } catch (Exception ignored) { }
+        try { telemetryOff(); s.cmd("set effect none", 1500); s.cmd("mic off", 1500); h.write(Proto.control(true)); s.cmd("lamps reset", 2000); s.cmd("layer 0", 3000); s.cmd("wake", 1000); } catch (Exception ignored) { }
     }
 }

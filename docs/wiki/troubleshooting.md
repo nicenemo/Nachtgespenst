@@ -25,7 +25,7 @@ Symptom, cause, fix. Every row happened at least once. Background: [claude-code-
 | `Please specify upload_port` or `Looking for upload port...` fails | udev rules missing, port hidden | `jbang tools/Flash.java`, or `--upload-port` with an unsandboxed call |
 | a plain `pio run -t upload` on the CoreS3: `Failed to connect to ESP32-S3: No serial data received` | TinyUSB cannot auto-reset | `jbang tools/Flash.java cores3` (1200-baud touch first) |
 | a build takes 10 minutes again after `pio run -t upload` | `upload` rebuilds | add `-t nobuild` to flash an existing image (or use `jbang tools/Flash.java`) |
-| the wrong UI or firmware appears after flashing | `.pio/build/<env>/firmware.bin` came from another branch | `jbang tools/Flash.java` prints branch and warns about stale images; check `INFO fw=` |
+| the wrong UI or firmware appears after flashing | `.pio/build/<env>/firmware.bin` came from another branch | `jbang tools/Flash.java` prints branch and warns about stale images; check `info fw=` |
 | old commit does not build (`...rest of setup() and loop() remain the same ...`) | that commit was a work in progress | use the last working commit (`16fbf03` for the pre-code-generation firmware) |
 | `RAM: ... of 327680 bytes` on the CoreS3 | PlatformIO counts internal RAM only; both boards have `BOARD_HAS_PSRAM` | do not treat it as the whole memory |
 
@@ -38,7 +38,7 @@ Symptom, cause, fix. Every row happened at least once. Background: [claude-code-
 | the CoreS3 shows "USB JTAG/serial debug unit" but is silent | it is in the ROM bootloader, not running the app | reflash with `jbang tools/Flash.java` |
 | evdev check fails with 0 events on the S3 | the test read the Bluetooth device while keys go over USB (or the reverse) | `SerialTest` matches by `Phys`; node numbers swap after reboots |
 | must the board be paired again after a flash? | no: bonds survive an application-only flash | do not erase flash; `jbang tools/Flash.java` writes `0x10000` only |
-| key presses arrive twice | USB and BLE both connected | `PREFER USB` (default) or `ONLY USB|BLE` |
+| key presses arrive twice | USB and BLE both connected | `prefer usb` (default) or `only usb|ble` |
 
 ## Camera
 

@@ -11,7 +11,7 @@ The window has the controls on the left, the log in the middle and on the right 
 | Part | What it does |
 |---|---|
 | **Start the cycle** | every part in turn; "repeat until Stop" loops; "include the fast disk run" adds the run without display and sound |
-| Walk through all pages | `LAYER n` for every page (no key or tap is sent, so Power Down and Sleep are never pressed) |
+| Walk through all pages | `layer n` for every page (no key or tap is sent, so Power Down and Sleep are never pressed) |
 | Jules Verne to the SD card and back | the [Disk demo](disk-drive.md): the compressed book over the lamps, unpacked and written to the SD card, then back over the game pad buttons, SHA-256 on both ends |
 | ... in fast mode | the same without display, LED bar and sound on the board |
 | LED bar | Nightrider (both sides together, up and down), breath, rainbow (down both sides), comet (along the chain: down the right side, round the bottom, up the left side), sparkle; mapped to the measured positions of the lamps ([lamparray-testing](lamparray-testing.md)) |

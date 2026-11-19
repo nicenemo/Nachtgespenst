@@ -137,54 +137,66 @@ public class SerialTest {
     }
 
     static void testBoard(String tag, Link l, Map<String, String> info, Path shotDir) throws Exception {
-        String r = l.cmd("PING", 1500);
+        String r = l.cmd("ping", 1500);
         check(tag, "PING", "OK PONG".equals(r), String.valueOf(r));
         String bad = l.cmd("BOGUS 1 2 3", 1500);
         check(tag, "unknown cmd -> ERR", bad != null && bad.startsWith("ERR"), String.valueOf(bad));
-        String bad2 = l.cmd("TAP x y", 1500);
+        String bad2 = l.cmd("tap x y", 1500);
         check(tag, "garbage args -> ERR", bad2 != null && bad2.startsWith("ERR"), String.valueOf(bad2));
+
+        // The shell: help lists the commands, help <command> explains one, and the old upper-case commands are gone.
+        l.drain(); l.send("help");
+        List<String> hl = new ArrayList<>(); for (String x; (x = l.line(400)) != null; ) hl.add(x);
+        check(tag, "help lists the commands", !hl.isEmpty() && hl.get(0).startsWith("OK HELP") && hl.stream().anyMatch(x -> x.startsWith("layer ")) && hl.stream().anyMatch(x -> x.startsWith("telem ")), hl.size() + " lines");
+        l.drain(); l.send("help layer");
+        List<String> h1 = new ArrayList<>(); for (String x; (x = l.line(400)) != null; ) h1.add(x);
+        check(tag, "help layer explains the command", h1.size() >= 2 && h1.get(0).equals("OK HELP layer") && h1.stream().anyMatch(x -> x.contains("layer <n>")), h1.size() + " lines");
+        String nh = l.cmd("help nonsense", 1500);
+        check(tag, "help of an unknown command -> ERR", nh != null && nh.startsWith("ERR"), String.valueOf(nh));
+        String oldStyle = l.cmd("PING", 1500);
+        check(tag, "upper case commands are not accepted any more", oldStyle != null && oldStyle.startsWith("ERR"), String.valueOf(oldStyle));
 
         int pages = Integer.parseInt(info.get("pages")), locks = Integer.parseInt(info.get("locks"));
         int W = Integer.parseInt(info.get("w")), H = Integer.parseInt(info.get("h"));
 
-        r = l.cmd("LAYER 0", 2000);
+        r = l.cmd("layer 0", 2000);
         check(tag, "LAYER 0", r != null && r.startsWith("OK LAYER 0"), String.valueOf(r));
-        r = l.cmd("STATE?", 1500);
+        r = l.cmd("state", 1500);
         check(tag, "STATE? page=0", r != null && kv(r).getOrDefault("page", "").startsWith("0/"), String.valueOf(r));
         // Safety: a TAP outside the Locks page is refused, so a test can never hit the Power Down or Sleep tiles of the System and Media pages.
         // (The matching guard of KEY on those two tiles is deliberately not exercised: if it failed, the host would power down.)
-        r = l.cmd("TAP 10 10", 1500);
+        r = l.cmd("tap 10 10", 1500);
         check(tag, "TAP outside the Locks page is refused", r != null && r.startsWith("ERR"), String.valueOf(r));
-        r = l.cmd("LAYER " + pages, 1500);
+        r = l.cmd("layer " + pages, 1500);
         check(tag, "LAYER out of range -> ERR", r != null && r.startsWith("ERR"), String.valueOf(r));
-        r = l.cmd("LAYER " + locks, 2000);
-        r = l.cmd("STATE?", 1500);
+        r = l.cmd("layer " + locks, 2000);
+        r = l.cmd("state", 1500);
         check(tag, "STATE? title=Locks", r != null && kv(r).getOrDefault("title", "").equals("Locks"), String.valueOf(r));
 
         if (shotDir != null) {
             saveShot(tag, l, shotDir);
             // every page: <shotDir>/<board>/pageNN.png (slow over the Core2 UART: ~20 s per page)
             for (int p = 0; p < pages; p++) {
-                l.cmd("LAYER " + p, 2000);
+                l.cmd("layer " + p, 2000);
                 Thread.sleep(300);
                 saveShot(tag, l, shotDir.resolve(tag), String.format("page%02d.png", p));
             }
-            l.cmd("LAYER " + locks, 2000);
+            l.cmd("layer " + locks, 2000);
         }
 
         // KEY on Locks page: Scroll Lock (idx 2) -> host LED must toggle
         String ev = "S3".equals(tag) ? findEvent(info.get("name") + " Keyboard", true) : null;   // USB: "<manufacturer> NG-S3 Keyboard"
-        Map<String, String> s0 = kv(l.cmd("STATE?", 1500));
+        Map<String, String> s0 = kv(l.cmd("state", 1500));
         int scroll0 = Integer.parseInt(s0.get("scroll")), presses0 = Integer.parseInt(s0.get("presses"));
         final Link lk = l;
         List<int[]> keys = null;
         if (ev != null) {
-            try { keys = captureKeys(ev, () -> { try { lk.cmd("KEY " + locks + " 2", 1500); } catch (Exception e) { } }, 600); }
+            try { keys = captureKeys(ev, () -> { try { lk.cmd("key " + locks + " 2", 1500); } catch (Exception e) { } }, 600); }
             catch (IOException e) { report.add("INFO [" + tag + "] cannot read " + ev + ": " + e.getMessage()); ev = null; }
         }
-        if (ev == null) l.cmd("KEY " + locks + " 2", 1500);
+        if (ev == null) l.cmd("key " + locks + " 2", 1500);
         Thread.sleep(500);
-        Map<String, String> s1 = kv(l.cmd("STATE?", 1500));
+        Map<String, String> s1 = kv(l.cmd("state", 1500));
         check(tag, "KEY locks 2: presses++", Integer.parseInt(s1.get("presses")) == presses0 + 1, s0.get("presses") + "->" + s1.get("presses"));
         // Host LED feedback depends on the desktop (Wayland/X often does not toggle LEDs): informational only.
         report.add("INFO [" + tag + "] host scroll LED " + scroll0 + "->" + s1.get("scroll") + " (not asserted)");
@@ -196,49 +208,49 @@ public class SerialTest {
             report.add("SKIP [" + tag + "] evdev check (device node not found/readable)");
         }
         // restore scroll LED state
-        l.cmd("KEY " + locks + " 2", 1500); Thread.sleep(400);
+        l.cmd("key " + locks + " 2", 1500); Thread.sleep(400);
 
         // TAP on the Locks tile 2 (Scroll). Layout from ui.cpp: bar 24 px on top (C2) / 38 px at the bottom (S3), GAP=3, 3 tiles.
         int gap = 3, bar = "C2".equals(tag) ? 24 : 38, w = (W - 4 * gap) / 3;
         int tx = gap + 2 * (w + gap) + w / 2, ty = ("C2".equals(tag) ? bar : 0) + (H - bar) / 2;
-        int p0 = Integer.parseInt(kv(l.cmd("STATE?", 1500)).get("presses"));
-        r = l.cmd("TAP " + tx + " " + ty, 1500);
+        int p0 = Integer.parseInt(kv(l.cmd("state", 1500)).get("presses"));
+        r = l.cmd("tap " + tx + " " + ty, 1500);
         check(tag, "TAP accepted", "OK TAP".equals(r), String.valueOf(r));
         Thread.sleep(600);
-        Map<String, String> s2 = kv(l.cmd("STATE?", 1500));
+        Map<String, String> s2 = kv(l.cmd("state", 1500));
         check(tag, "TAP on Scroll tile counted", Integer.parseInt(s2.get("presses")) == p0 + 1 && "Scroll".equalsIgnoreCase(s2.get("last").replace("_", " ").split(" ")[0]) ,
               "presses " + p0 + "->" + s2.get("presses") + " last=" + s2.get("last"));
-        l.cmd("KEY " + locks + " 2", 1500); // restore state again
+        l.cmd("key " + locks + " 2", 1500); // restore state again
         check(tag, "STATE? reports usb= and ble= next to conn=", s2.containsKey("usb") && s2.containsKey("ble") && s2.containsKey("conn"), String.valueOf(s2.keySet()));
         settingsChecks(tag, l);
         systemControlCheck(tag, l, info);
         functionKeysCheck(tag, l, info);
         if ("S3".equals(tag)) testBle(tag, l, info, locks);
-        l.cmd("LAYER 0", 2000);
+        l.cmd("layer 0", 2000);
     }
 
     /** Settings and the LED, screen and wake commands (ADR 0014). Leaves the stored settings at their defaults. */
     static void settingsChecks(String tag, Link l) throws Exception {
-        String r = l.cmd("SET?", 1500);
+        String r = l.cmd("set", 1500);
         check(tag, "SET? lists the settings", r != null && r.startsWith("OK SET led="), String.valueOf(r));
         for (String mode : new String[]{"OFF", "LOCKS", "ON"}) {
-            r = l.cmd("LEDS " + mode, 1500);
-            String q = l.cmd("LEDS?", 1500);
+            r = l.cmd("leds " + mode, 1500);
+            String q = l.cmd("leds", 1500);
             check(tag, "LEDS " + mode, ("OK LEDS " + mode).equals(r) && q != null && q.contains("led=" + mode.toLowerCase()), r + " / " + q);
         }
-        r = l.cmd("SET bright 500", 1500);
+        r = l.cmd("set bright 500", 1500);
         check(tag, "SET bright out of range -> ERR", r != null && r.startsWith("ERR"), String.valueOf(r));
-        r = l.cmd("SET nonsense 1", 1500);
+        r = l.cmd("set nonsense 1", 1500);
         check(tag, "SET unknown key -> ERR", r != null && r.startsWith("ERR"), String.valueOf(r));
-        r = l.cmd("SET bright 60", 1500);
+        r = l.cmd("set bright 60", 1500);
         check(tag, "SET bright 60", r != null && r.contains("bright=60"), String.valueOf(r));
-        r = l.cmd("BL 100", 1500);
+        r = l.cmd("bl 100", 1500);
         check(tag, "BL 100", "OK BL 100".equals(r), String.valueOf(r));
-        r = l.cmd("BL AUTO", 1500);
+        r = l.cmd("bl auto", 1500);
         check(tag, "BL AUTO", "OK BL AUTO".equals(r), String.valueOf(r));
-        r = l.cmd("WAKE", 1500);
+        r = l.cmd("wake", 1500);
         check(tag, "WAKE", "OK WAKE".equals(r), String.valueOf(r));
-        r = l.cmd("SET defaults 1", 1500);
+        r = l.cmd("set defaults 1", 1500);
         check(tag, "SET defaults restores the stored settings", r != null && r.contains("led=on bright=40 ledidle=0 bl=128 dim=60 off=300 prefer=usb"), String.valueOf(r));
     }
 
@@ -253,7 +265,7 @@ public class SerialTest {
         if (ev == null) { report.add("SKIP [" + tag + "] System Control check (no evdev device: board not connected)"); return; }
         int media = 18, wake = 11;                       // Media is the 19th layer, Wake Up its last tile
         List<int[]> keys;
-        try { keys = captureKeys(ev, () -> { try { l.cmd("KEY " + media + " " + wake, 1500); } catch (Exception e) { } }, 800); }
+        try { keys = captureKeys(ev, () -> { try { l.cmd("key " + media + " " + wake, 1500); } catch (Exception e) { } }, 800); }
         catch (IOException e) { report.add("INFO [" + tag + "] cannot read " + ev + ": " + e.getMessage()); return; }
         boolean down = false, up = false;
         for (int[] k : keys) if (k[0] == 143) { if (k[1] == 1) down = true; if (k[1] == 0) up = true; }
@@ -274,7 +286,7 @@ public class SerialTest {
         StringBuilder bad = new StringBuilder();
         for (int[] t : tiles) {
             int want = t[2] <= 12 ? 58 + t[2] : 170 + t[2];                       // KEY_F13 = 183 ... KEY_F24 = 194
-            List<int[]> keys = captureKeys(ev, () -> { try { l.cmd("KEY " + t[0] + " " + t[1], 1500); } catch (Exception e) { } }, 500);
+            List<int[]> keys = captureKeys(ev, () -> { try { l.cmd("key " + t[0] + " " + t[1], 1500); } catch (Exception e) { } }, 500);
             boolean down = false, up = false; StringBuilder got = new StringBuilder();
             for (int[] k : keys) { got.append(k[0]).append('/').append(k[1]).append(' '); if (k[0] == want) { if (k[1] == 1) down = true; if (k[1] == 0) up = true; } }
             if (!(down && up)) bad.append(" F").append(t[2]).append(" (saw ").append(got.toString().trim()).append(")");
@@ -294,14 +306,14 @@ public class SerialTest {
 
     /** Press Scroll Lock on the Locks page and capture the events on one host evdev node. */
     static List<int[]> pressAndCapture(Link l, String ev, int locks) throws Exception {
-        try { return captureKeys(ev, () -> { try { l.cmd("KEY " + locks + " 2", 1500); } catch (Exception e) { } }, 800); }
+        try { return captureKeys(ev, () -> { try { l.cmd("key " + locks + " 2", 1500); } catch (Exception e) { } }, 800); }
         catch (IOException e) { report.add("INFO cannot read " + ev + ": " + e.getMessage()); return null; }
     }
 
     /** Send one mode command, press Scroll Lock, and check which of the two host devices saw it (expUsb / expBle). */
     static void routeCheck(String tag, Link l, String modeCmd, String okReply, String usbEv, String bleEv, int locks,
                            boolean expUsb, boolean expBle) throws Exception {
-        String r = l.cmd(modeCmd, 1500);
+        String r = l.cmd(modeCmd.toLowerCase(), 1500);
         check(tag, modeCmd, okReply.equals(r), String.valueOf(r));
         List<int[]> usb = pressAndCapture(l, usbEv, locks), ble = pressAndCapture(l, bleEv, locks);
         // pressAndCapture presses once per device, so the host scroll LED is toggled twice per mode = balanced
@@ -316,7 +328,7 @@ public class SerialTest {
      * USB only, PREFER BOTH over both; each mode is checked against the USB and BLE host input devices.
      */
     static void testBle(String tag, Link l, Map<String, String> info, int locks) throws Exception {
-        String st = l.cmd("PREFER?", 1500);
+        String st = l.cmd("prefer", 1500);
         Map<String, String> m = st != null && st.startsWith("OK") ? kv(st) : Map.of();
         check(tag, "BLE connected (board reports ble=1)", "1".equals(m.get("ble")), String.valueOf(st));
         String bleEv = findEvent(("S3".equals(tag) ? "-cs3" : "-c2") + " Keyboard", false), usbEv = findEvent(info.get("name") + " Keyboard", true);   // BLE name ends in -cs3 / -c2
@@ -328,7 +340,7 @@ public class SerialTest {
         routeCheck(tag, l, "ONLY USB",    "OK ONLY USB",    usbEv, bleEv, locks, true,  false);
         routeCheck(tag, l, "ONLY BLE",    "OK ONLY BLE",    usbEv, bleEv, locks, false, true);
         routeCheck(tag, l, "PREFER BOTH", "OK PREFER BOTH", usbEv, bleEv, locks, true,  true);
-        String r = l.cmd("PREFER USB", 1500);
+        String r = l.cmd("prefer usb", 1500);
         check(tag, "PREFER USB restored", "OK PREFER USB".equals(r), String.valueOf(r));
     }
 
@@ -338,7 +350,7 @@ public class SerialTest {
 
     static void saveShot(String tag, Link l, Path dir, String name) throws Exception {
         l.drain();
-        l.send("SHOT");
+        l.send("shot");
         String hdr = null; long end = System.currentTimeMillis() + 5000;
         while (System.currentTimeMillis() < end) {
             String s = l.line(1000);
@@ -363,7 +375,7 @@ public class SerialTest {
     static double timeShot(Link l) throws Exception {
         l.drain();
         long t0 = System.nanoTime();
-        l.send("SHOT");
+        l.send("shot");
         String hdr = null; long end = System.currentTimeMillis() + 5000;
         while (System.currentTimeMillis() < end) {
             String s = l.line(1000);
@@ -393,35 +405,35 @@ public class SerialTest {
         int[] sample = {1, 13, 14, locks};
         List<Double> ping = new ArrayList<>(), readout = new ArrayList<>(), ack = new ArrayList<>(), total = new ArrayList<>();
         List<Double> build = new ArrayList<>(), render = new ArrayList<>(), flush = new ArrayList<>();
-        l.cmd("LAYER 0", 3000); Thread.sleep(600);
-        for (int i = 0; i < 20; i++) { long t0 = System.nanoTime(); l.cmd("PING", 1000); ping.add((System.nanoTime() - t0) / 1e6); }
+        l.cmd("layer 0", 3000); Thread.sleep(600);
+        for (int i = 0; i < 20; i++) { long t0 = System.nanoTime(); l.cmd("ping", 1000); ping.add((System.nanoTime() - t0) / 1e6); }
         for (int i = 0; i < 2; i++) readout.add(timeShot(l));
         for (int r = 0; r < reps; r++) for (int n : sample) {
             l.drain();
             long t0 = System.nanoTime();
-            String a = l.cmd("LAYER " + n, 5000);
+            String a = l.cmd("layer " + n, 5000);
             double tAck = (System.nanoTime() - t0) / 1e6;
             double shot = timeShot(l);
             if (a == null || shot < 0) { report.add("FAIL [" + tag + "] latency sample for page " + n); fail++; continue; }
             ack.add(tAck); total.add((System.nanoTime() - t0) / 1e6);
-            String pf = l.cmd("PERF?", 1500);                     // firmware-side split: build / render / flush (LVGL builds only)
+            String pf = l.cmd("perf", 1500);                     // firmware-side split: build / render / flush (LVGL builds only)
             if (pf != null && pf.startsWith("OK PERF")) {
                 Map<String, String> k = kv(pf);
                 build.add(Double.parseDouble(k.get("build_ms"))); render.add(Double.parseDouble(k.get("render_ms"))); flush.add(Double.parseDouble(k.get("flush_ms")));
             }
         }
-        l.cmd("LAYER 0", 3000);
+        l.cmd("layer 0", 3000);
         Thread.sleep(800); l.drain();
         // Fast paging: ten page changes 150 ms apart (about what a finger does on the Core2 buttons), then how long
         // until the last page is really on screen. LAYER commands queue on the UART, so this is the sum of everything
         // the firmware does for pages nobody sees.
         long b0 = System.nanoTime();
-        for (int i = 1; i <= 10; i++) { l.send("LAYER " + i); Thread.sleep(150); }
+        for (int i = 1; i <= 10; i++) { l.send("layer " + i); Thread.sleep(150); }
         String last = null; long bend = System.currentTimeMillis() + 90000;
         while (System.currentTimeMillis() < bend) { String x = l.line(1000); if (x != null && x.startsWith("OK LAYER 10")) { last = x; break; } }
         double bShot = timeShot(l);
         double burstMs = (System.nanoTime() - b0) / 1e6 - median(readout);
-        l.cmd("LAYER 0", 5000);
+        l.cmd("layer 0", 5000);
         if (last == null || bShot < 0) { report.add("FAIL [" + tag + "] fast paging burst did not complete"); fail++; }
         else report.add(String.format("INFO [%s] fast paging: 10 page changes 150 ms apart, last page on screen %.0f ms after the first press (%.0f ms after the last press)",
                 tag, burstMs, burstMs - 1500));
@@ -454,7 +466,7 @@ public class SerialTest {
                 if (!l.open()) { report.add("SKIP " + p.getSystemPortPath() + ": cannot open"); continue; }
                 l.drain();
                 String r = null;
-                for (int i = 0; i < 3 && (r == null || !r.startsWith("OK INFO")); i++) r = l.cmd("INFO", 2000);
+                for (int i = 0; i < 3 && (r == null || !r.startsWith("OK INFO")); i++) r = l.cmd("info", 2000);
                 if (r == null || !r.startsWith("OK INFO")) { report.add("SKIP " + p.getSystemPortPath() + ": no INFO reply (not a Nachtgespenst)"); continue; }
                 Map<String, String> info = kv(r);
                 String tag = info.getOrDefault("board", "?");

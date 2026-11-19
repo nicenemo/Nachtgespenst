@@ -243,10 +243,29 @@ String dir() {
     root.close();
     return out;
 }
+bool helpSection(const char* name, Print& out) {
+    if (!sdMount()) return false;
+    File f = SD.open("/help.txt", FILE_READ);
+    if (!f) return false;
+    String want = String("== ") + name, line;
+    bool in = false, found = false;
+    while (f.available()) {
+        char ch = (char)f.read();
+        if (ch == '\r') continue;
+        if (ch != '\n') { line += ch; continue; }
+        if (line.startsWith("== ")) { if (in) break; in = (line == want); found = found || in; }
+        else if (in && !line.startsWith("#")) out.println(line);
+        line = "";
+    }
+    if (in && line.length() && !line.startsWith("== ")) out.println(line);      // the last line without a newline
+    f.close();
+    return found;
+}
 #else
 bool sdMount() { return false; }
 String sdStatus() { return String("SD present=0 (not used on this board)"); }
 String dir() { return String(); }
+bool helpSection(const char*, Print&) { return false; }
 #endif
 
 void begin() {

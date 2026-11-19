@@ -260,7 +260,7 @@ public class LedCam {
     }
 
     static void colours(Link l) throws Exception {
-        l.send("INFO");
+        l.send("info");
         int locks = -1;
         for (String line : l.readUntil("OK INFO", 3000)) { Matcher m = Pattern.compile("locks=(\\d+)").matcher(line); if (m.find()) locks = Integer.parseInt(m.group(1)); }
         if (locks < 0) throw new IllegalStateException("board did not answer INFO");
@@ -294,7 +294,7 @@ public class LedCam {
     /** Films the bar with LEDS ON (layer 0, blue), LEDS OFF twice and LEDS LOCKS on a layer page, and compares. Restores LEDS ON. */
     static void dark(Link l) throws Exception {
         int fails = 0;
-        l.send("SET defaults 1"); l.readUntil("OK", 1500);
+        l.send("set defaults 1"); l.readUntil("OK", 1500);
         layer(l, 0);
         Frame on = shot(l, "LEDS ON", "on.jpg");
         Frame off1 = shot(l, "LEDS OFF", "off1.jpg");
@@ -310,13 +310,13 @@ public class LedCam {
         fails += verdictLine("LEDS OFF is clearly darker than LEDS ON", onOff > 6 && onOff > 4 * noise);
         fails += verdictLine("two LEDS OFF frames look the same (the bar is really dark)", noise < 3);
         // "Locks only" shows the host lock state on every page: dark when no lock is on, lit when one is.
-        l.send("STATE?");
+        l.send("state");
         boolean anyLock = false;
         for (String line : l.readUntil("OK STATE", 1500)) { Matcher m = Pattern.compile("caps=(\\d) num=(\\d) scroll=(\\d)").matcher(line); if (m.find()) anyLock = !(m.group(1) + m.group(2) + m.group(3)).equals("000"); }
         fails += verdictLine("LEDS LOCKS on a layer page " + (anyLock ? "shows the lock that is on (host lock active)" : "is as dark as OFF (no lock is on)"),
                 anyLock ? locksVsOff > Math.max(6, noise * 4) : locksVsOff < Math.max(3, noise * 2));
         fails += verdictLine("LEDS ON brings the colours back", backVsOn < onOff * 0.35);
-        l.send("LEDS ON"); l.readUntil("OK", 1500);
+        l.send("leds on"); l.readUntil("OK", 1500);
         if (clean) deleteFrames();
         System.out.println(fails == 0 ? "dark: PASS" : "dark: " + fails + " FAIL");
         if (fails > 0) System.exit(1);
@@ -325,7 +325,7 @@ public class LedCam {
     // ------------------------------------------------------------------ locks: the Locks page colours
     /** Reads caps/num/scroll from STATE?, or null. */
     static int[] lockState(Link l) throws Exception {
-        l.send("STATE?");
+        l.send("state");
         for (String line : l.readUntil("OK STATE", 1500)) {
             Matcher m = Pattern.compile("caps=(\\d) num=(\\d) scroll=(\\d)").matcher(line);
             if (m.find()) return new int[]{Integer.parseInt(m.group(1)), Integer.parseInt(m.group(2)), Integer.parseInt(m.group(3))};
@@ -340,7 +340,7 @@ public class LedCam {
      * original lock state is restored. A board with a USB host (CoreS3) follows the host's own LED report instead.
      */
     static void locks(Link l) throws Exception {
-        l.send("INFO");
+        l.send("info");
         int lockPage = -1;
         for (String line : l.readUntil("OK INFO", 3000)) { Matcher m = Pattern.compile("locks=(\\d+)").matcher(line); if (m.find()) lockPage = Integer.parseInt(m.group(1)); }
         if (lockPage < 0) throw new IllegalStateException("board did not answer INFO");
@@ -357,7 +357,7 @@ public class LedCam {
             for (int attempt = 0; attempt < 3; attempt++) {
                 int[] st = lockState(l);
                 if (st == null || Arrays.equals(st, want)) break;
-                for (int b = 0; b < 3; b++) if (st[b] != want[b]) { l.send("KEY " + lockPage + " " + b); l.readUntil("OK", 1500); Thread.sleep(500); }
+                for (int b = 0; b < 3; b++) if (st[b] != want[b]) { l.send("key " + lockPage + " " + b); l.readUntil("OK", 1500); Thread.sleep(500); }
                 Thread.sleep(600);
             }
             int[] got = lockState(l);
@@ -389,7 +389,7 @@ public class LedCam {
         for (int attempt = 0; attempt < 3; attempt++) {
             int[] st = lockState(l);
             if (st == null || Arrays.equals(st, want)) return;
-            for (int b = 0; b < 3; b++) if (st[b] != want[b]) { l.send("KEY " + lockPage + " " + b); l.readUntil("OK", 1500); Thread.sleep(500); }
+            for (int b = 0; b < 3; b++) if (st[b] != want[b]) { l.send("key " + lockPage + " " + b); l.readUntil("OK", 1500); Thread.sleep(500); }
             Thread.sleep(500);
         }
     }
@@ -402,7 +402,7 @@ public class LedCam {
 
     static int verdictLine(String what, boolean ok) { System.out.println((ok ? "PASS " : "FAIL ") + what); return ok ? 0 : 1; }
 
-    static void layer(Link l, int n) throws Exception { l.send("LAYER " + n); Thread.sleep(1200); }
+    static void layer(Link l, int n) throws Exception { l.send("layer " + n); Thread.sleep(1200); }
 
     static double mag(double[] v) { return Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]); }
 

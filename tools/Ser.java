@@ -24,6 +24,16 @@ import static java.lang.foreign.ValueLayout.*;
             }
             return null;
         }
+        /** Sends a command and returns every line of the reply: from the first OK or ERR line until the board has been quiet for quietMs. */
+        List<String> cmdAll(String c, long ms, long quietMs) throws InterruptedException {
+            List<String> out = new ArrayList<>();
+            String first = cmd(c, ms);
+            if (first == null) return out;
+            out.add(first);
+            for (String l; (l = line(quietMs)) != null; ) out.add(l);
+            return out;
+        }
+
         String cmd(String c, long ms) throws InterruptedException {
             send(c); long end = System.currentTimeMillis() + ms;
             while (System.currentTimeMillis() < end) {
@@ -48,7 +58,7 @@ import static java.lang.foreign.ValueLayout.*;
             int[] at(int x, int y) { int i = (y * w + x) * 3; return new int[]{px[i] & 255, px[i + 1] & 255, px[i + 2] & 255}; }
         }
         Shot shot() throws Exception {
-            drain(); send("SHOT"); String hdr = null; long end = System.currentTimeMillis() + 5000;
+            drain(); send("shot"); String hdr = null; long end = System.currentTimeMillis() + 5000;
             while (System.currentTimeMillis() < end) { String s = line(1000); if (s != null && s.startsWith("OK SHOT")) { hdr = s; break; } }
             if (hdr == null) return null;
             String[] t = hdr.split("\\s+"); int w = Integer.parseInt(t[2]), h = Integer.parseInt(t[3]);

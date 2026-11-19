@@ -58,7 +58,7 @@ public class DemoApp {
     final JProgressBar busy = new JProgressBar();
     final JSpinner seconds = new JSpinner(new SpinnerNumberModel(8, 2, 60, 1));
     final JComboBox<String> photoGrid = new JComboBox<>(new String[]{"64x38", "160x95", "320x190"});
-    final JCheckBox repeat = new JCheckBox("repeat until Stop", false), withFast = new JCheckBox("include the fast disk run", true);
+    final JCheckBox repeat = new JCheckBox("repeat until Stop", false), withFast = new JCheckBox("include the fast disk run", true), withMic = new JCheckBox("include the microphone parts (tones)", false);
     final JButton stop = new JButton("■  Stop"), reconnect = new JButton("Connect");
     final List<JButton> actions = new ArrayList<>();
     final ScreenPanel screenPanel = new ScreenPanel();
@@ -103,7 +103,7 @@ public class DemoApp {
         stop.addActionListener(e -> stopRun());
         stop.setEnabled(false);
         JPanel cyc = section("Cycle");
-        cyc.add(row(start, stop)); cyc.add(repeat); cyc.add(withFast);
+        cyc.add(row(start, stop)); cyc.add(repeat); cyc.add(withFast); cyc.add(withMic);
         left.add(cyc);
 
         JPanel one = section("Parts");
@@ -121,9 +121,13 @@ public class DemoApp {
         JPanel board = section("On the board itself (autonomous)");
         JPanel bb = new JPanel(new GridLayout(0, 2, 6, 6));
         for (String n : Scenarios.BOARD_EFFECTS) bb.add(action(Character.toUpperCase(n.charAt(0)) + n.substring(1), () -> sc.boardEffect(n), false));
-        bb.add(action("Microphone VU (tones from the PC)", () -> sc.micDemo(), false));
-        bb.add(action("Microphone waveform on the lamps", () -> sc.micScope(), false));
         board.add(bb); left.add(board);
+
+        JPanel mic = section("Microphone and oscilloscope (the PC plays tones)");
+        mic.add(action("Oscilloscope on the lamps", () -> sc.micScope(), false));
+        mic.add(action("VU meter on the LED bar", () -> sc.micDemo(), false));
+        mic.add(action("Microphone check (pass or fail)", () -> sc.micCheck(), false));
+        left.add(mic);
 
         JPanel grid = section("Lamp grid (C64 style)");
         for (String n : Scenarios.GRID_EFFECTS) grid.add(action(Character.toUpperCase(n.charAt(0)) + n.substring(1), () -> sc.gridEffect(n), false));
@@ -212,7 +216,7 @@ public class DemoApp {
                     public void bar(int[] rgb) { lampPanel.setBar(rgb); }
                     public void grid(int[] rgb, int cols, int rows) { lampPanel.setGrid(rgb, cols, rows); }
                 };
-                Map<String, String> i = ser.kv("INFO");
+                Map<String, String> i = ser.kv("info");
                 SwingUtilities.invokeLater(() -> info.setText("connected: " + i.get("name") + ", firmware " + i.get("fw") + ", " + i.get("pages") + " pages, USB " + node));
                 say("Connected. Pick a demo, or start the cycle.");
                 state("Ready", false);
@@ -252,7 +256,7 @@ public class DemoApp {
         if (sc == null || (worker != null && worker.isAlive())) return;
         sc.seconds = ((Number) seconds.getValue()).doubleValue();
         sc.photoGrid = (String) photoGrid.getSelectedItem();
-        boolean again = repeat.isSelected(), fast = withFast.isSelected();
+        boolean again = repeat.isSelected(), fast = withFast.isSelected(), mic = withMic.isSelected();
         state("Cycle running", true);
         lampPanel.clear();
         worker = Thread.ofVirtual().name("cycle").start(() -> {
@@ -260,7 +264,7 @@ public class DemoApp {
                 int n = 0;
                 do {
                     say("=== cycle " + (++n));
-                    for (String[] r : sc.cycle(fast)) say(String.format("%-12s %8s  %s", r[0], r[1], r[2]));
+                    for (String[] r : sc.cycle(fast, mic)) say(String.format("%-12s %8s  %s", r[0], r[1], r[2]));
                 } while (again && !Thread.currentThread().isInterrupted());
                 say("→ cycle done, checks pass=" + sc.pass + " fail=" + sc.fail);
             } catch (InterruptedException e) { say("→ stopped");
@@ -297,11 +301,15 @@ public class DemoApp {
             app.log.setText("Connected. Pick a demo, or start the cycle.\n=== Jules Verne to the SD card and back\nbook 618734 bytes, raw deflate 232700 bytes (38%)\nsent 232700 compressed bytes in 7,95 s = 28,6 kB/s\nloaded back 618734 bytes in 16,37 s = 36,9 kB/s over the gamepad\nSHA-256 of the received file equals the original\n");
             app.setEnabledActions(true);
             try {
-                BufferedImage sample = ImageIO.read(Boards.repoRoot().resolve("site/img/lamps/deventer-lamps.png").toFile());
-                app.screenPanel.set(sample);
-                int cols = 160, rows = 95; int[] px = new int[cols * rows];
-                for (int y = 0; y < rows; y++) for (int x = 0; x < cols; x++) px[y * cols + x] = sample.getRGB(x * 2, y * 2) & 0xFFFFFF;
-                app.lampPanel.setGrid(px, cols, rows);
+                BufferedImage sample = ImageIO.read(Boards.repoRoot().resolve("site/img/lamps/scope-880.png").toFile());
+                app.screenPanel.set(sample);                       // the board shows the oscilloscope the PC paints on its lamps
+                Scope sc = new Scope(80, 47); java.util.Random rnd = new java.util.Random(1);
+                for (int f = 0; f < 5; f++) {
+                    int[] v = new int[512]; double ph = rnd.nextDouble() * 6.28;
+                    for (int i = 0; i < 512; i++) v[i] = (int) (3000 * Math.sin(2 * Math.PI * 880 * i / 16000.0 + ph) + rnd.nextGaussian() * 120);
+                    sc.frame(null, v);
+                }
+                app.lampPanel.setGrid(sc.pix.clone(), 80, 47);
                 app.lampPanel.setBar(new int[]{0x220000, 0x660500, 0xCC1000, 0xFF2000, 0xFF1000, 0x880800, 0x330300, 0x110100, 0, 0});
             } catch (Exception ignored) { }
             app.root.setSize(1450, 780);

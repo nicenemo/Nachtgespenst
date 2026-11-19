@@ -51,7 +51,7 @@ final class DiskDrive {
      * acknowledgement), so a bad link (Bluetooth, --inject) settles on what it can carry.
      */
     void disk(Ser s, Hid h) throws Exception {
-        try { diskRun(s, h); } finally { if (!o.via.equals("usb")) s.cmd("PREFER USB", 2000); }
+        try { diskRun(s, h); } finally { if (!o.via.equals("usb")) s.cmd("prefer usb", 2000); }
     }
 
     void diskRun(Ser s, Hid h) throws Exception {
@@ -59,11 +59,11 @@ final class DiskDrive {
         byte[] book = diskBook(); byte[] comp = Proto.deflateRaw(book);
         CRC32 whole = new CRC32(); whole.update(comp);
         rep.info(String.format("book %d bytes, raw deflate %d bytes (%.0f%%)", book.length, comp.length, 100.0 * comp.length / book.length));
-        int pages = Integer.parseInt(s.kv("INFO").get("pages")), diskPage = pages - 3;
-        s.cmd("LAYER " + diskPage, 3000); Thread.sleep(600);
-        rep.check("on the Disk page", s.kv("STATE?").getOrDefault("title", "").equals("Disk"), s.kv("STATE?").toString());
-        s.cmd("DISK RESET", 2000);
-        if (!usb) s.cmd("PREFER BLE", 2000);                      // the answers (keys and game pad reports) must leave over the link under test, not over USB
+        int pages = Integer.parseInt(s.kv("info").get("pages")), diskPage = pages - 3;
+        s.cmd("layer " + diskPage, 3000); Thread.sleep(600);
+        rep.check("on the Disk page", s.kv("state").getOrDefault("title", "").equals("Disk"), s.kv("state").toString());
+        s.cmd("disk reset", 2000);
+        if (!usb) s.cmd("prefer ble", 2000);                      // the answers (keys and game pad reports) must leave over the link under test, not over USB
         String ev = Evdev.findKeyboard(o.tag, usb);
         if (ev == null) { rep.check("keyboard device of the board found", false, "no evdev node"); return; }
         try (Evdev ed = new Evdev(ev, o.grab)) {
@@ -151,7 +151,7 @@ final class DiskDrive {
             }
             double sec = (System.nanoTime() - t0) / 1e9;
             Thread.sleep(500);
-            Map<String, String> st = s.kv("DISK?");
+            Map<String, String> st = s.kv("disk");
             rep.info(String.format("sent %d compressed bytes in %.2f s = %.1f kB/s (%.1f kB/s of text), %d reports, %d windows, %d errors (%d timeouts, %d naks), largest block %d bytes, last block %d lamps, window %d, gap %d us",
                     comp.length, sec, comp.length / 1024.0 / sec, book.length / 1024.0 / sec, reportsSent, windows, errors, timeouts, naks, maxBlock, blockLamps, window, gap));
             rep.info("board: " + st);
@@ -165,7 +165,7 @@ final class DiskDrive {
             rep.check("the SHA-256 the board computed equals the original's", Proto.hex(orig).equals(st.get("sha")), "board " + st.get("sha") + " pc " + Proto.hex(orig));
             Proto.sendHash(h, sid, orig, (long) (comp.length / sec), 0);
             Thread.sleep(300);
-            st = s.kv("DISK?");
+            st = s.kv("disk");
             rep.check("the board compares the PC's hash with its own (match)", "1".equals(st.get("match")), st.toString());
             if (o.load) {
                 String devPort = Hid.find(o.tag, usb);
@@ -179,7 +179,7 @@ final class DiskDrive {
                         rep.check("the board's own hash (in its header report) equals the received file's", ls[8] == 1, "");
                         Proto.sendHash(h, sid, Proto.sha256(back), (long) (ls[0] * 1024), 1);
                         Thread.sleep(500);
-                        Map<String, String> st2 = s.kv("DISK?");
+                        Map<String, String> st2 = s.kv("disk");
                         rep.info("board after the load: " + st2);
                         rep.check("the board shows a match with the hash of what the PC received", "1".equals(st2.get("match")), st2.toString());
                         rep.check("the board measured its own sending speed", Proto.num(st2, "txkbps10") > 0, "txkbps10=" + st2.get("txkbps10"));
@@ -258,5 +258,5 @@ final class DiskDrive {
         return got;
     }
 
-    int barPage(Ser s) throws Exception { return Integer.parseInt(s.kv("INFO").get("pages")) - 1; }
+    int barPage(Ser s) throws Exception { return Integer.parseInt(s.kv("info").get("pages")) - 1; }
 }

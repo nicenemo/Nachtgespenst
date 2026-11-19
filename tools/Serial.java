@@ -13,10 +13,10 @@ import java.util.Optional;
  * Send one or more serial commands to a board and print each reply.
  *
  * <pre>
- * jbang tools/Serial.java S3 "LAYER 26" "STATE?"      # S3 or C2 (core2/cores3 also work)
+ * jbang tools/Serial.java S3 "layer 26" "state"       # S3 or C2 (core2/cores3 also work); see "help" and docs/wiki/shell.md
  * </pre>
  *
- * Text commands only (PING, INFO, STATE?, LAYER n, TAP x y, KEY l i, PREFER ..., ONLY ...). SHOT is binary: use
+ * Text commands only (help lists them; see docs/wiki/shell.md). SHOT is binary: use
  * {@code jbang tools/SerialTest.java --shot DIR}. A command that gets no reply within 3 seconds is reported and the
  * exit code is 1 (the very first command is retried once: opening the CoreS3 port can reset the chip).
  *
@@ -46,7 +46,7 @@ public class Serial {
                 String reply = ask(p, cmd, 3000);
                 if (reply == null && i == 0) { Thread.sleep(1500); reply = ask(p, cmd, 3000); }   // the first command may race a reset
                 if (reply == null) { missed++; System.out.println(cmd + " -> (no reply)"); }
-                else System.out.println(reply);
+                else { System.out.println(reply); String more; while ((more = more(p, 250)) != null) System.out.println(more); }   // help and disk dir print more lines
             }
         } finally {
             p.closePort();
@@ -72,6 +72,20 @@ public class Serial {
             } else Thread.sleep(2);
         }
         return null;
+    }
+
+    /** The next line of a reply that goes on after its first line, or null once the board has been quiet for ms. */
+    static String more(SerialPort p, long ms) throws InterruptedException {
+        StringBuilder line = new StringBuilder(); byte[] one = new byte[1]; long end = System.currentTimeMillis() + ms;
+        while (System.currentTimeMillis() < end) {
+            if (p.bytesAvailable() > 0 && p.readBytes(one, 1) == 1) {
+                char c = (char) (one[0] & 0xff);
+                if (c == '\n') { return line.toString(); }
+                if (c != '\r') line.append(c);
+                end = System.currentTimeMillis() + ms;
+            } else Thread.sleep(2);
+        }
+        return line.length() > 0 ? line.toString() : null;
     }
 
     static void drain(SerialPort p) throws InterruptedException {

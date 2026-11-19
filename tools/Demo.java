@@ -66,7 +66,7 @@ public class Demo {
                     public void grid(int[] rgb, int cols, int rows) { }
                 };
             }
-            System.out.println("Demo runner on " + s.kv("INFO"));
+            System.out.println("Demo runner on " + s.kv("info"));
             List<String[]> all = new ArrayList<>();
             try {
                 for (int c = 1; cycles == 0 || c <= cycles; c++) {

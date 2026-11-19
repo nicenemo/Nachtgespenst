@@ -25,7 +25,7 @@ Method and caveat: read on 2026-11-18 from the public GitHub pages (`layers.md`,
 | `VOLUME`, `CONSUMER`, `POWER` | `Media` | transport, volume, mute, and power/sleep/wake |
 | `APPL` (application launch) | `App Launch` | browser, file manager, mail, calendar, task manager, calculator |
 | `DISPLAY` (brightness) | none | the brightness usages exist in the vocabulary, no page uses them yet |
-| `MOUSE`, `CONFIG` | none | Bluetooth/transport choice is a firmware command (`PREFER`, `ONLY`) |
+| `MOUSE`, `CONFIG` | none | Bluetooth/transport choice is a firmware command (`prefer`, `only`) |
 | `APL/BQN`, `LOGIC`, `MATH`, three Greek layers, four punctuation layers | none | these type Unicode through OS input modes; USB/BLE HID has no Unicode |
 | `NGRAM`, `QWERTY` (base typing layers) | none | a macro pad has no typing layer |
 | none | `Maven Tools`, `Office/Prod`, `System`, `Edit Keys`, `MS Teams`, `MS Outlook`, `PowerPoint`, `Browser Ctrl`, `Debug IDE`, `International`, `Language`, `Hard Locks`, `Locks` | application-specific pages and the Locks page are new |
@@ -36,7 +36,7 @@ Method and caveat: read on 2026-11-18 from the public GitHub pages (`layers.md`,
 - **Typing keyboard vs macro pad.** The ZMK configuration is built for typing: home-row mods (hold-taps with prior-idle and tapping terms), layer-taps on the thumbs, 10 combos that toggle special layers. Nachtgespenst has no timing-dependent behaviours; a tile is a key press, a chord, or a launcher.
 - **Navigating layers.** ZMK uses `&lt`, `&tog` and combos; Nachtgespenst uses the three Core2 buttons or the CoreS3 bottom bar, plus the Locks page.
 - **Feedback.** Nachtgespenst shows the layer colour on the LED bar, the host lock state on the Locks page, and screenshots/tests are scriptable over serial; the ZMK keymap has none of that.
-- **Transports.** ZMK handles BLE and USB through its own stack; Nachtgespenst chooses per report with `PREFER` and `ONLY` (S3).
+- **Transports.** ZMK handles BLE and USB through its own stack; Nachtgespenst chooses per report with `prefer` and `only` (S3).
 
 ## Ideas this suggests (not planned)
 
