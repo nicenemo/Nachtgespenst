@@ -34,6 +34,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import javax.sound.sampled.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -139,7 +140,12 @@ public class DemoApp {
         stop.setEnabled(false); stop.addActionListener(e -> stopRun());
         side.add(stop);
         side.add(talkButton("Demos …", ConsoleTheme.LAVENDER, () -> popup("Demos", demoPane)));
-        side.add(talkButton("Cameras …", ConsoleTheme.LAVENDER, () -> popup("Cameras", camPane)));
+        JPanel icons = new JPanel(new GridLayout(1, 3, 4, 0)); icons.setOpaque(false); icons.setAlignmentX(Component.LEFT_ALIGNMENT); icons.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
+        icons.add(iconButton(ConsoleUi.IconButton.Kind.CAMERA, "Cameras: choose, turn and mirror", () -> popup("Cameras", camPane)));
+        icons.add(iconButton(ConsoleUi.IconButton.Kind.MIC, "Microphone: device, volume and level", this::micPopup));
+        icons.add(iconButton(ConsoleUi.IconButton.Kind.SPEAKER, "Speaker: device and volume", () -> popup("Speaker", speakerPane)));
+        for (Component c : icons.getComponents()) c.setPreferredSize(new Dimension(40, 34));
+        side.add(Box.createVerticalStrut(2)); side.add(icons); side.add(Box.createVerticalStrut(4));
         side.add(talkButton("Log …", ConsoleTheme.LAVENDER, () -> popup("What is happening", logPaneOuter)));
         side.add(Box.createVerticalGlue());
 
@@ -199,6 +205,7 @@ public class DemoApp {
             camPane.add(camBox[i]); camPane.add(camPick[i]); camPane.add(Box.createVerticalStrut(4)); camPane.add(row); camPane.add(Box.createVerticalStrut(2 * gap));
         }
         camPane.setPreferredSize(new Dimension(380, 220));
+        buildAudioPanes(pr);
         sideScroll = side; root.add(side, BorderLayout.WEST);
         side.setPreferredSize(new Dimension(ConsoleTheme.LEG_W - 30 + ConsoleTheme.ELBOW_W + gap, 100));
 
@@ -258,6 +265,84 @@ public class DemoApp {
         public int getScrollableBlockIncrement(Rectangle r, int o, int d) { return 120; }
         public boolean getScrollableTracksViewportWidth() { return true; }
         public boolean getScrollableTracksViewportHeight() { return false; }
+    }
+
+    // ---- sound: the speaker the tones of the demos play on, and the microphone of the PC (a level check for the online talk)
+    final JPanel speakerPane = new JPanel(), micPane = new JPanel();
+    final JComboBox<Mixer.Info> speakerPick = new JComboBox<>(), micPick = new JComboBox<>();
+    final JSlider speakerVol = new JSlider(0, 100, 100), micGain = new JSlider(0, 200, 100);
+    final Meter meter = new Meter();
+    volatile TargetDataLine micLine; volatile boolean micRun;
+
+    void buildAudioPanes(java.util.prefs.Preferences pr) {
+        for (Mixer.Info mi : Tones.devices(true)) speakerPick.addItem(mi);
+        for (Mixer.Info mi : Tones.devices(false)) micPick.addItem(mi);
+        speakerPick.setRenderer(new MixerRenderer()); micPick.setRenderer(new MixerRenderer());
+        pickByName(speakerPick, pr.get("speaker", null)); pickByName(micPick, pr.get("mic", null));
+        speakerVol.setValue(pr.getInt("speakerVol", 100)); micGain.setValue(pr.getInt("micGain", 100));
+        Tones.volume = speakerVol.getValue() / 100.0; Tones.output = (Mixer.Info) speakerPick.getSelectedItem();
+        speakerPick.addActionListener(e -> { Tones.output = (Mixer.Info) speakerPick.getSelectedItem(); if (Tones.output != null) pr.put("speaker", Tones.output.getName()); });
+        speakerVol.addChangeListener(e -> { Tones.volume = speakerVol.getValue() / 100.0; pr.putInt("speakerVol", speakerVol.getValue()); });
+        micGain.addChangeListener(e -> pr.putInt("micGain", micGain.getValue()));
+        micPick.addActionListener(e -> { Mixer.Info mi = (Mixer.Info) micPick.getSelectedItem(); if (mi != null) pr.put("mic", mi.getName()); if (micRun) { stopMic(); startMic(); } });
+        speakerPane.setLayout(new BoxLayout(speakerPane, BoxLayout.Y_AXIS)); speakerPane.setOpaque(false);
+        speakerPane.add(label("Device")); speakerPane.add(fit(speakerPick)); speakerPane.add(Box.createVerticalStrut(8));
+        speakerPane.add(label("Volume of the tones")); speakerPane.add(fit(speakerVol)); speakerPane.add(Box.createVerticalStrut(8));
+        ConsoleUi.BlockButton test = new ConsoleUi.BlockButton("Play a test tone", ConsoleTheme.LAVENDER);
+        test.addActionListener(e -> Tones.playAsync(440, 1.0, 0.6)); speakerPane.add(test);
+        speakerPane.setPreferredSize(new Dimension(440, 190));
+        micPane.setLayout(new BoxLayout(micPane, BoxLayout.Y_AXIS)); micPane.setOpaque(false);
+        micPane.add(label("Device")); micPane.add(fit(micPick)); micPane.add(Box.createVerticalStrut(8));
+        micPane.add(label("Gain")); micPane.add(fit(micGain)); micPane.add(Box.createVerticalStrut(8));
+        micPane.add(label("Level")); meter.setAlignmentX(Component.LEFT_ALIGNMENT); meter.setMaximumSize(new Dimension(Integer.MAX_VALUE, 26)); meter.setPreferredSize(new Dimension(100, 26)); micPane.add(meter);
+        micPane.add(Box.createVerticalStrut(8)); micPane.add(label("The microphone is opened only while this window is open. The demos listen with the microphone of the board, not with this one."));
+        micPane.setPreferredSize(new Dimension(440, 230));
+    }
+    static void pickByName(JComboBox<Mixer.Info> box, String name) { if (name != null) for (int i = 0; i < box.getItemCount(); i++) if (box.getItemAt(i).getName().equals(name)) box.setSelectedIndex(i); }
+    static JComponent fit(JComponent c) { c.setAlignmentX(Component.LEFT_ALIGNMENT); c.setMaximumSize(new Dimension(Integer.MAX_VALUE, c.getPreferredSize().height)); return c; }
+    static JLabel label(String t) {
+        JLabel l = new JLabel("<html><body style='width:400px'>" + t + "</body></html>"); l.setFont(ConsoleTheme.sansRegular(12f)); l.setForeground(ConsoleTheme.PEACH); l.setAlignmentX(Component.LEFT_ALIGNMENT); return l;
+    }
+    static final class MixerRenderer extends DefaultListCellRenderer {
+        @Override public Component getListCellRendererComponent(JList<?> l, Object v, int i, boolean sel, boolean foc) {
+            super.getListCellRendererComponent(l, v, i, sel, foc); if (v instanceof Mixer.Info mi) setText(mi.getName()); return this;
+        }
+    }
+    void micPopup() { startMic(); try { popup("Microphone", micPane); } finally { stopMic(); } }
+    void startMic() {
+        Mixer.Info mi = (Mixer.Info) micPick.getSelectedItem();
+        if (mi == null) { meter.set(0, "no microphone found"); return; }
+        micRun = true;
+        Thread.ofVirtual().name("mic").start(() -> {
+            AudioFormat fmt = new AudioFormat(16000f, 16, 1, true, false);
+            try (TargetDataLine line = AudioSystem.getTargetDataLine(fmt, mi)) {
+                line.open(fmt); line.start(); micLine = line; byte[] b = new byte[1600];
+                while (micRun) {
+                    int n = line.read(b, 0, b.length); if (n <= 0) break;
+                    double sum = 0; for (int i = 0; i + 1 < n; i += 2) { short v = (short) ((b[i + 1] << 8) | (b[i] & 255)); sum += (double) v * v; }
+                    double rms = Math.sqrt(sum / (n / 2)) / 32768.0 * (micGain.getValue() / 100.0);
+                    meter.set(Math.min(1.0, Math.sqrt(rms * 6)), null);                       // a square root so that quiet speech still moves the meter
+                }
+            } catch (Exception e) { meter.set(0, "cannot open the microphone: " + e.getMessage()); }
+            micLine = null;
+        });
+    }
+    void stopMic() { micRun = false; TargetDataLine l = micLine; if (l != null) { try { l.stop(); l.close(); } catch (RuntimeException ignored) { } } meter.set(0, null); }
+
+    /** A level meter in the style of the LED bar: a row of small blocks that light up from the left. */
+    static final class Meter extends JComponent {
+        private volatile double level; private volatile String note; private double peak;
+        void set(double l, String n) { level = l; note = n; SwingUtilities.invokeLater(this::repaint); }
+        @Override protected void paintComponent(Graphics g0) {
+            Graphics2D g = (Graphics2D) g0.create(); ConsoleUi.quality(g);
+            int n = 30, w = getWidth(), h = getHeight(); double cw = (double) w / n; peak = Math.max(level, peak - 0.02);
+            for (int i = 0; i < n; i++) {
+                boolean on = i < level * n; Color c = i > n * 0.85 ? ConsoleTheme.CORAL : i > n * 0.6 ? ConsoleTheme.AMBER : ConsoleTheme.PEACH;
+                g.setColor(on ? c : ConsoleTheme.mix(c, ConsoleTheme.BLACK, 0.85)); g.fill(new java.awt.geom.RoundRectangle2D.Double(i * cw + 1, 2, cw - 3, h - 4, 4, 4));
+            }
+            if (note != null) { g.setColor(ConsoleTheme.CORAL); g.setFont(ConsoleTheme.sansRegular(12f)); g.drawString(note, 6, h / 2 + 4); }
+            g.dispose();
+        }
     }
 
     static JPanel column() { JPanel c = new JPanel(); c.setLayout(new BoxLayout(c, BoxLayout.Y_AXIS)); c.setOpaque(false); return c; }

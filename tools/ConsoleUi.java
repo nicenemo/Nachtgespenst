@@ -146,7 +146,7 @@ final class ConsoleUi {
 
     /** A small block with a drawn symbol instead of text: a turn clockwise or anticlockwise, a half turn, a mirror left to right or top to bottom. */
     static class IconButton extends BlockButton {
-        enum Kind { TURN_RIGHT, TURN_LEFT, TURN_HALF, MIRROR_H, MIRROR_V }
+        enum Kind { TURN_RIGHT, TURN_LEFT, TURN_HALF, MIRROR_H, MIRROR_V, CAMERA, MIC, SPEAKER }
         private final Kind kind;
         IconButton(Kind kind, String tip, Color base) {
             super("", base); this.kind = kind; setToolTipText(tip); getAccessibleContext().setAccessibleName(tip);
@@ -171,6 +171,21 @@ final class ConsoleUi {
                     head.moveTo(tx - dx * 5 + nx * 4, ty - dy * 5 + ny * 4); head.lineTo(tx, ty); head.lineTo(tx - dx * 5 - nx * 4, ty - dy * 5 - ny * 4);
                     g.draw(head);
                     if (kind == Kind.TURN_HALF) { g.setFont(ConsoleTheme.sansBold(8f)); g.drawString("180", -g.getFontMetrics().stringWidth("180") / 2f, 3); }
+                }
+                case CAMERA -> {
+                    g.draw(new RoundRectangle2D.Double(-9, -5, 18, 12, 4, 4));
+                    g.draw(new Ellipse2D.Double(-3.5, -2.5, 7, 7));
+                    g.fill(new RoundRectangle2D.Double(-4, -8, 8, 3, 2, 2));
+                }
+                case MIC -> {
+                    g.draw(new RoundRectangle2D.Double(-3, -9, 6, 11, 6, 6));
+                    g.draw(new Arc2D.Double(-6.5, -6, 13, 13, 180, 180, Arc2D.OPEN));
+                    g.draw(new java.awt.geom.Line2D.Double(0, 7, 0, 10)); g.draw(new java.awt.geom.Line2D.Double(-4, 10, 4, 10));
+                }
+                case SPEAKER -> {
+                    Path2D.Double cone = new Path2D.Double(); cone.moveTo(-9, -3); cone.lineTo(-5, -3); cone.lineTo(0, -7); cone.lineTo(0, 7); cone.lineTo(-5, 3); cone.lineTo(-9, 3); cone.closePath();
+                    g.fill(cone);
+                    g.draw(new Arc2D.Double(-3, -4, 8, 8, -60, 120, Arc2D.OPEN)); g.draw(new Arc2D.Double(-3, -8, 16, 16, -60, 120, Arc2D.OPEN));
                 }
                 case MIRROR_H, MIRROR_V -> {
                     if (kind == Kind.MIRROR_V) g.rotate(Math.PI / 2);
