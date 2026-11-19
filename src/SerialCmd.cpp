@@ -4,6 +4,7 @@
 #include "ui.h"
 #include "HIDManager.h"
 #include "Lamps.h"
+#include "Disk.h"
 #include "Settings.h"
 
 namespace {
@@ -97,6 +98,12 @@ void handle(char* line) {
         else if (!strcmp(a, "BRIGHT") && num(b, x) && !extra) { Lamps::setBarBrightness(x < 1 ? 1 : x > 255 ? 255 : x); ui_leds_refresh(); Serial.printf("OK LAMPS BRIGHT %u\n", (unsigned)Lamps::barBrightness()); }
         else Serial.println("ERR lamps");
     }
+    // Disk demo (src/Disk.cpp): DISK? shows the state of the transfer, DISK RESET forgets it
+    else if (!strcmp(cmd, "DISK?") && !a) Serial.printf("OK %s\n", Disk::status().c_str());
+    else if (!strcmp(cmd, "DISK") && a && !b && !strcasecmp(a, "RESET")) { Disk::reset(); Serial.println("OK DISK RESET"); }
+    else if (!strcmp(cmd, "DISK") && a && !b && !strcasecmp(a, "DIR")) Serial.printf("OK DIR\n%s", Disk::dir().c_str());
+    else if (!strcmp(cmd, "DISK") && a && b && !extra && !strcasecmp(a, "SOUND") && (!strcasecmp(b, "ON") || !strcasecmp(b, "OFF"))) { Disk::setSound(!strcasecmp(b, "ON")); Serial.printf("OK DISK SOUND %s\n", b); }
+    else if (!strcmp(cmd, "SD?") && !a) Serial.printf("OK %s\n", Disk::sdStatus().c_str());
     else if (!strcmp(cmd, "SHOT") && !a) { Serial.print("OK "); ui_screenshot(Serial); }
     else if (!strcmp(cmd, "LAYER") && num(a, x) && !b) {
         if (x < 0 || x >= (int)ui_page_count()) Serial.println("ERR range");

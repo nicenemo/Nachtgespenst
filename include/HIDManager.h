@@ -47,6 +47,7 @@ namespace HIDManager {
 
     // The central send method (decides which report is sent)
     void send(const Binding& b);
+    bool sendRaw(uint8_t reportId, const uint8_t* data, size_t len);   // one input report at once on the chosen transport(s), no queue; false when it could not go
     bool canSend(const Binding& b);   // false for usages without a report in the report map (they would be ignored)
     
     // Event-driven functionality

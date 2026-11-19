@@ -30,6 +30,8 @@ namespace Lamps {
     bool workerOn();
     bool pending();                                 // a screen frame is waiting to be drawn: the main loop should not sleep
     void getLamp(uint16_t id, uint8_t rgbi[4]);
+    const uint8_t* raw(uint16_t id);                // the four bytes r, g, b, intensity of lamp id and of the lamps after it (contiguous), or null
+    void setFrameSink(void (*fn)());                // called from the HID task whenever a frame (update-complete report) has been stored
 
     void resetCounters();                           // also clears all lamp colours
     String status();                                // "LAMPS key=value ..." for the serial command

@@ -78,10 +78,14 @@ namespace HIDManager {
     }
     // Short timeout: a stalled host must not block the main loop for the default 100 ms.
     static bool usbReport(uint8_t id, const uint8_t* data, size_t len) { return usbHid.SendReport(id, data, len, 1); }
+    // A stream of reports waits for each one to complete: with the 1 ms timeout above SendReport reports false for a report that did go out,
+    // and the sender then repeated it (half of the data came back twice).
+    static bool usbReportWait(uint8_t id, const uint8_t* data, size_t len) { return usbHid.SendReport(id, data, len, 20); }
 #else
     static bool usbReady() { return false; }
     static void usbBegin() {}
     static bool usbReport(uint8_t, const uint8_t*, size_t) { return false; }
+    static bool usbReportWait(uint8_t, const uint8_t*, size_t) { return false; }
 #endif
 
     // ---- BLE transport ------------------------------------------------------
@@ -90,6 +94,7 @@ namespace HIDManager {
     static NimBLECharacteristic* inputKeyboard = nullptr;
     static NimBLECharacteristic* inputConsumer = nullptr;
     static NimBLECharacteristic* inputSystem = nullptr;
+    static NimBLECharacteristic* inputGamepad = nullptr;
     static NimBLECharacteristic* outputKeyboard = nullptr;
     static std::atomic<bool> _bleConnected{false};
 
@@ -166,6 +171,7 @@ namespace HIDManager {
         inputKeyboard  = hid->getInputReport(HID::Reports::KEYBOARD);
         inputConsumer  = hid->getInputReport(HID::Reports::CONSUMER);
         inputSystem    = hid->getInputReport(HID::Reports::SYSTEM);
+        inputGamepad   = hid->getInputReport(HID::Reports::GAMEPAD);
         outputKeyboard = hid->getOutputReport(HID::Reports::KEYBOARD);
         if (outputKeyboard) outputKeyboard->setCallbacks(new MyOutputCallbacks());
         // LampArray reports (see HID_Specs.h): feature 5 to 7 and output 8 to 10.
@@ -202,7 +208,7 @@ namespace HIDManager {
         return _bleConnected && server && server->getConnectedCount() > 0;
     }
     static bool bleReport(uint8_t id, const uint8_t* data, size_t len) {
-        NimBLECharacteristic* c = (id == HID::Reports::KEYBOARD) ? inputKeyboard : (id == HID::Reports::SYSTEM) ? inputSystem : inputConsumer;
+        NimBLECharacteristic* c = (id == HID::Reports::KEYBOARD) ? inputKeyboard : (id == HID::Reports::SYSTEM) ? inputSystem : (id == HID::Reports::GAMEPAD) ? inputGamepad : inputConsumer;
         if (!c) return false;
         c->setValue(data, len);
         return c->notify();
@@ -280,6 +286,20 @@ namespace HIDManager {
     uint8_t getLedStatus() { return _ledStatus.load(); }
 
     void handleAsyncEvents() { pump(); }
+    bool sendRaw(uint8_t id, const uint8_t* data, size_t len) {
+        bool usb = usbReady(), ble = bleReady();
+        switch ((Prefer)_prefer.load()) {
+            case Prefer::USB:  ble = ble && !usb; break;
+            case Prefer::BLE:  usb = usb && !ble; break;
+            case Prefer::BOTH: break;
+            case Prefer::USB_ONLY: ble = false; break;
+            case Prefer::BLE_ONLY: usb = false; break;
+        }
+        bool ok = false;
+        if (usb) ok = usbReportWait(id, data, len) || ok;
+        if (ble) ok = bleReport(id, data, len) || ok;
+        return ok;
+    }
     void setEventListener(HIDEventListener l) { _eventListener = l; }
     bool isConnected() { return usbReady() || bleReady(); }
     bool isUsbConnected() { return usbReady(); }

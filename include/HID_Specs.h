@@ -53,7 +53,9 @@ namespace HID {
             LAMP_RESP  = 0x07, // feature: LampAttributesResponseReport (read the attributes of that lamp)
             LAMP_MULTI = 0x08, // output: LampMultiUpdateReport (up to 8 lamps)
             LAMP_RANGE = 0x09, // output: LampRangeUpdateReport (one colour for a range of lamps)
-            LAMP_CTRL  = 0x0A  // output: LampArrayControlReport (autonomous mode)
+            LAMP_CTRL  = 0x0A, // output: LampArrayControlReport (autonomous mode)
+            // Game pad: 384 buttons (48 bytes) as parallel data lines, the way back of the Disk demo (src/Disk.cpp)
+            GAMEPAD    = 0x0B
         };
 
         // --- PAGE 0x07 & 0x08: Keyboard + LEDs ---
@@ -108,6 +110,24 @@ namespace HID {
             0x95, 0x01,         //   Report Count (1)
             0x75, 0x10,         //   Report Size (16 bits)
             0x81, 0x00,         //   Input (Data, Array, Absolute)
+            0xC0                // End Collection
+        };
+
+        // --- PAGE 0x01 / 0x09: Game Pad with 384 buttons. The Disk demo sends a file back to the host in these 48 bytes per report;
+        // a host that reads the raw HID node (hidraw) sees every bit, evdev only maps the first buttons. ---
+        inline constexpr uint8_t GamepadBlock[] = {
+            0x05, 0x01,         // Usage Page (Generic Desktop)
+            0x09, 0x05,         // Usage (Game Pad)
+            0xA1, 0x01,         // Collection (Application)
+            0x85, ID::GAMEPAD,  //   REPORT ID (11)
+            0x05, 0x09,         //   Usage Page (Button)
+            0x19, 0x01,         //   Usage Minimum (Button 1)
+            0x2A, 0x80, 0x01,   //   Usage Maximum (Button 384)
+            0x15, 0x00,         //   Logical Minimum (0)
+            0x25, 0x01,         //   Logical Maximum (1)
+            0x75, 0x01,         //   Report Size (1 bit)
+            0x96, 0x80, 0x01,   //   Report Count (384)
+            0x81, 0x02,         //   Input (Data, Variable, Absolute)
             0xC0                // End Collection
         };
 
@@ -211,6 +231,7 @@ namespace HID {
         add(Reports::KeyboardBlock, sizeof(Reports::KeyboardBlock));
         add(Reports::ConsumerBlock, sizeof(Reports::ConsumerBlock));
         add(Reports::SystemBlock, sizeof(Reports::SystemBlock));   // report ID 3: power down, sleep, wake up
+        add(Reports::GamepadBlock, sizeof(Reports::GamepadBlock)); // report ID 11: 384 buttons, the data way back
         Reports::AddLampArray(map);
         // The Haptics block is defined above but not advertised: the host would expect reports the firmware does not provide.
 

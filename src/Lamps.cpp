@@ -42,6 +42,7 @@ volatile uint32_t c_barShows = 0;
 TaskHandle_t g_worker = nullptr;
 volatile bool g_workerOn = true;
 void (*g_sink)() = nullptr;
+void (*g_frameSink)() = nullptr;
 uint32_t g_drawn, g_drawnFrames, g_drawUs;
 
 // page state
@@ -77,6 +78,7 @@ void frameComplete() {
         if (g_workerOn && g_worker && g_sink && g_page != Page::None) xTaskNotifyGive(g_worker);   // the worker shows it at once, on its own core
         else g_barReady = true;                                                                       // the main loop shows it
     }
+    if (g_frameSink) g_frameSink();
 }
 
 // Runs on the core the main loop does not use: puts the bar lamps on the LED bar as soon as a frame has changed them, so neither the
@@ -287,6 +289,8 @@ CRGB barColor(uint8_t i) {
 bool barChanged() { bool v = g_barReady; g_barReady = false; if (v) g_mainBarStamp = g_barStampUs; return v; }
 void barShown() { if (g_mainBarStamp) { latAdd(g_latBar, esp_timer_get_time() - g_mainBarStamp); c_barShows++; g_mainBarStamp = 0; } }
 void setBarSink(void (*fn)()) { g_sink = fn; }
+void setFrameSink(void (*fn)()) { g_frameSink = fn; }
+const uint8_t* raw(uint16_t id) { return g_lamp && id < lampTotal() ? (const uint8_t*)&g_lamp[id] : nullptr; }
 void setWorker(bool on) { g_workerOn = on; }
 bool workerOn() { return g_workerOn; }
 bool pending() { return g_page != Page::None && c_frames != g_drawnFrames; }

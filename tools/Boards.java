@@ -25,7 +25,7 @@ final class Boards {
         String usbId() { return String.format("%04x:%04x", vid, pid); }
     }
 
-    static final Board C2 = new Board("C2", "core2", 0x10c4, 0xea60, 0x10c4, 0xea60, "esp32", 460800);     // CP2104 UART bridge
+    static final Board C2 = new Board("C2", "core2", 0x10c4, 0xea60, 0x10c4, 0xea60, "esp32", 230400);     // CP2104 UART bridge
     // CoreS3 native USB: the firmware uses the pid.codes test ID 1209:0001 (ADR 0015); the ROM bootloader, and firmware
     // older than 2026-11-18, use Espressif's shared 303a:1001.
     static final Board S3 = new Board("S3", "cores3", 0x1209, 0x0001, 0x303a, 0x1001, "esp32s3", 921600);

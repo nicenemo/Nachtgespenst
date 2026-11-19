@@ -5,6 +5,7 @@
 #include "Keymap.h"
 #include "HIDManager.h"
 #include "Lamps.h"
+#include "Disk.h"
 #include "Settings.h"
 #include "Theme.h"
 #include "Icons.h"
@@ -28,9 +29,13 @@ const LockDef LOCKS[3] = {
     {"SCROLL", HIDManager::LED_SCROLL, LOCK_COLORS[2]},
 };
 
-// Two LampArray test pages follow the Locks page (see Lamps.h): the screen lamps and the LED bar lamps.
-constexpr int PAGE_LAMP_SCREEN = LAYER_COUNT + 1;
-constexpr int PAGE_LAMP_BAR = LAYER_COUNT + 2;
+// After the Locks page: the Disk demo (file transfer over the LampArray, see Disk.h) and the two LampArray test pages (see Lamps.h):
+// the screen lamps and the LED bar lamps. The lamp pages stay last (the test tools count from the end).
+constexpr int PAGE_DISK = LAYER_COUNT + 1;
+constexpr int PAGE_LAMP_SCREEN = LAYER_COUNT + 2;
+constexpr int PAGE_LAMP_BAR = LAYER_COUNT + 3;
+lv_obj_t* g_diskBar = nullptr; lv_obj_t* g_diskState = nullptr; lv_obj_t* g_diskStats = nullptr; lv_obj_t* g_diskText = nullptr;
+int g_diskLit = -1;
 bool g_lampEnter = false; // a lamp page was just built: draw it once LVGL has painted the empty body
 
 int g_page = 0;
@@ -128,8 +133,14 @@ void updateLedsLocked() {
     FastLED.setBrightness(Lamps::barBrightness());
     uint8_t mask = 0; // host LED bits: num=1 caps=2 scroll=4 -> bar mask caps=1 num=2 scroll=4
     for (int i = 0; i < 3; i++) if (g_hostLed & LOCKS[i].ledBit) mask |= 1u << i;
-    if (g_page > LAYER_COUNT) {
+    if (g_page >= PAGE_LAMP_SCREEN) {
         for (int i = 0; i < LED_COUNT; i++) g_leds[i] = Lamps::barColor(i); // lamps 0..9 of the LampArray
+    } else if (g_page == PAGE_DISK) {
+        Disk::View v = Disk::view();                                          // progress of the transfer along the bar
+        bool sendingBack = v.tx == Disk::Tx::Header || v.tx == Disk::Tx::Data;
+        int lit = sendingBack ? (v.txTotal ? (int)((uint64_t)v.txBytes * LED_COUNT / v.txTotal) : 0) : (v.total ? (int)((uint64_t)v.bytes * LED_COUNT / v.total) : 0);
+        CRGB c = v.state == Disk::State::DoneOk ? CRGB(0, 255, 40) : v.state == Disk::State::DoneBad ? CRGB(255, 0, 0) : CRGB(0, 90, 255);
+        for (int i = 0; i < LED_COUNT; i++) g_leds[i] = (v.state == Disk::State::DoneOk || v.state == Disk::State::DoneBad || i < lit) ? c : CRGB(4, 4, 4);
     } else if (g_page == LAYER_COUNT) {
         ledBarLocks(g_leds, LED_COUNT, mask);
     } else if (mode == LM::Locks) {
@@ -161,7 +172,7 @@ void refreshLocks() {
 void buildPage();
 
 const char* pageTitle(int page) {
-    return page == PAGE_LAMP_SCREEN ? "Lamps: screen" : page == PAGE_LAMP_BAR ? "Lamps: bar" : page == LAYER_COUNT ? "Locks" : LAYERS[page].title;
+    return page == PAGE_DISK ? "Disk" : page == PAGE_LAMP_SCREEN ? "Lamps: screen" : page == PAGE_LAMP_BAR ? "Lamps: bar" : page == LAYER_COUNT ? "Locks" : LAYERS[page].title;
 }
 
 // Title and page counter of the header; cheap, so it follows a page change at once while the body waits for the coalescing.
@@ -263,6 +274,77 @@ void addTileContent(lv_obj_t* t, const char* layer, const Binding& b, int cw, in
     }
 }
 
+// The Disk page: progress, speeds, the SHA-256 the board computed next to the one the PC sent, and the first lines of the book.
+lv_obj_t* g_diskHash = nullptr;
+
+void buildDisk(int W, int H) {
+    g_diskState = lv_label_create(g_body);
+    lv_obj_set_style_text_font(g_diskState, &lv_font_montserrat_16, 0);
+    lv_obj_set_style_text_color(g_diskState, lv_color_white(), 0);
+    lv_obj_align(g_diskState, LV_ALIGN_TOP_LEFT, 8, 4);
+    g_diskBar = lv_bar_create(g_body);
+    lv_obj_set_size(g_diskBar, W - 16, 10);
+    lv_obj_align(g_diskBar, LV_ALIGN_TOP_LEFT, 8, 28);
+    lv_bar_set_range(g_diskBar, 0, 1000);
+    g_diskStats = lv_label_create(g_body);
+    lv_obj_set_style_text_font(g_diskStats, &lv_font_montserrat_14, 0);
+    lv_obj_set_style_text_color(g_diskStats, lv_color_hex(0xA0C0FF), 0);
+    lv_obj_align(g_diskStats, LV_ALIGN_TOP_LEFT, 8, 44);
+    g_diskHash = lv_label_create(g_body);
+    lv_obj_set_style_text_font(g_diskHash, &lv_font_montserrat_12, 0);
+    lv_obj_set_style_text_color(g_diskHash, lv_color_hex(0xE0E4F0), 0);
+    lv_obj_align(g_diskHash, LV_ALIGN_TOP_LEFT, 8, 98);
+    g_diskText = lv_label_create(g_body);
+    lv_obj_set_style_text_font(g_diskText, &lv_font_montserrat_12, 0);
+    lv_obj_set_style_text_color(g_diskText, lv_color_hex(0x9AA0B0), 0);
+    lv_label_set_long_mode(g_diskText, LV_LABEL_LONG_CLIP);
+    lv_obj_set_size(g_diskText, W - 16, H - 174);
+    lv_obj_align(g_diskText, LV_ALIGN_TOP_LEFT, 8, 172);
+    Disk::enter();
+    g_diskLit = -2;                              // refreshDisk() fills the labels at once
+}
+
+void refreshDisk() {
+    if (g_page != PAGE_DISK || !g_diskState) return;
+    static uint32_t last = 0, sig = 0;
+    if (millis() - last < 120 && g_diskLit != -2) return;
+    last = millis();
+    Disk::View v = Disk::view();
+    bool sending = v.tx == Disk::Tx::Header || v.tx == Disk::Tx::Data;
+    uint32_t s = v.blocksOk * 31u + v.blocksBad * 7u + v.blocksDup * 3u + (uint32_t)v.state * 1000003u + v.bytes + v.txBytes * 5u + (uint32_t)v.tx * 99991u + (uint32_t)(v.match + 2) * 77u + v.pcRate + v.txKbps10;
+    if (s == sig && g_diskLit != -2) return;
+    sig = s; g_diskLit = (int)(v.bytes + v.txBytes) + 7 * (int)v.state + 13 * (int)v.tx;
+    static bool fastShown = false;
+    if (Disk::quiet()) {                                                      // nothing else is drawn until it is done
+        if (!fastShown) { fastShown = true; lv_label_set_text(g_diskState, "Fast transfer (no display, no sound)"); }
+        return;
+    }
+    fastShown = false;
+    static const char* const names[] = {"Disk drive ready", "Loading", "Checking", "Saved", "Failed"};
+    if (sending) lv_label_set_text_fmt(g_diskState, "Sending back: %s", v.name);
+    else if (v.tx == Disk::Tx::DoneOk) lv_label_set_text_fmt(g_diskState, "Sent back: %s", v.name);
+    else if (v.tx == Disk::Tx::Failed) lv_label_set_text(g_diskState, "Sending back failed");
+    else lv_label_set_text_fmt(g_diskState, "%s%s%s", names[(int)v.state], v.name[0] && v.state != Disk::State::Idle ? ": " : "", v.state != Disk::State::Idle ? v.name : "");
+    uint32_t done = sending || v.tx == Disk::Tx::DoneOk ? v.txBytes : v.bytes, tot = sending || v.tx == Disk::Tx::DoneOk ? v.txTotal : v.total;
+    lv_bar_set_value(g_diskBar, tot ? (int32_t)((uint64_t)done * 1000 / tot) : 0, LV_ANIM_OFF);
+    lv_label_set_text_fmt(g_diskStats, "save %lu.%lu kB/s   load %lu.%lu kB/s   (PC: %lu kB/s)\nblocks ok %lu bad %lu repeated %lu  block %u B\n%lu of %lu bytes  %lu lines  crc %s",
+                          (unsigned long)(v.kbps10 / 10), (unsigned long)(v.kbps10 % 10), (unsigned long)(v.txKbps10 / 10), (unsigned long)(v.txKbps10 % 10),
+                          (unsigned long)(v.pcRate / 1024), (unsigned long)v.blocksOk, (unsigned long)v.blocksBad, (unsigned long)v.blocksDup, v.lastBlockBytes,
+                          (unsigned long)done, (unsigned long)tot, (unsigned long)v.lines, v.state == Disk::State::DoneOk ? "ok" : v.state == Disk::State::DoneBad ? "BAD" : "-");
+    char h[240];
+    snprintf(h, sizeof(h), "SHA-256 board  %.32s\n               %.32s\nSHA-256 PC     %.32s\n               %.32s\n%s  (%lu ms)",
+             v.sha[0] ? v.sha : "-", v.sha[0] ? v.sha + 32 : "", v.pcSha[0] ? v.pcSha : "-", v.pcSha[0] ? v.pcSha + 32 : "",
+             v.match == 1 ? "MATCH" : v.match == 0 ? "DIFFERENT" : "waiting for the hash of the PC", (unsigned long)(v.shaUs / 1000));
+    lv_label_set_text(g_diskHash, h);
+    lv_obj_set_style_text_color(g_diskHash, v.match == 1 ? lv_color_hex(0x6BE08A) : v.match == 0 ? lv_color_hex(0xFF6B6B) : lv_color_hex(0xE0E4F0), 0);
+    char sd[64] = "no SD card (the file stays in RAM)";
+    if (v.sdPresent) snprintf(sd, sizeof(sd), "SD card %lu MB, %lu MB used%s", (unsigned long)v.sdMB, (unsigned long)v.sdUsedMB, v.saved ? ", file written" : "");
+    String body = Disk::excerpt()[0] ? String(Disk::excerpt()) : (v.state == Disk::State::Idle && !sending ? Disk::dir() : String());   // no card access while a transfer runs
+    String text = String(sd) + "\n" + body;
+    lv_label_set_text(g_diskText, text.c_str());
+    g_ledDirty = true;
+}
+
 void buildPage() {
     uint32_t perfT0 = micros();
     g_perfRenderUs = 0; g_perfFlushUs = 0; g_perfStrips = 0;
@@ -270,10 +352,14 @@ void buildPage() {
     for (int i = 0; i < 3; i++) { g_lockTiles[i] = nullptr; g_lockState[i] = nullptr; }
     int W = M5.Display.width(), H = M5.Display.height() - HEADER_H;
     Lamps::leavePage();
+    Disk::leave();
+    g_diskBar = g_diskState = g_diskStats = g_diskText = nullptr; g_diskLit = -1;
 
     setHeader(g_page);
-    if (g_page > LAYER_COUNT) {
+    if (g_page >= PAGE_LAMP_SCREEN) {
         g_lampEnter = true;                     // the body stays empty; Lamps draws on the panel in ui_loop()
+    } else if (g_page == PAGE_DISK) {
+        buildDisk(W, H);
     } else if (g_page == LAYER_COUNT) {
         int w = (W - 4 * GAP) / 3, h = H - 2 * GAP;
         static const char* const LOCK_ICONS[3] = {IC_KEYBOARD_CAPSLOCK, IC_DIALPAD, IC_LOCK};
@@ -348,7 +434,7 @@ static void checkKeymap() {
 }
 
 // ---------- public API ----------
-uint8_t ui_page_count() { return LAYER_COUNT + 3; }
+uint8_t ui_page_count() { return LAYER_COUNT + 4; }
 int ui_layer() { return g_page; }
 uint8_t ui_locks_page() { return LAYER_COUNT; }
 void ui_toggle_locks() { ui_set_layer(g_page == LAYER_COUNT ? g_prevPage : LAYER_COUNT); }
@@ -482,7 +568,7 @@ String ui_state() {
     char b[220];
     snprintf(b, sizeof(b), "STATE page=%d/%d title=%s caps=%d num=%d scroll=%d last=%s presses=%lu conn=%d usb=%d ble=%d",
              g_page, (int)ui_page_count(),
-             g_page == PAGE_LAMP_SCREEN ? "Lamps-screen" : g_page == PAGE_LAMP_BAR ? "Lamps-bar" : g_page == LAYER_COUNT ? "Locks" : LAYERS[g_page].title,
+             g_page == PAGE_DISK ? "Disk" : g_page == PAGE_LAMP_SCREEN ? "Lamps-screen" : g_page == PAGE_LAMP_BAR ? "Lamps-bar" : g_page == LAYER_COUNT ? "Locks" : LAYERS[g_page].title,
              !!(led & HIDManager::LED_CAPS), !!(led & HIDManager::LED_NUM), !!(led & HIDManager::LED_SCROLL),
              g_lastKey, (unsigned long)g_pressCount, HIDManager::isConnected(), HIDManager::isUsbConnected(), HIDManager::isBleConnected());
     return String(b);
@@ -538,7 +624,7 @@ uint32_t ui_loop() {
         uint8_t l = HIDManager::getLedStatus();
         if (l != g_hostLed) { g_hostLed = l; g_ledDirty = true; }
     }
-    bool lampBar = g_page > LAYER_COUNT && Lamps::barChanged();   // worker off: a LampArray frame touched lamps 0..9
+    bool lampBar = g_page >= PAGE_LAMP_SCREEN && Lamps::barChanged();   // worker off: a LampArray frame touched lamps 0..9
     if (lampBar) g_ledDirty = true;
     if (g_ledDirty) {
         g_ledDirty = false;
@@ -556,6 +642,8 @@ uint32_t ui_loop() {
                          M5.Display.width(), M5.Display.height() - HEADER_H);
     }
     Lamps::tick();
-    if (g_pageDirty || Lamps::pending()) return 1;                       // a page is waiting for its coalescing window
+    Disk::loop();                                    // acknowledgements go out as key presses
+    refreshDisk();
+    if (g_pageDirty || Lamps::pending() || (g_page == PAGE_DISK && Disk::view().state == Disk::State::Receiving)) return 1;                       // a page is waiting for its coalescing window
     return next < 1 ? 1 : (next > 10 ? 10 : next);
 }
