@@ -37,6 +37,7 @@ jbang tools/LampTest.java screen --board C2 --via ble --tiers 8x6,16x12,32x24 --
 - `enum` reads the attributes report, requests the attributes of up to 200 lamps and prints the time per lamp (what a host pays when the device appears).
 - `bar` sets ten different colours and intensities and reads them back, ramps the intensity of all ten lamps from 0 to 255 (the camera measures the brightness when `--crop` is given; frames are deleted afterwards, only a cropped contact sheet `intensity.png` stays), checks the three colour channels and fires 2,000 range updates back to back.
 - `screen` sets each grid size (default 8x6 up to 320x190), sends frames as fast as the host can write, waits for the board, and prints frames per second, lamps per second, the loss (reports the board never received), how often the board drew, and checks sampled lamps in a screenshot. `--shot DIR` keeps the screenshots. A screenshot over the Core2's UART takes about 20 s.
+- `rate` sweeps the send interval and reports what the board actually saw (reports per second over the board's own receive window). `speed` (USB) switches lamps as fast as possible with 8-lamp multi updates and with range updates of 1 to 60,800 lamps. `interference` repeats the same burst with 100 serial PINGs per second, on the lamp page and on a layer page, to see what else changes the rate.
 - `--via usb|ble` chooses the transport (the Core2 only has Bluetooth). `PREFER` and `ONLY` do not matter: lamp reports are not routed by them.
 
 Results of the first measurements: see the bottom of this page.
@@ -70,5 +71,40 @@ What this means:
 - **Enumeration over Bluetooth is slow** because every lamp needs a write and a read: 768 lamps take about 48 seconds when a host connects, 3,072 lamps about 3 minutes. Windows enumerates all lamps, so a tier C or D matrix over Bluetooth is not practical; tier A or B (10 or about 34 lamps) is.
 - **Intensity.** Every lamp has red, green, blue and intensity (0 to 255) and the shown colour is `colour x intensity / 255`. On the bar, at the global brightness of 40 of 255, the camera sees no difference for intensities 1 to 12 and a steady, monotonic rise from 16 (CoreS3: 11 of 16 steps visible) or 32 (Core2: 7 of 16, with a jump between 24 and 32 that is partly the webcam's exposure): the ten-bit style range is squeezed into about 40 real levels. `LAMPS BRIGHT n` raises the global brightness (to 120 at most); a gamma curve in the firmware would spread the steps better.
 - **Counters.** `LAMPS?` counts every report including the control report, which is why a run of N updates shows N + 1.
+
+## Speed limits and what disturbs the measurement (2026-11-19)
+Two Bluetooth controllers sit in the laptop and both were used: `hci1` is the built-in **Intel** controller (USB 8087:0a2a, Bluetooth 5) and `hci0` is the removable **CSR8510 A10** dongle (USB 0a12:0001, Bluetooth 4.0). Each board was bonded to one controller at a time (the other bond removed) and measured with `rate`. The `HID_PHYS` of the hidraw node shows which controller carries the board.
+
+**Bluetooth: the controller makes no difference, the link does.** Reports delivered per second to the board, steady state, with the send queue full:
+
+| Board | Report | Intel (BT 5) | CSR dongle (BT 4.0) |
+|---|---|---|---|
+| CoreS3 | multi update, 51 bytes (8 lamps) | 15.8 /s = 127 lamps/s | 15.9 /s = 127 lamps/s |
+| CoreS3 | range update, 10 bytes | 30.1 /s | 30.8 /s |
+| Core2 | multi update, 51 bytes | 29.2 /s = 234 lamps/s | 30.4 /s = 243 lamps/s |
+| Core2 | range update, 10 bytes | 30.1 /s | 30.4 /s |
+
+So no: neither controller handles more than about 30 reports per second, and the number is the same with a Bluetooth 4.0 and a Bluetooth 5 radio, i.e. it is not the radio. 30 per second is one write per 33 ms: BlueZ sends one queued write per connection event and its default connection interval is about 30 ms; the 7.5 to 15 ms the firmware asks for is not applied. To test that explanation the interval has to be lowered on the host (root: the debugfs files `/sys/kernel/debug/bluetooth/hciN/conn_min_interval` and `conn_max_interval`, in units of 1.25 ms, then reconnect; for the owner in fish: `sudo sh -c 'echo 6 > /sys/kernel/debug/bluetooth/hci0/conn_min_interval; echo 12 > /sys/kernel/debug/bluetooth/hci0/conn_max_interval'`). Not done yet. Open question: why the CoreS3 manages only half the rate with 51-byte writes (16 against 30 per second) while the Core2 does not; both controllers show it, so it is on the board's side (the ESP32-S3 stack, its MTU or data length negotiation) and has to be looked into before the multi update is used over Bluetooth on the CoreS3. The range update (one colour for many lamps) is the efficient Bluetooth report anyway: 30 reports per second can switch up to 30 times 60,800 lamps.
+
+**USB (CoreS3 only): 1,000 reports per second is the ceiling, then the firmware.** Full-speed USB polls an interrupt endpoint once per millisecond, so one report per millisecond:
+
+| Report | Reports per second | Lamps switched per second |
+|---|---|---|
+| multi update, 8 lamps | 960 to 1,000 | 7,700 |
+| range, 1 lamp | 910 | 910 |
+| range, 192 lamps | 910 | 174,000 |
+| range, 768 lamps | 880 | 673,000 |
+| range, 3,072 lamps | 253 | 777,000 |
+| range, 12,288 lamps | 62 | 761,000 |
+| range, 60,800 lamps (every pixel) | 13 | 810,000 |
+
+From about 3,000 lamps per report the limit is no longer USB but the firmware: storing a lamp takes about 1.25 microseconds, so about 800,000 lamps per second whatever the report size (the board's own counter agrees to 0.5%). Lamp storage could be made faster (set the changed bits per range instead of per lamp) if that ever matters. What the screen shows is limited by the panel instead: a changed screen takes 45 ms to draw (175 ms for all 60,800 pixels), so at most about 20 frames per second, and frames are merged when updates come faster.
+
+**What disturbs the measurement?** Tested with `interference` (a burst with and without a serial PING every 10 ms, on the bar page, on the screen lamp page where the board redraws, and on a layer page with no lamp drawing):
+- **The USB serial console is not in the way.** On the CoreS3 over USB the rate moves by +0.3 to +0.4% (952 against 948 reports per second) with or without 100 serial messages per second, and with or without drawing. The serial port and the HID interface share the bus, but at these rates the bus has room.
+- **The CoreS3 over Bluetooth is not disturbed either** (16.0 to 16.1 reports per second in every variant).
+- **The Core2 over Bluetooth is slightly sensitive to serial traffic:** 100 PINGs per second cost 2 to 7% (28.8 to 30.3 against 31.1 reports per second), because its serial port is a UART with interrupts and the main loop answers every message on the same CPU as the Bluetooth stack. The drawing does not matter. `LampTest` therefore keeps the serial port quiet while it sends and reads the counters afterwards.
+- **Real sources of error, not caused by the console:** (1) the host queue: BlueZ queues output reports without a bound, so sending faster than the link drains makes a burst arrive late (and range updates get dropped past about 50 queued); the tool paces its sending and waits for the queue to drain before and after every test. (2) Other Bluetooth devices on the same controller: the laptop has speakers and headphones paired, they were not connected during the measurements (`bluetoothctl devices Connected` showed only the two boards); a connected audio device would take airtime. (3) The second board stays connected but idle during a measurement. (4) The host side of USB: one write is one blocking transfer, the host counted 997 to 1,000 per second and the board 948 to 961 (the board's window starts at the first report, so the difference of about 5% is start-up and scheduling jitter; use the host figure as the ceiling and the board figure as what was received).
+- **Do not test the Power Down and Sleep tiles.** They really power down or suspend the computer. The test tools only press the Wake Up tile of the Media page (harmless); the firmware now refuses Power Down and Sleep over the serial port (`KEY` and `TAP` answer `ERR`).
 
 How the numbers are produced: `LampTest.java screen`, `bar` and `rate` (`jbang tools/LampTest.java rate --board S3 --via ble --pace-us 1` sweeps the send interval and reports what the board actually saw). Camera brightness curves: `bar --crop ...`.

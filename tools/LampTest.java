@@ -18,6 +18,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.IntFunction;
 
 import static java.lang.foreign.ValueLayout.*;
 
@@ -42,7 +44,7 @@ public class LampTest {
     static String boardName = "S3", via = null, shotDir = null, out = "lamptest-out", camera = "/dev/video0", tiers = "8x6,16x12,32x24,64x48,128x96,320x190";
     static int[] crop = null;
     static int frames = 0, enumMax = 200;
-    static String screen = "black";            // laptop screen while the camera films the bar: black (default), white or off
+    static String ownPort;                     // serial port of the board under test (the other board's LED bar is switched off during camera tests)
     static int paceUs = -1;                    // microseconds between two output reports; -1 = automatic (0 for USB, 15000 for Bluetooth)
     static int pass = 0, fail = 0;
     static String tag;
@@ -66,7 +68,6 @@ public class LampTest {
             case "--frames" -> frames = Integer.parseInt(args[++i]);
             case "--enum-max" -> enumMax = Integer.parseInt(args[++i]);
             case "--pace-us" -> paceUs = Integer.parseInt(args[++i]);
-            case "--screen" -> screen = args[++i];
             case "--crop" -> crop = Arrays.stream(args[++i].split(",")).mapToInt(Integer::parseInt).toArray();
             default -> { if (args[i].startsWith("--")) usage("unknown option " + args[i]); cmds.add(args[i]); }
         }
@@ -81,6 +82,7 @@ public class LampTest {
         Optional<SerialPort> sp = Boards.find(board);
         if (sp.isEmpty()) { System.err.println("no " + tag + " board found on USB"); System.exit(2); }
         if (!Boards.usable(sp.get())) { System.err.println(Boards.SANDBOX_HINT); System.exit(2); }
+        ownPort = Boards.path(sp.get());
         String node = findHid(usb);
         if (node == null && !cmds.contains("info")) { System.err.println("no " + (usb ? "USB" : "Bluetooth") + " HID node for " + tag + " (connected and paired? after a descriptor change remove and pair again)"); System.exit(2); }
 
@@ -98,6 +100,8 @@ public class LampTest {
                     case "bar" -> bar(s, h);
                     case "screen" -> screen(s, h);
                     case "rate" -> rate(s, h);
+                    case "speed" -> speed(s, h);
+                    case "interference" -> interference(s, h);
                     case "all" -> { enumerate(s, h); bar(s, h); rate(s, h); screen(s, h); }
                     default -> usage("unknown command " + c);
                 }
@@ -345,8 +349,7 @@ public class LampTest {
         int[] levels = {0, 1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128, 192, 255};
         double[] lum = new double[levels.length];
         boolean cam = crop != null;
-        boolean lit = false;
-        if (cam && !screen.equals("off")) { try { Light.show(screen); lit = true; } catch (Exception e) { info("laptop screen " + screen + ": " + e.getMessage() + " (continuing)"); } }
+        if (cam) LedCam.otherBars(ownPort, false);
         List<BufferedImage> crops = new ArrayList<>();
         LedCam.out = out; LedCam.camera = camera;
         LedCam.Frame base = null;
@@ -401,8 +404,7 @@ public class LampTest {
         check("bar update burst: every report arrived", got == n + 1, got + " of " + n + " range updates plus the control report");
         h.write(control(true));
         s.cmd("LAMPS RESET", 2000);
-        if (cam) deleteFrames();
-        if (lit) { try { Light.show("off"); } catch (Exception ignored) { } }
+        if (cam) { deleteFrames(); LedCam.otherBars(ownPort, true); }
     }
 
     /** How fast does a transport deliver output reports? Multi updates (51 bytes) and range updates (10 bytes) at several send intervals. */
@@ -437,6 +439,91 @@ public class LampTest {
             check(kind + " updates: every report is delivered at a sensible send rate" + (paceUs == 0 ? "" : " (15 ms or slower)"), lossless, String.format("best delivery rate %.0f reports/s = %.0f lamps/s", bestRate, bestRate * (kind.equals("multi") ? 8 : 10)));
         }
         h.write(control(true)); s.cmd("LAMPS RESET", 2000);
+    }
+
+    // ------------------------------------------------------------------ speed and interference
+    record Burst(double hostPerSec, long reports, double boardPerSec, double lampsPerSec, double lampsSetPerSec, long drawn, long drawUs, boolean lossless) {}
+
+    /**
+     * Sends n output reports back to back (paced when a pace is set) and reads what the board counted: reports per second on the
+     * host and on the board, lamps per second by the sender's count (lamps per report) and by the board's own counter, and how
+     * often the board drew. With noise the serial port carries a PING every 10 ms during the flood.
+     */
+    static Burst burst(Ser s, Hid h, int n, IntFunction<byte[]> gen, int lampsPerReport, boolean noise) throws Exception {
+        drain(s); h.write(control(false)); Thread.sleep(150);
+        AtomicBoolean stop = new AtomicBoolean(false);
+        Thread t = null;
+        if (noise) { t = new Thread(() -> { while (!stop.get()) { s.send("PING"); try { Thread.sleep(10); } catch (InterruptedException e) { return; } } }); t.start(); }
+        long t0 = System.nanoTime();
+        for (int k = 0; k < n; k++) { h.write(gen.apply(k)); pace(); }
+        double hostMs = (System.nanoTime() - t0) / 1e6;
+        if (t != null) { stop.set(true); t.join(); }
+        s.drain();
+        settle(s, 180000);
+        Map<String, String> st = s.kv("LAMPS?");
+        long got = num(st, "reports") - 1, span = num(st, "span_us");
+        double sec = Math.max(span / 1e6, 1e-6);
+        return new Burst(n / (hostMs / 1000), got, (got - 1) / sec, lampsPerReport * (got - 1) / sec, num(st, "lamps_set") / sec, num(st, "drawn"), num(st, "draw_us"), got == n);
+    }
+
+    static String fmt(Burst b, int n) {
+        return String.format("%5d reports: host %6.0f/s, board %6.0f/s, %9.0f lamps/s (board counter %10.0f/s), drew %d times (%d us), %s",
+                n, b.hostPerSec, b.boardPerSec, b.lampsPerSec, b.lampsSetPerSec, b.drawn, b.drawUs, b.lossless ? "all arrived" : (b.reports + " of " + n + " arrived"));
+    }
+
+    static byte[] multiFrame(int k) {
+        int[] ids = new int[8]; int[][] c = new int[8][4];
+        for (int j = 0; j < 8; j++) { ids[j] = 10 + j; c[j] = new int[]{k & 255, j * 30, 255 - (k & 255), 255}; }
+        return multi(ids, c, 8, true);
+    }
+
+    /** Lamps switched per second: multi updates (8 lamps) and range updates of growing size, on a lamp page (the board draws). */
+    static void speed(Ser s, Hid h) throws Exception {
+        int screenPage = barPage(s) - 1;
+        s.cmd("LAYER " + screenPage, 3000);
+        int[][] grids = {{16, 12}, {16, 12}, {32, 24}, {64, 48}, {128, 96}, {320, 190}};
+        int[] sizes = {1, 192, 768, 3072, 12288, 60800};
+        s.cmd("LAMPS GRID 16 12", 3000);
+        int nm = paceUs > 0 ? 80 : 4000;
+        Burst m = burst(s, h, nm, Lamp_multi, 8, false);
+        info("multi update, 8 lamps per report, " + via + ": " + fmt(m, nm));
+        check("multi updates: every report arrived", m.lossless, m.reports + " of " + nm);
+        for (int i = 0; i < sizes.length; i++) {
+            s.cmd("LAMPS GRID " + grids[i][0] + " " + grids[i][1], 3000);
+            final int r = sizes[i];
+            int n = paceUs > 0 ? 60 : (r >= 12288 ? 200 : 1500);
+            Burst b = burst(s, h, n, k -> range(10, 10 + r - 1, k & 255, 255 - (k & 255), 128, 255, true), r, false);
+            info("range update of " + r + " lamp" + (r > 1 ? "s" : "") + ", " + via + ": " + fmt(b, n));
+            check("range of " + r + " lamps: every report arrived", b.lossless, b.reports + " of " + n);
+        }
+        s.cmd("LAMPS GRID 16 12", 3000); h.write(control(true)); s.cmd("LAMPS RESET", 2000);
+    }
+
+    static final IntFunction<byte[]> Lamp_multi = LampTest::multiFrame;
+
+    /** Does anything else on the link change the delivery rate: serial traffic, the board drawing, the page that is shown? */
+    static void interference(Ser s, Hid h) throws Exception {
+        int screenPage = barPage(s) - 1, barPg = barPage(s);
+        s.cmd("LAMPS GRID 16 12", 3000);
+        int n = paceUs > 0 ? 80 : 3000;
+        if (paceUs > 0) paceUs = 15000;                     // Bluetooth: queue a little faster than it drains; the board's span is the drain rate
+        String[] names = {"bar page (the board draws ten swatches), no serial traffic", "bar page, PING on the serial port every 10 ms",
+                          "screen lamp page (the board redraws changed rows), no serial traffic", "layer page (no lamp drawing at all), no serial traffic",
+                          "layer page, PING on the serial port every 10 ms"};
+        int[] pages = {barPg, barPg, screenPage, 0, 0};
+        boolean[] noise = {false, true, false, false, true};
+        double[] rate = new double[names.length];
+        for (int i = 0; i < names.length; i++) {
+            s.cmd("LAYER " + pages[i], 3000); Thread.sleep(800);
+            Burst b = burst(s, h, n, Lamp_multi, 8, noise[i]);
+            rate[i] = b.boardPerSec;
+            info(names[i] + ": " + fmt(b, n));
+        }
+        double base = rate[0];
+        for (int i = 1; i < names.length; i++) info(String.format("  %s: %+.1f%% against the baseline", names[i], 100 * (rate[i] - base) / base));
+        check("serial traffic changes the rate by less than 5%", Math.abs(rate[1] - base) / base < 0.05 && Math.abs(rate[4] - rate[3]) / rate[3] < 0.05, String.format("%.1f vs %.1f and %.1f vs %.1f reports/s", rate[1], base, rate[4], rate[3]));
+        check("drawing changes the rate by less than 5%", Math.abs(rate[2] - base) / base < 0.05 && Math.abs(rate[3] - base) / base < 0.05, String.format("screen page %.1f, layer page %.1f, bar page %.1f reports/s", rate[2], rate[3], base));
+        s.cmd("LAYER 0", 3000); h.write(control(true)); s.cmd("LAMPS RESET", 2000);
     }
 
     static int barPage(Ser s) throws Exception { return Integer.parseInt(s.kv("INFO").get("pages")) - 1; }

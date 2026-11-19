@@ -98,9 +98,9 @@ void handle(char* line) {
         else { ui_set_layer(x); Serial.printf("OK LAYER %d\n", ui_layer()); }
     }
 #if NG_SERIAL_INPUT   // TAP and KEY really type on the host: build with -D NG_SERIAL_INPUT=0 to leave them out
-    else if (!strcmp(cmd, "TAP") && num(a, x) && num(b, y) && !extra) { ui_tap(x, y); Serial.println("OK TAP"); }
+    else if (!strcmp(cmd, "TAP") && num(a, x) && num(b, y) && !extra) Serial.println(ui_tap(x, y) ? "OK TAP" : "ERR tap");
     else if (!strcmp(cmd, "KEY") && num(a, x) && num(b, y) && !extra)
-        Serial.println(ui_press(x, y) ? "OK KEY" : "ERR key");
+        Serial.println(ui_press(x, y, true) ? "OK KEY" : "ERR key");
 #endif
     else Serial.println("ERR unknown");
 }

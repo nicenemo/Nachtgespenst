@@ -78,6 +78,7 @@ public class Flash {
             port.closePort();                       // dropping DTR at 1200 baud makes the firmware reboot into the bootloader
             Thread.sleep(3000);
             port = Boards.waitBoot(b, 15).orElse(null);
+            if (port == null) port = Boards.waitFor(b, 10).orElse(null);   // the bootloader is up but jSerialComm may still report the old IDs: esptool will say if it is not
             if (port == null) die("the CoreS3 did not come back after the 1200-baud touch (hold the side button ~3 s for download mode)", 1);
         }
 

@@ -428,7 +428,7 @@ void ui_set_layer(int n) {
     g_ledDirty = true;
 }
 
-bool ui_press(int layer, int idx) {
+bool ui_press(int layer, int idx, bool fromSerial) {
     if (layer < 0 || layer >= (int)ui_page_count() || layer > LAYER_COUNT) return false; // lamp pages have no keys
     if (layer == LAYER_COUNT) {
         if (idx < 0 || idx > 2) return false;
@@ -448,6 +448,8 @@ bool ui_press(int layer, int idx) {
     if (idx < 0 || idx >= L.rows * L.cols) return false;
     const Binding& b = L.tiles[idx];
     if (!HIDManager::canSend(b)) return false;                   // empty tile, or a usage without a report in the report map
+    // Power Down (0x81) and Sleep (0x82) really power down or suspend the computer: a test over the serial port must never press them.
+    if (fromSerial && b.page == HID::Page::GENERIC_DESKTOP && (b.usage.id == 0x81 || b.usage.id == 0x82)) return false;
     g_lastKey = b.label ? b.label : b.usage.identifier;
     g_pressCount++;
     HIDManager::send(b);
@@ -456,7 +458,12 @@ bool ui_press(int layer, int idx) {
 
 void ui_leds_refresh() { g_ledDirty = true; }
 
-void ui_tap(int x, int y) { flushPage(); g_injX = x; g_injY = y; g_injUntil = millis() + 120; }
+bool ui_tap(int x, int y) {
+    flushPage();
+    if (g_page != LAYER_COUNT) return false;           // only the Locks page: no tile there can power down or suspend the host
+    g_injX = x; g_injY = y; g_injUntil = millis() + 120;
+    return true;
+}
 
 void ui_wake() { g_lastActive = millis(); g_blOverride = -1; }
 void ui_backlight(int level) { g_blOverride = level < 0 ? -1 : (level > 255 ? 255 : level); }

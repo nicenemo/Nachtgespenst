@@ -151,6 +151,10 @@ public class SerialTest {
         check(tag, "LAYER 0", r != null && r.startsWith("OK LAYER 0"), String.valueOf(r));
         r = l.cmd("STATE?", 1500);
         check(tag, "STATE? page=0", r != null && kv(r).getOrDefault("page", "").startsWith("0/"), String.valueOf(r));
+        // Safety: a TAP outside the Locks page is refused, so a test can never hit the Power Down or Sleep tiles of the System and Media pages.
+        // (The matching guard of KEY on those two tiles is deliberately not exercised: if it failed, the host would power down.)
+        r = l.cmd("TAP 10 10", 1500);
+        check(tag, "TAP outside the Locks page is refused", r != null && r.startsWith("ERR"), String.valueOf(r));
         r = l.cmd("LAYER " + pages, 1500);
         check(tag, "LAYER out of range -> ERR", r != null && r.startsWith("ERR"), String.valueOf(r));
         r = l.cmd("LAYER " + locks, 2000);

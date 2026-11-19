@@ -1,6 +1,6 @@
 ///usr/bin/env jbang "$0" "$@" ; exit $?
 //DEPS com.fazecast:jSerialComm:2.11.0
-//SOURCES Light.java
+//SOURCES Boards.java
 //JAVA 27
 //COMPILE_OPTIONS --add-modules=jdk.incubator.vector
 //JAVA_OPTIONS --add-modules=jdk.incubator.vector --enable-native-access=ALL-UNNAMED
@@ -38,11 +38,11 @@ public class LedCam {
     static String port, out = "ledcam-out", camera = "/dev/video0", size = "1280x720";
     static int[] crop = null;
     static boolean clean = false;
-    static String screen = "black";            // laptop screen during the test: black (default), white or off (leave as it is)
+    static boolean others = true;              // switch the LED bar of the other board off during the test (LEDS OFF), back on afterwards
 
     public static void main(String[] args) throws Exception {
         if (args.length == 0 || !(args[0].equals("pins") || args[0].equals("colours") || args[0].equals("dark") || args[0].equals("locks"))) {
-            System.err.println("usage: LedCam.java pins|colours|dark|locks --port P --out DIR [--camera DEV] [--size WxH] [--crop x0,y0,x1,y1] [--clean] [--screen black|white|off]");
+            System.err.println("usage: LedCam.java pins|colours|dark|locks --port P --out DIR [--camera DEV] [--size WxH] [--crop x0,y0,x1,y1] [--clean]");
             System.exit(2);
         }
         for (int i = 1; i < args.length; i++) switch (args[i]) {
@@ -52,18 +52,16 @@ public class LedCam {
             case "--size" -> size = args[++i];
             case "--crop" -> crop = Arrays.stream(args[++i].split(",")).mapToInt(Integer::parseInt).toArray();
             case "--clean" -> clean = true;
-            case "--screen" -> screen = args[++i];
+            case "--keep-others" -> others = false;
             default -> { System.err.println("unknown option " + args[i]); System.exit(2); }
         }
         if (port == null) { System.err.println("--port is required"); System.exit(2); }
         Files.createDirectories(Path.of(out));
-        // The laptop screen is a light source in the picture: show a full black page (or white, for a photo) while filming.
-        boolean lit = !screen.equals("off");
-        if (lit) { try { Light.show(screen); } catch (Exception e) { System.err.println("screen " + screen + ": " + e.getMessage() + " (continuing)"); lit = false; } }
+        if (others) otherBars(port, false);
         try (Link link = new Link(port)) {
             if (args[0].equals("pins")) pins(link); else if (args[0].equals("dark")) dark(link); else if (args[0].equals("locks")) locks(link); else colours(link);
         } finally {
-            if (lit) { try { Light.show("off"); } catch (Exception ignored) { } }
+            if (others) otherBars(port, true);
         }
     }
 
@@ -98,6 +96,25 @@ public class LedCam {
             return lines;
         }
         public void close() { p.closePort(); }
+    }
+
+    /**
+     * The LED bar of the other board lights the white sheet and the camera sees it: switch it off for the length of the test
+     * (LEDS OFF over its serial port) and back on afterwards (LEDS ON). The setting is stored on that board, so a run that is
+     * killed halfway leaves it dark: send LEDS ON to it. Opening the port can reset the board, hence the wait.
+     */
+    static void otherBars(String ownPort, boolean on) {
+        for (Boards.Board b : List.of(Boards.C2, Boards.S3)) {
+            Optional<SerialPort> sp = Boards.find(b);
+            if (sp.isEmpty() || Boards.path(sp.get()).equals(ownPort)) continue;
+            try (Link l = new Link(Boards.path(sp.get()))) {
+                for (int attempt = 0; attempt < 4; attempt++) {
+                    Thread.sleep(attempt == 0 ? 2500 : 1000);
+                    l.send(on ? "LEDS ON" : "LEDS OFF");
+                    if (l.readUntil("OK LEDS", 1500).stream().anyMatch(x -> x.startsWith("OK LEDS"))) { System.out.println(b.tag() + " bar " + (on ? "on" : "off")); break; }
+                }
+            } catch (Exception e) { System.err.println("could not switch the " + b.tag() + " bar " + (on ? "on" : "off") + ": " + e.getMessage()); }
+        }
     }
 
     // ------------------------------------------------------------------ camera frames
