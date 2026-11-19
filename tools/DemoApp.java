@@ -72,11 +72,18 @@ public class DemoApp {
         @Override protected void paintComponent(Graphics g0) {
             super.paintComponent(g0);
             Graphics2D g = (Graphics2D) g0.create(); ConsoleUi.quality(g);
+            int gap = ConsoleTheme.GAP, w = getWidth(), h = getHeight();
+            // the banner: black, with the swirling waves of the site behind the ghost and the title
+            Shape band = new java.awt.geom.RoundRectangle2D.Double(gap, gap, w - gap - ConsoleTheme.PAD, ConsoleTheme.BAR_H - gap, 36, 36);
+            Graphics2D gb = (Graphics2D) g.create(); gb.clip(band);
+            ConsoleUi.waves(gb, gap, gap, w - gap - ConsoleTheme.PAD, ConsoleTheme.BAR_H - gap); gb.dispose();
+            ConsoleUi.ghost(g, gap + 12, gap, ConsoleTheme.BAR_H - gap - 2);
+            g.setColor(new Color(0xF6E7A6)); g.setFont(ConsoleTheme.sansBold(26f));
+            g.drawString("Nachtgespenst", gap + 12 + ConsoleTheme.BAR_H + 4, gap + (ConsoleTheme.BAR_H - gap) / 2 + 10);
+            // the elbow frames the sidebar: a thin bar over it and a leg beside it, a large outer radius and a tight inner radius
             g.setColor(ConsoleTheme.AMBER);
-            g.fill(ConsoleUi.elbow(0, 0, ConsoleTheme.LEG_W + 90, ConsoleTheme.BAR_H + 40, ConsoleTheme.BAR_H, ConsoleTheme.LEG_W, ConsoleTheme.OUTER_R, ConsoleTheme.INNER_R));
-            g.setColor(ConsoleTheme.BLACK); g.setFont(ConsoleTheme.sansBold(26f));
-            g.drawString("Nachtgespenst", 66, 38);
-            g.drawImage(ghost(40), 18, 8, null);
+            int y0 = ConsoleTheme.BAR_H + gap;
+            g.fill(ConsoleUi.elbow(0, y0, ConsoleTheme.LEG_W + ConsoleTheme.ELBOW_W, h - y0 - gap - 4, ConsoleTheme.ELBOW_W, ConsoleTheme.ELBOW_W, 28, 8));
             g.dispose();
         }
     }
@@ -101,8 +108,8 @@ public class DemoApp {
         JPanel head = new JPanel(new BorderLayout(gap, 0)); head.setOpaque(false);
         head.setPreferredSize(new Dimension(100, ConsoleTheme.BAR_H));
         JPanel infoWrap = new JPanel(new BorderLayout()); infoWrap.setOpaque(false);
-        infoWrap.setBorder(BorderFactory.createEmptyBorder(ConsoleTheme.BAR_H / 2 - 14, 0, ConsoleTheme.BAR_H / 2 - 14, 0)); infoWrap.add(infoBar);
-        JPanel west = new JPanel(); west.setOpaque(false); west.setPreferredSize(new Dimension(ConsoleTheme.LEG_W + 90 + gap, ConsoleTheme.BAR_H));
+        infoWrap.setBorder(BorderFactory.createEmptyBorder(ConsoleTheme.BAR_H / 2 - 12, 0, ConsoleTheme.BAR_H / 2 - 12, 0)); infoWrap.add(infoBar);
+        JPanel west = new JPanel(); west.setOpaque(false); west.setPreferredSize(new Dimension(ConsoleTheme.BAR_H + 12 + 4 + 215, ConsoleTheme.BAR_H));
         reconnect.setPreferredSize(new Dimension(130, ConsoleTheme.BLOCK_H)); reconnect.setMaximumSize(new Dimension(130, ConsoleTheme.BLOCK_H));
         JPanel conn = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, ConsoleTheme.BAR_H / 2 - ConsoleTheme.BLOCK_H / 2)); conn.setOpaque(false); conn.add(reconnect);
         head.add(west, BorderLayout.WEST); head.add(infoWrap, BorderLayout.CENTER); head.add(conn, BorderLayout.EAST);
@@ -111,7 +118,7 @@ public class DemoApp {
 
         // sidebar: blocks in the colours of the console, the text at the bottom right of each block
         JPanel side = new JPanel(); side.setLayout(new BoxLayout(side, BoxLayout.Y_AXIS)); side.setOpaque(false);
-        side.setBorder(BorderFactory.createEmptyBorder(40 + gap, 0, gap, gap));
+        side.setBorder(BorderFactory.createEmptyBorder(ConsoleTheme.ELBOW_W + 2 * gap, ConsoleTheme.ELBOW_W + gap, gap, gap));
         ConsoleUi.BlockButton start = new ConsoleUi.BlockButton("Start the cycle", ConsoleTheme.AMBER);
         start.setFont(ConsoleTheme.sansBold(16f)); start.setPreferredSize(new Dimension(100, 52)); start.setMaximumSize(new Dimension(Integer.MAX_VALUE, 52));
         start.addActionListener(e -> cycleRun()); actions.add(start);
@@ -151,7 +158,7 @@ public class DemoApp {
         JScrollPane lp = new JScrollPane(side, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         lp.getVerticalScrollBar().putClientProperty("FlatLaf.style", "width: 8; thumbArc: 999; trackArc: 999; thumb: #9999FF; track: #000000; hoverThumbColor: #FFCC99; pressedThumbColor: #FF9900");
         lp.setBorder(null); lp.setOpaque(false); lp.getViewport().setOpaque(false); lp.getVerticalScrollBar().setUnitIncrement(18);
-        lp.setPreferredSize(new Dimension(ConsoleTheme.LEG_W + gap, 100));
+        lp.setPreferredSize(new Dimension(ConsoleTheme.LEG_W + ConsoleTheme.ELBOW_W + gap, 100));
         root.add(lp, BorderLayout.WEST);
 
         // centre: the log, and the board and the lamps on the right
@@ -161,14 +168,20 @@ public class DemoApp {
         ConsoleUi.Frame logFrame = new ConsoleUi.Frame("What is happening", ConsoleTheme.PEACH); logFrame.setLayout(new BorderLayout()); logFrame.add(logPane);
         ConsoleUi.Frame boardFrame = new ConsoleUi.Frame("The board", ConsoleTheme.LAVENDER); boardFrame.setLayout(new BorderLayout()); boardFrame.add(screenPanel);
         ConsoleUi.Frame lampFrame = new ConsoleUi.Frame("The lamps, worked out on the PC", ConsoleTheme.AMBER); lampFrame.setLayout(new BorderLayout()); lampFrame.add(lampPanel);
-        JPanel right = new JPanel(new GridLayout(2, 1, 0, gap)); right.setOpaque(false); right.setPreferredSize(new Dimension(430, 100));
-        right.add(boardFrame); right.add(lampFrame);
-        JPanel centre = new JPanel(new BorderLayout(gap, 0)); centre.setOpaque(false);
-        centre.add(logFrame, BorderLayout.CENTER); centre.add(right, BorderLayout.EAST);
+        // the centre grows and shrinks with the window: the log takes two fifths, the previews three fifths, board and lamps share the height
+        for (JComponent c : new JComponent[]{logFrame, boardFrame, lampFrame, screenPanel, lampPanel, logPane}) c.setPreferredSize(new Dimension(10, 10));
+        JPanel right = new JPanel(new GridBagLayout()); right.setOpaque(false);
+        GridBagConstraints rc = new GridBagConstraints(); rc.fill = GridBagConstraints.BOTH; rc.weightx = 1; rc.gridx = 0; rc.insets = new Insets(0, 0, gap, 0);
+        rc.gridy = 0; rc.weighty = 0.5; right.add(boardFrame, rc);
+        rc.gridy = 1; rc.weighty = 0.5; rc.insets = new Insets(0, 0, 0, 0); right.add(lampFrame, rc);
+        JPanel centre = new JPanel(new GridBagLayout()); centre.setOpaque(false);
+        GridBagConstraints cc = new GridBagConstraints(); cc.fill = GridBagConstraints.BOTH; cc.weighty = 1; cc.gridy = 0;
+        cc.gridx = 0; cc.weightx = 0.4; cc.insets = new Insets(0, 0, 0, gap); centre.add(logFrame, cc);
+        cc.gridx = 1; cc.weightx = 0.6; cc.insets = new Insets(0, 0, 0, 0); centre.add(right, cc);
         root.add(centre, BorderLayout.CENTER);
 
         statusBar.setText("Ready"); statusBar.setPreferredSize(new Dimension(100, 30));
-        JPanel south = new JPanel(new BorderLayout()); south.setOpaque(false); south.setBorder(BorderFactory.createEmptyBorder(0, ConsoleTheme.LEG_W + gap, 0, 0)); south.add(statusBar);
+        JPanel south = new JPanel(new BorderLayout()); south.setOpaque(false); south.setBorder(BorderFactory.createEmptyBorder(0, ConsoleTheme.LEG_W + ConsoleTheme.ELBOW_W + gap, 0, 0)); south.add(statusBar);
         root.add(south, BorderLayout.SOUTH);
 
         screenPanel.setOpaque(false); lampPanel.setOpaque(false);
@@ -314,11 +327,11 @@ public class DemoApp {
                 app.lampPanel.setGrid(sc.pix.clone(), 80, 47);
                 app.lampPanel.setBar(new int[]{0x220000, 0x660500, 0xCC1000, 0xFF2000, 0xFF1000, 0x880800, 0x330300, 0x110100, 0, 0});
             } catch (Exception ignored) { }
-            app.root.setSize(1450, 780);
+            app.root.setSize(1280, 820);
             layout(app.root);
-            BufferedImage img = new BufferedImage(1450, 780, BufferedImage.TYPE_INT_RGB);
+            BufferedImage img = new BufferedImage(1280, 820, BufferedImage.TYPE_INT_RGB);
             Graphics2D g2 = img.createGraphics();
-            g2.setColor(UIManager.getColor("Panel.background")); g2.fillRect(0, 0, 1450, 780);
+            g2.setColor(UIManager.getColor("Panel.background")); g2.fillRect(0, 0, 1280, 820);
             app.root.print(g2); g2.dispose();
             ImageIO.write(img, "png", new java.io.File(shot));
             System.out.println("wrote " + shot);
@@ -333,7 +346,13 @@ public class DemoApp {
             f.addWindowListener(new java.awt.event.WindowAdapter() {
                 public void windowClosing(java.awt.event.WindowEvent e) { app.stopRun(); if (app.sc != null) app.sc.release(); app.close(); f.dispose(); System.exit(0); }
             });
-            f.setSize(1450, 780); f.setLocationByPlatform(true); f.setVisible(true);
+            f.setMinimumSize(new Dimension(980, 640)); f.setSize(1280, 820); f.setLocationByPlatform(true);
+            // F11 toggles full screen, Escape leaves it; the window can also be maximised and resized freely, the layout follows
+            app.root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("F11"), "full");
+            app.root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("ESCAPE"), "unfull");
+            app.root.getActionMap().put("full", new AbstractAction() { public void actionPerformed(java.awt.event.ActionEvent e) { fullScreen(f, null); } });
+            app.root.getActionMap().put("unfull", new AbstractAction() { public void actionPerformed(java.awt.event.ActionEvent e) { fullScreen(f, false); } });
+            f.setVisible(true);
             app.connect();
         });
     }
@@ -367,7 +386,7 @@ public class DemoApp {
             super.paintComponent(g0);
             Graphics2D g = (Graphics2D) g0;
             Insets in = getInsets();
-            int barW = 30, gap = 10, x0 = in.left + 4, y0 = in.top + 6;
+            int barW = Math.max(26, Math.min(46, getWidth() / 14)), gap = 10, x0 = in.left + 4, y0 = in.top + 6;
             int w = getWidth() - in.left - in.right - 8, h = getHeight() - in.top - in.bottom - 34;
             int availW = w - 2 * (barW + gap);
             int[] gr = grid; int c = cols, r = rows;
@@ -381,12 +400,11 @@ public class DemoApp {
                 for (int i = 0; i < 5; i++) {
                     int cell = ph / 5, ly = py + i * cell + 3;
                     int lamp = side == 0 ? 9 - i : i;                          // the left side runs up (lamp 9 at the top), the right side runs down
-                    g.setColor(new Color(b[lamp] & 0xFFFFFF)); g.fillRoundRect(bx, ly, barW, cell - 6, 10, 10);
-                    g.setColor(new Color(0x555555)); g.drawRoundRect(bx, ly, barW, cell - 6, 10, 10);
+                    ConsoleUi.ledCell(g, bx, ly, barW, cell - 6, b[lamp] & 0xFFFFFF);
                 }
             }
             if (gr == null) {
-                g.setColor(new Color(0x2B2B2B)); g.fillRect(px, py, pw, ph); g.setColor(Color.GRAY);
+                g.setColor(new Color(0x101010)); g.fillRect(px, py, pw, ph); g.setColor(Color.GRAY);
                 g.drawRect(px, py, pw, ph); g.drawString("the lamp grid appears here", px + 12, py + ph / 2);
                 return;
             }
@@ -394,8 +412,21 @@ public class DemoApp {
             im.setRGB(0, 0, c, r, gr, 0, c);
             g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
             g.drawImage(im, px, py, pw, ph, null);
-            g.setColor(Color.GRAY); g.drawString(c + " x " + r + " lamps; bar: lamps 0-4 down the right, 5-9 up the left (measured)", x0, py + ph + 18);
+            g.setColor(Color.GRAY); g.setFont(ConsoleTheme.mono(11f));
+            String cap = c + " x " + r + " lamps, bar 0-4 down the right, 5-9 up the left";
+            while (cap.length() > 12 && g.getFontMetrics().stringWidth(cap) > w) cap = cap.substring(0, cap.length() - 1);   // never wider than the panel
+            g.drawString(cap, x0, Math.min(getHeight() - 6, py + ph + 18));
         }
+    }
+
+    /** Full screen on or off (null toggles). The frame is undecorated in full screen, which needs a dispose first. */
+    static void fullScreen(JFrame f, Boolean want) {
+        GraphicsDevice d = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+        boolean now = d.getFullScreenWindow() == f, to = want == null ? !now : want;
+        if (to == now) return;
+        f.dispose(); f.setUndecorated(to); f.setVisible(true); d.setFullScreenWindow(to ? f : null);
+        if (!to) { f.setSize(1280, 820); f.setLocationByPlatform(true); }
+        f.revalidate(); f.repaint();
     }
 
     static void layout(Container c) { c.doLayout(); for (Component k : c.getComponents()) if (k instanceof Container cc) layout(cc); }

@@ -21,7 +21,7 @@ final class ConsoleTheme {
     static final Color TEXT = PEACH;                       // live data on black
 
     // spacing and shapes for the desktop (the device uses half of these, see the design system)
-    static final int GAP = 6, PAD = 10, BAR_H = 56, LEG_W = 250, OUTER_R = 56, INNER_R = 18, BLOCK_R = 14, BLOCK_H = 38;
+    static final int GAP = 6, PAD = 10, BAR_H = 64, LEG_W = 250, OUTER_R = 56, INNER_R = 18, BLOCK_R = 14, BLOCK_H = 38, ELBOW_W = 12;
 
     private static final Map<String, Font> CACHE = new HashMap<>();
 
