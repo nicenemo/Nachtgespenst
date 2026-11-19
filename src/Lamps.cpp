@@ -1,5 +1,6 @@
 #include "Lamps.h"
 #include "HID_Specs.h"
+#include "Settings.h"
 #include <M5Unified.h>
 #include <algorithm>
 #include <esp_heap_caps.h>
@@ -23,7 +24,7 @@ uint32_t g_maxGrid = 0;
 uint16_t g_cols = 16, g_rows = 12;
 volatile bool g_auto = true;
 volatile uint16_t g_reqId = 0;
-uint8_t g_bright = 40;
+int g_brightOverride = -1;                 // LAMPS BRIGHT (a test command): cleared by LAMPS RESET, never stored
 
 // counters since resetCounters()
 volatile uint32_t c_reports, c_multi, c_range, c_ctrl, c_short, c_bad, c_lampsSet, c_frames, c_bytes, c_featGet, c_featSet;
@@ -264,13 +265,14 @@ void resetCounters() {
     c_t0 = c_t1 = 0;
     g_drawn = g_drawnFrames = g_drawUs = 0;
     g_auto = true;
+    g_brightOverride = -1;
     if (g_lamp) { memset(g_lamp, 0, (size_t)lampTotal() * sizeof(Lamp)); memset(g_dirty, 0, ((size_t)lampTotal() + 7) / 8); }
     g_barTouched = false; g_barReady = true;     // the bar goes dark
     g_full = true;
 }
 
-void setBarBrightness(uint8_t level) { g_bright = level < 1 ? 1 : (level > 120 ? 120 : level); }
-uint8_t barBrightness() { return g_bright; }
+void setBarBrightness(uint8_t level) { g_brightOverride = level < 1 ? 1 : (level > 120 ? 120 : level); }
+uint8_t barBrightness() { return g_brightOverride >= 0 ? (uint8_t)g_brightOverride : Settings::ledBright(); }
 
 String status() {
     char b[400];
@@ -281,7 +283,7 @@ String status() {
              g_auto ? "auto" : "host", (unsigned)lampTotal(), g_cols, g_rows, (unsigned)maxGridLamps(), (unsigned long)c_reports,
              (unsigned long)c_multi, (unsigned long)c_range, (unsigned long)c_ctrl, (unsigned long)c_short, (unsigned long)c_bad,
              (unsigned long)c_lampsSet, (unsigned long)c_frames, (unsigned long)c_bytes, (unsigned long)c_featGet,
-             (unsigned long)c_featSet, (long long)span, (unsigned long)g_drawn, (unsigned long)g_drawUs, (unsigned)g_bright);
+             (unsigned long)c_featSet, (long long)span, (unsigned long)g_drawn, (unsigned long)g_drawUs, (unsigned)barBrightness());
     return String(b);
 }
 

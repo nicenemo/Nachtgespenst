@@ -210,9 +210,9 @@ namespace HID {
 
         add(Reports::KeyboardBlock, sizeof(Reports::KeyboardBlock));
         add(Reports::ConsumerBlock, sizeof(Reports::ConsumerBlock));
+        add(Reports::SystemBlock, sizeof(Reports::SystemBlock));   // report ID 3: power down, sleep, wake up
         Reports::AddLampArray(map);
-        // System and Haptics blocks are defined above but not advertised:
-        // the host would expect reports the firmware does not provide.
+        // The Haptics block is defined above but not advertised: the host would expect reports the firmware does not provide.
 
         return map;
     }

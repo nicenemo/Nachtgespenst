@@ -24,9 +24,6 @@ namespace HIDManager {
     static HIDEventListener _eventListener = nullptr; // set once before traffic starts
     static std::vector<uint8_t> reportMap; // must outlive begin()
 
-    // Host LED bits (HID LED page): Num=0x01, Caps=0x02, Scroll=0x04
-    constexpr uint8_t LED_NUM = 0x01, LED_CAPS = 0x02, LED_SCROLL = 0x04;
-
     static void pushLed(uint8_t status) {
         _ledStatus.store(status);
         if (_eventListener) _eventListener(HIDEvent::LED_UPDATED, status);
@@ -92,6 +89,7 @@ namespace HIDManager {
     static NimBLEHIDDevice* hid = nullptr;
     static NimBLECharacteristic* inputKeyboard = nullptr;
     static NimBLECharacteristic* inputConsumer = nullptr;
+    static NimBLECharacteristic* inputSystem = nullptr;
     static NimBLECharacteristic* outputKeyboard = nullptr;
     static std::atomic<bool> _bleConnected{false};
 
@@ -167,6 +165,7 @@ namespace HIDManager {
         // 3. Reports. The IDs must match the Report IDs in the report map.
         inputKeyboard  = hid->getInputReport(HID::Reports::KEYBOARD);
         inputConsumer  = hid->getInputReport(HID::Reports::CONSUMER);
+        inputSystem    = hid->getInputReport(HID::Reports::SYSTEM);
         outputKeyboard = hid->getOutputReport(HID::Reports::KEYBOARD);
         if (outputKeyboard) outputKeyboard->setCallbacks(new MyOutputCallbacks());
         // LampArray reports (see HID_Specs.h): feature 5 to 7 and output 8 to 10.
@@ -203,7 +202,7 @@ namespace HIDManager {
         return _bleConnected && server && server->getConnectedCount() > 0;
     }
     static bool bleReport(uint8_t id, const uint8_t* data, size_t len) {
-        NimBLECharacteristic* c = (id == HID::Reports::KEYBOARD) ? inputKeyboard : inputConsumer;
+        NimBLECharacteristic* c = (id == HID::Reports::KEYBOARD) ? inputKeyboard : (id == HID::Reports::SYSTEM) ? inputSystem : inputConsumer;
         if (!c) return false;
         c->setValue(data, len);
         return c->notify();
@@ -311,8 +310,26 @@ namespace HIDManager {
         dispatch(HID::Reports::CONSUMER, report, sizeof(report));
     }
 
+    // System Control (Generic Desktop 0x81 to 0x83): one report byte, bit 0 power down, 1 sleep, 2 wake up.
+    static void sendSystem(const Binding& b) {
+        if (b.usage.id < 0x81 || b.usage.id > 0x83) return;
+        uint8_t report = (uint8_t)(1u << (b.usage.id - 0x81));
+        dispatch(HID::Reports::SYSTEM, &report, 1);
+    }
+
+    bool canSend(const Binding& b) {
+        if (b.usage.id == 0) return false;
+        switch (b.page) {
+            case HID::Page::KEYBOARD_KEYPAD: return b.usage.id <= 0xE7;
+            case HID::Page::CONSUMER:        return b.usage.id <= 0x3FF;
+            case HID::Page::GENERIC_DESKTOP: return b.usage.id >= 0x81 && b.usage.id <= 0x83;
+            default:                         return false;
+        }
+    }
+
     void send(const Binding& b) {
         if (b.page == HID::Page::KEYBOARD_KEYPAD) sendKeyboard(b);
         else if (b.page == HID::Page::CONSUMER)   sendConsumer(b);
+        else if (b.page == HID::Page::GENERIC_DESKTOP) sendSystem(b);
     }
 }

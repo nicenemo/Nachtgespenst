@@ -5,6 +5,7 @@
 #include "Keymap.h"
 #include "HIDManager.h"
 #include "Lamps.h"
+#include "Settings.h"
 #include "Theme.h"
 #include "Icons.h"
 #include "IconCodes.h"
@@ -22,9 +23,9 @@ constexpr int MAX_TILES = 32;
 
 struct LockDef { const char* name; uint8_t ledBit; CRGB color; };
 const LockDef LOCKS[3] = {
-    {"CAPS",   0x02, LOCK_COLORS[0]},
-    {"NUM",    0x01, LOCK_COLORS[1]},
-    {"SCROLL", 0x04, LOCK_COLORS[2]},
+    {"CAPS",   HIDManager::LED_CAPS,   LOCK_COLORS[0]},
+    {"NUM",    HIDManager::LED_NUM,    LOCK_COLORS[1]},
+    {"SCROLL", HIDManager::LED_SCROLL, LOCK_COLORS[2]},
 };
 
 // Two LampArray test pages follow the Locks page (see Lamps.h): the screen lamps and the LED bar lamps.
@@ -34,6 +35,16 @@ bool g_lampEnter = false; // a lamp page was just built: draw it once LVGL has p
 
 int g_page = 0;
 int g_prevPage = 0; // page to return to when leaving Locks via toggle
+// Page changes are coalesced: ui_set_layer() only records the target page and the new header; the body is built once
+// in ui_loop() (or when something needs the screen: SHOT, an injected tap), so a burst of presses builds one page.
+bool g_pageDirty = false;
+uint32_t g_pageStamp = 0;
+constexpr uint32_t PAGE_COALESCE_MS = 25;
+// Idle handling (backlight and LED bar) and the manual overrides of the serial commands WAKE and BL.
+uint32_t g_lastActive = 0;
+int g_blOverride = -1;          // -1 = automatic
+bool g_ledIdleOff = false;      // the bar is dark because of "ledidle"
+bool g_barPowered = false;      // 5 V rail of the M-Bus (LED base) is on
 uint8_t g_lastLock = LK_NONE;
 volatile uint8_t g_hostLed = 0;
 volatile bool g_ledDirty = true;
@@ -57,7 +68,11 @@ CRGB g_leds[LED_COUNT];
 // Timing for PERF? (microseconds). Build = last buildPage(); render and flush are accumulated since that build
 // (render = time inside lv_timer_handler/lv_refr_now that actually drew strips, flush = the part spent in pushImage).
 uint32_t g_perfBuildUs = 0, g_perfRenderUs = 0, g_perfFlushUs = 0, g_perfStrips = 0;
-uint8_t g_dispBuf[2][320 * 24 * 2] __attribute__((aligned(4)));
+// Two partial render buffers of DISP_ROWS rows: fewer, taller strips mean fewer walks over the widget tree (ADR 0007).
+#ifndef NG_DISP_ROWS
+#define NG_DISP_ROWS 48
+#endif
+uint8_t g_dispBuf[2][320 * NG_DISP_ROWS * 2] __attribute__((aligned(4)));
 
 lv_color_t c565(uint16_t c) {
     return lv_color_make(((c >> 11) & 31) * 255 / 31, ((c >> 5) & 63) * 255 / 63, (c & 31) * 255 / 31);
@@ -91,15 +106,27 @@ void readCb(lv_indev_t*, lv_indev_data_t* d) {
 }
 
 // ---------- LED bar ----------
+// The bar follows the setting "led": off (dark, 5 V rail off), locks (only the host lock state) or layers (layer colours).
 void updateLeds() {
 #if NG_HAS_LEDBAR
+    using LM = Settings::LedMode;
+    LM mode = Settings::ledMode();
+    if (mode == LM::Off || g_ledIdleOff) {
+        fill_solid(g_leds, LED_COUNT, CRGB::Black);
+        FastLED.show();
+        if (mode == LM::Off && g_barPowered) { M5.Power.setExtOutput(false); g_barPowered = false; }
+        return;
+    }
+    if (!g_barPowered) { M5.Power.setExtOutput(true); g_barPowered = true; delay(40); } // the LEDs need a moment after the rail returns
     FastLED.setBrightness(Lamps::barBrightness());
+    uint8_t mask = 0; // host LED bits: num=1 caps=2 scroll=4 -> bar mask caps=1 num=2 scroll=4
+    for (int i = 0; i < 3; i++) if (g_hostLed & LOCKS[i].ledBit) mask |= 1u << i;
     if (g_page > LAYER_COUNT) {
         for (int i = 0; i < LED_COUNT; i++) g_leds[i] = Lamps::barColor(i); // lamps 0..9 of the LampArray
     } else if (g_page == LAYER_COUNT) {
-        uint8_t mask = 0; // host LED bits: num=1 caps=2 scroll=4 -> bar mask caps=1 num=2 scroll=4
-        for (int i = 0; i < 3; i++) if (g_hostLed & LOCKS[i].ledBit) mask |= 1u << i;
         ledBarLocks(g_leds, LED_COUNT, mask);
+    } else if (mode == LM::Locks) {
+        ledBarLocks(g_leds, LED_COUNT, mask, false);
     } else {
         fill_solid(g_leds, LED_COUNT, LAYERS[g_page].color);
     }
@@ -125,6 +152,31 @@ void refreshLocks() {
 }
 
 void buildPage();
+
+const char* pageTitle(int page) {
+    return page == PAGE_LAMP_SCREEN ? "Lamps: screen" : page == PAGE_LAMP_BAR ? "Lamps: bar" : page == LAYER_COUNT ? "Locks" : LAYERS[page].title;
+}
+
+// Title and page counter of the header; cheap, so it follows a page change at once while the body waits for the coalescing.
+void setHeader(int page) {
+    char buf[48];
+    snprintf(buf, sizeof(buf), "%d/%d", page + 1, (int)ui_page_count());
+#if NG_HAS_BTNS
+    lv_label_set_text(g_title, pageTitle(page));
+    lv_label_set_text(g_pageLbl, buf);
+#else
+    // single readable line in the bottom bar: "Title  n/27"
+    lv_label_set_text_fmt(g_title, "%s  %s", pageTitle(page), buf);
+    lv_label_set_text(g_pageLbl, buf);
+    lv_obj_add_flag(g_pageLbl, LV_OBJ_FLAG_HIDDEN);
+#endif
+}
+
+void flushPage() {
+    if (!g_pageDirty) return;
+    g_pageDirty = false;
+    buildPage();
+}
 
 void onTile(lv_event_t* e) {
     intptr_t idx = (intptr_t)lv_event_get_user_data(e);
@@ -210,14 +262,12 @@ void buildPage() {
     lv_obj_clean(g_body);
     for (int i = 0; i < 3; i++) { g_lockTiles[i] = nullptr; g_lockState[i] = nullptr; }
     int W = M5.Display.width(), H = M5.Display.height() - HEADER_H;
-    char buf[48];
     Lamps::leavePage();
 
+    setHeader(g_page);
     if (g_page > LAYER_COUNT) {
-        lv_label_set_text(g_title, g_page == PAGE_LAMP_SCREEN ? "Lamps: screen" : "Lamps: bar");
         g_lampEnter = true;                     // the body stays empty; Lamps draws on the panel in ui_loop()
     } else if (g_page == LAYER_COUNT) {
-        lv_label_set_text(g_title, "Locks");
         int w = (W - 4 * GAP) / 3, h = H - 2 * GAP;
         static const char* const LOCK_ICONS[3] = {IC_KEYBOARD_CAPSLOCK, IC_DIALPAD, IC_LOCK};
         for (int i = 0; i < 3; i++) {
@@ -238,7 +288,6 @@ void buildPage() {
         refreshLocks();
     } else {
         const GridLayer& L = LAYERS[g_page];
-        lv_label_set_text(g_title, L.title);
         int cw = (W - (L.cols + 1) * GAP) / L.cols;
         int ch = (H - (L.rows + 1) * GAP) / L.rows;
         Theme th = ThemeManager::getTheme();
@@ -253,13 +302,6 @@ void buildPage() {
             addTileContent(t, L.title, b, cw, ch);
         }
     }
-    snprintf(buf, sizeof(buf), NG_HAS_BTNS ? "%d/%d" : "%d/%d", g_page + 1, (int)ui_page_count());
-    lv_label_set_text(g_pageLbl, buf);
-#if !NG_HAS_BTNS
-    // single readable line in the bottom bar: "Title  n/27"
-    lv_label_set_text_fmt(g_title, "%s  %s", lv_label_get_text(g_title), buf);
-    lv_obj_add_flag(g_pageLbl, LV_OBJ_FLAG_HIDDEN);
-#endif
     g_ledDirty = true;
     g_perfBuildUs = micros() - perfT0;
 }
@@ -282,6 +324,22 @@ lv_obj_t* navBtn(const char* txt, int dir, lv_align_t al) {
 #endif
 } // namespace
 
+// Boot check: every tile that has a usage must be sendable (see HIDManager::canSend). A tile that is not is reported once
+// on the serial port and ignored when pressed, instead of silently doing nothing.
+static void checkKeymap() {
+    int bad = 0;
+    for (int l = 0; l < LAYER_COUNT; l++) {
+        const GridLayer& L = LAYERS[l];
+        for (int i = 0; i < L.rows * L.cols; i++) {
+            const Binding& b = L.tiles[i];
+            if (b.usage.id == 0 || HIDManager::canSend(b)) continue;
+            Serial.printf("[keymap] layer %d (%s) tile %d: %s on page 0x%04X has no report\n", l, L.title, i, b.usage.identifier, (unsigned)b.page);
+            bad++;
+        }
+    }
+    if (!bad) Serial.println("[keymap] every tile can be sent");
+}
+
 // ---------- public API ----------
 uint8_t ui_page_count() { return LAYER_COUNT + 3; }
 int ui_layer() { return g_page; }
@@ -290,9 +348,7 @@ void ui_toggle_locks() { ui_set_layer(g_page == LAYER_COUNT ? g_prevPage : LAYER
 
 void ui_begin() {
 #if NG_HAS_LEDBAR
-    M5.Power.setExtOutput(true); // 5V on the M-Bus for the LED base
-    FastLED.addLeds<WS2812, LED_PIN, GRB>(g_leds, LED_COUNT);
-    FastLED.setBrightness(40);
+    FastLED.addLeds<WS2812, LED_PIN, GRB>(g_leds, LED_COUNT);   // the 5 V rail and the brightness follow the settings (updateLeds)
 #endif
     HIDManager::setEventListener(onHid);
     g_hostLed = HIDManager::getLedStatus();
@@ -355,6 +411,7 @@ void ui_begin() {
     lv_obj_remove_flag(g_body, LV_OBJ_FLAG_SCROLLABLE);
 
     buildPage();
+    checkKeymap();
 }
 
 void ui_set_layer(int n) {
@@ -362,10 +419,13 @@ void ui_set_layer(int n) {
     int np = ((n % cnt) + cnt) % cnt;
     if (np == LAYER_COUNT && g_page != LAYER_COUNT) g_prevPage = g_page;
     g_page = np;
-    // Deferred rebuild is not needed: callers run outside LVGL's event dispatch
-    // for serial use; from event callbacks lv_obj_clean on the pressed parent is
-    // safe because the button lives in the header, not the body.
-    buildPage();
+    // Only the target and the header change now; the body is built once in ui_loop() (see PAGE_COALESCE_MS), so a burst
+    // of presses costs one page. The LED bar follows at once. Callers run outside LVGL's event dispatch (serial and the
+    // main loop), and from the nav buttons the pressed object lives in the header, not in the body.
+    setHeader(g_page);
+    g_pageDirty = true;
+    g_pageStamp = millis();
+    g_ledDirty = true;
 }
 
 bool ui_press(int layer, int idx) {
@@ -387,7 +447,7 @@ bool ui_press(int layer, int idx) {
     const GridLayer& L = LAYERS[layer];
     if (idx < 0 || idx >= L.rows * L.cols) return false;
     const Binding& b = L.tiles[idx];
-    if (b.usage.id == 0) return false;
+    if (!HIDManager::canSend(b)) return false;                   // empty tile, or a usage without a report in the report map
     g_lastKey = b.label ? b.label : b.usage.identifier;
     g_pressCount++;
     HIDManager::send(b);
@@ -396,16 +456,19 @@ bool ui_press(int layer, int idx) {
 
 void ui_leds_refresh() { g_ledDirty = true; }
 
-void ui_tap(int x, int y) { g_injX = x; g_injY = y; g_injUntil = millis() + 120; }
+void ui_tap(int x, int y) { flushPage(); g_injX = x; g_injY = y; g_injUntil = millis() + 120; }
+
+void ui_wake() { g_lastActive = millis(); g_blOverride = -1; }
+void ui_backlight(int level) { g_blOverride = level < 0 ? -1 : (level > 255 ? 255 : level); }
 
 String ui_state() {
     uint8_t led = HIDManager::getLedStatus();
-    char b[200];
-    snprintf(b, sizeof(b), "STATE page=%d/%d title=%s caps=%d num=%d scroll=%d last=%s presses=%lu conn=%d",
+    char b[220];
+    snprintf(b, sizeof(b), "STATE page=%d/%d title=%s caps=%d num=%d scroll=%d last=%s presses=%lu conn=%d usb=%d ble=%d",
              g_page, (int)ui_page_count(),
              g_page == PAGE_LAMP_SCREEN ? "Lamps-screen" : g_page == PAGE_LAMP_BAR ? "Lamps-bar" : g_page == LAYER_COUNT ? "Locks" : LAYERS[g_page].title,
-             !!(led & 0x02), !!(led & 0x01), !!(led & 0x04),
-             g_lastKey, (unsigned long)g_pressCount, HIDManager::isConnected());
+             !!(led & HIDManager::LED_CAPS), !!(led & HIDManager::LED_NUM), !!(led & HIDManager::LED_SCROLL),
+             g_lastKey, (unsigned long)g_pressCount, HIDManager::isConnected(), HIDManager::isUsbConnected(), HIDManager::isBleConnected());
     return String(b);
 }
 
@@ -418,6 +481,7 @@ String ui_perf() {
 
 void ui_screenshot(Stream& out) {
     int W = M5.Display.width(), H = M5.Display.height();
+    flushPage();                                     // a LAYER may still be waiting to be built
     uint32_t perfT0 = micros(), perfStrips0 = g_perfStrips;
     lv_refr_now(nullptr);
     if (g_perfStrips != perfStrips0) g_perfRenderUs += micros() - perfT0;   // the SHOT forced a render: count it
@@ -431,23 +495,27 @@ void ui_screenshot(Stream& out) {
     out.print("\nEND\n");
 }
 
-// Backlight: dim after 60 s without touch/button, off after 5 min; any touch wakes
-// it (no re-init needed, unlike deep sleep).
+// Backlight: dim after "dim" seconds without touch or button (default 60), off after "off" seconds (default 300); any
+// touch wakes it (no re-init needed, unlike deep sleep). The LED bar goes dark after "ledidle" minutes. The serial
+// commands WAKE (restart the timers) and BL n (fixed level, BL AUTO to return) override the timers.
 static void idleBacklight() {
-    static uint32_t lastActive = 0;
-    static uint8_t level = 255;
+    static int level = -1;
+    uint8_t active = Settings::backlight();
     bool touched = M5.Touch.getCount() > 0;
-    if (touched && level < 128) g_swallowTouch = true;
-    if (touched || M5.BtnA.isPressed() || M5.BtnB.isPressed() || M5.BtnC.isPressed())
-        lastActive = millis();
-    uint32_t idle = millis() - lastActive;
-    uint8_t want = idle < 60000 ? 128 : (idle < 300000 ? 16 : 0);
+    if (touched && level >= 0 && level < active) g_swallowTouch = true;
+    if (touched || M5.BtnA.isPressed() || M5.BtnB.isPressed() || M5.BtnC.isPressed()) g_lastActive = millis();
+    uint32_t idle = millis() - g_lastActive;
+    int want = idle < (uint32_t)Settings::dimSec() * 1000 ? active : (idle < (uint32_t)Settings::offSec() * 1000 ? 16 : 0);
+    if (g_blOverride >= 0) want = g_blOverride;
     if (want != level) { level = want; M5.Display.setBrightness(want); }
+    bool ledIdle = Settings::ledIdleMin() > 0 && idle > (uint32_t)Settings::ledIdleMin() * 60000UL;
+    if (ledIdle != g_ledIdleOff) { g_ledIdleOff = ledIdle; g_ledDirty = true; }
 }
 
 uint32_t ui_loop() {
     static uint32_t lastLedPoll = 0;
     idleBacklight();
+    if (g_pageDirty && millis() - g_pageStamp >= PAGE_COALESCE_MS) flushPage();
     // Keep in sync with the HID layer (local toggles do not always fire the listener).
     if (millis() - lastLedPoll > 100) {
         lastLedPoll = millis();
@@ -470,5 +538,6 @@ uint32_t ui_loop() {
                          M5.Display.width(), M5.Display.height() - HEADER_H);
     }
     Lamps::tick();
+    if (g_pageDirty) return 1;                       // a page is waiting for its coalescing window
     return next < 1 ? 1 : (next > 10 ? 10 : next);
 }

@@ -27,12 +27,20 @@ public class Light {
             System.err.println("usage: jbang tools/Light.java white|black|off");
             System.exit(2);
         }
+        try { show(args[0]); } catch (IllegalStateException e) { System.err.println(e.getMessage()); System.exit(1); }
+    }
+
+    /**
+     * Shows the page ("white" or "black") or closes the window ("off"); used by LedCam and LampTest (--screen black).
+     * Throws IllegalStateException when the window cannot be opened (no display available to this call).
+     */
+    static void show(String mode) throws Exception {
         Files.createDirectories(STATE);
         closeWindow();
-        if (args[0].equals("off")) { System.out.println("closed"); return; }
+        if (mode.equals("off")) { System.out.println("light: closed"); return; }
 
-        Path page = root().resolve("tools/lightbox/" + args[0] + ".html");
-        if (!Files.isRegularFile(page)) { System.err.println("missing " + page); System.exit(1); }
+        Path page = root().resolve("tools/lightbox/" + mode + ".html");
+        if (!Files.isRegularFile(page)) throw new IllegalStateException("missing " + page);
         Path profile = STATE.resolve("profile");
         Files.createDirectories(profile);
         Files.writeString(profile.resolve("user.js"), String.join("\n",
@@ -51,8 +59,8 @@ public class Light {
         Process p = pb.start();
         Files.writeString(STATE.resolve("pid"), Long.toString(p.pid()));
         Thread.sleep(4000);                                   // let the window open and the page paint
-        if (!p.isAlive()) { System.err.println("firefox exited early (is a display available to this call?)"); System.exit(1); }
-        System.out.println(args[0] + " page is up (pid " + p.pid() + ")");
+        if (!p.isAlive()) throw new IllegalStateException("firefox exited early (is a display available to this call?)");
+        System.out.println("light: " + mode + " page is up (pid " + p.pid() + ")");
     }
 
     /** Stops the kiosk window of an earlier call, if there is one. */

@@ -205,8 +205,54 @@ public class SerialTest {
         check(tag, "TAP on Scroll tile counted", Integer.parseInt(s2.get("presses")) == p0 + 1 && "Scroll".equalsIgnoreCase(s2.get("last").replace("_", " ").split(" ")[0]) ,
               "presses " + p0 + "->" + s2.get("presses") + " last=" + s2.get("last"));
         l.cmd("KEY " + locks + " 2", 1500); // restore state again
+        check(tag, "STATE? reports usb= and ble= next to conn=", s2.containsKey("usb") && s2.containsKey("ble") && s2.containsKey("conn"), String.valueOf(s2.keySet()));
+        settingsChecks(tag, l);
+        systemControlCheck(tag, l, info);
         if ("S3".equals(tag)) testBle(tag, l, info, locks);
         l.cmd("LAYER 0", 2000);
+    }
+
+    /** Settings and the LED, screen and wake commands (ADR 0014). Leaves the stored settings at their defaults. */
+    static void settingsChecks(String tag, Link l) throws Exception {
+        String r = l.cmd("SET?", 1500);
+        check(tag, "SET? lists the settings", r != null && r.startsWith("OK SET led="), String.valueOf(r));
+        for (String mode : new String[]{"OFF", "LOCKS", "ON"}) {
+            r = l.cmd("LEDS " + mode, 1500);
+            String q = l.cmd("LEDS?", 1500);
+            check(tag, "LEDS " + mode, ("OK LEDS " + mode).equals(r) && q != null && q.contains("led=" + mode.toLowerCase()), r + " / " + q);
+        }
+        r = l.cmd("SET bright 500", 1500);
+        check(tag, "SET bright out of range -> ERR", r != null && r.startsWith("ERR"), String.valueOf(r));
+        r = l.cmd("SET nonsense 1", 1500);
+        check(tag, "SET unknown key -> ERR", r != null && r.startsWith("ERR"), String.valueOf(r));
+        r = l.cmd("SET bright 60", 1500);
+        check(tag, "SET bright 60", r != null && r.contains("bright=60"), String.valueOf(r));
+        r = l.cmd("BL 100", 1500);
+        check(tag, "BL 100", "OK BL 100".equals(r), String.valueOf(r));
+        r = l.cmd("BL AUTO", 1500);
+        check(tag, "BL AUTO", "OK BL AUTO".equals(r), String.valueOf(r));
+        r = l.cmd("WAKE", 1500);
+        check(tag, "WAKE", "OK WAKE".equals(r), String.valueOf(r));
+        r = l.cmd("SET defaults 1", 1500);
+        check(tag, "SET defaults restores the stored settings", r != null && r.contains("led=on bright=40 ledidle=0 bl=128 dim=60 off=300 prefer=usb"), String.valueOf(r));
+    }
+
+    /**
+     * System Control report (power down, sleep, wake up): press the Wake Up tile of the Media page (the only one that is
+     * harmless on the host) and look for KEY_WAKEUP (143) on the keyboard evdev device of the board. The CoreS3
+     * uses USB, the Core2 its Bluetooth link.
+     */
+    static void systemControlCheck(String tag, Link l, Map<String, String> info) throws Exception {
+        boolean s3 = "S3".equals(tag);
+        String ev = findEvent(s3 ? info.get("name") + " Keyboard" : "-c2 Keyboard", s3);   // Linux folds System Control into the keyboard device
+        if (ev == null) { report.add("SKIP [" + tag + "] System Control check (no evdev device: board not connected)"); return; }
+        int media = 18, wake = 11;                       // Media is the 19th layer, Wake Up its last tile
+        List<int[]> keys;
+        try { keys = captureKeys(ev, () -> { try { l.cmd("KEY " + media + " " + wake, 1500); } catch (Exception e) { } }, 800); }
+        catch (IOException e) { report.add("INFO [" + tag + "] cannot read " + ev + ": " + e.getMessage()); return; }
+        boolean down = false, up = false;
+        for (int[] k : keys) if (k[0] == 143) { if (k[1] == 1) down = true; if (k[1] == 0) up = true; }
+        check(tag, "System Control: Wake Up tile reaches the host (KEY_WAKEUP down+up)", down && up, ev + " events=" + keys.size());
     }
 
     /** Down+up of Scroll Lock (KEY_SCROLLLOCK=70) seen in an evdev capture. */

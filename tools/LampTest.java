@@ -42,6 +42,7 @@ public class LampTest {
     static String boardName = "S3", via = null, shotDir = null, out = "lamptest-out", camera = "/dev/video0", tiers = "8x6,16x12,32x24,64x48,128x96,320x190";
     static int[] crop = null;
     static int frames = 0, enumMax = 200;
+    static String screen = "black";            // laptop screen while the camera films the bar: black (default), white or off
     static int paceUs = -1;                    // microseconds between two output reports; -1 = automatic (0 for USB, 15000 for Bluetooth)
     static int pass = 0, fail = 0;
     static String tag;
@@ -65,6 +66,7 @@ public class LampTest {
             case "--frames" -> frames = Integer.parseInt(args[++i]);
             case "--enum-max" -> enumMax = Integer.parseInt(args[++i]);
             case "--pace-us" -> paceUs = Integer.parseInt(args[++i]);
+            case "--screen" -> screen = args[++i];
             case "--crop" -> crop = Arrays.stream(args[++i].split(",")).mapToInt(Integer::parseInt).toArray();
             default -> { if (args[i].startsWith("--")) usage("unknown option " + args[i]); cmds.add(args[i]); }
         }
@@ -343,6 +345,8 @@ public class LampTest {
         int[] levels = {0, 1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128, 192, 255};
         double[] lum = new double[levels.length];
         boolean cam = crop != null;
+        boolean lit = false;
+        if (cam && !screen.equals("off")) { try { Light.show(screen); lit = true; } catch (Exception e) { info("laptop screen " + screen + ": " + e.getMessage() + " (continuing)"); } }
         List<BufferedImage> crops = new ArrayList<>();
         LedCam.out = out; LedCam.camera = camera;
         LedCam.Frame base = null;
@@ -398,6 +402,7 @@ public class LampTest {
         h.write(control(true));
         s.cmd("LAMPS RESET", 2000);
         if (cam) deleteFrames();
+        if (lit) { try { Light.show("off"); } catch (Exception ignored) { } }
     }
 
     /** How fast does a transport deliver output reports? Multi updates (51 bytes) and range updates (10 bytes) at several send intervals. */

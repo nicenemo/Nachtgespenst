@@ -3,6 +3,7 @@
 #include "Keymap.h"
 #include "HIDManager.h"
 #include "Lamps.h"
+#include "Settings.h"
 #include "ui.h"
 #include "SerialCmd.h"
 
@@ -17,8 +18,10 @@ void setup() {
 #endif
     Serial.printf("NACHTGESPENST board=%s name=%s fw=%s %s\n", NG_BOARD_ID, K_DEVICE_NAME, __DATE__, __TIME__);
 
+    Settings::begin();                                                  // stored settings first: the others read them
     Lamps::begin();   // before HIDManager: BLE and USB handlers may deliver reports as soon as the host connects
-    HIDManager::begin(K_BLE_NAME, K_MANUFACTURER);   // the Bluetooth name carries the emoji; USB strings stay ASCII
+    HIDManager::begin(K_BLE_NAME, K_MANUFACTURER);
+    HIDManager::setPrefer((HIDManager::Prefer)Settings::prefer());     // routing chosen with SET prefer (default USB)   // the Bluetooth name carries the emoji; USB strings stay ASCII
 
     ui_begin();
 }

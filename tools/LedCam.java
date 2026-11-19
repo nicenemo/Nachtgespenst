@@ -1,5 +1,6 @@
 ///usr/bin/env jbang "$0" "$@" ; exit $?
 //DEPS com.fazecast:jSerialComm:2.11.0
+//SOURCES Light.java
 //JAVA 27
 //COMPILE_OPTIONS --add-modules=jdk.incubator.vector
 //JAVA_OPTIONS --add-modules=jdk.incubator.vector --enable-native-access=ALL-UNNAMED
@@ -37,10 +38,11 @@ public class LedCam {
     static String port, out = "ledcam-out", camera = "/dev/video0", size = "1280x720";
     static int[] crop = null;
     static boolean clean = false;
+    static String screen = "black";            // laptop screen during the test: black (default), white or off (leave as it is)
 
     public static void main(String[] args) throws Exception {
-        if (args.length == 0 || !(args[0].equals("pins") || args[0].equals("colours"))) {
-            System.err.println("usage: LedCam.java pins|colours --port P --out DIR [--camera DEV] [--size WxH] [--crop x0,y0,x1,y1] [--clean]");
+        if (args.length == 0 || !(args[0].equals("pins") || args[0].equals("colours") || args[0].equals("dark") || args[0].equals("locks"))) {
+            System.err.println("usage: LedCam.java pins|colours|dark|locks --port P --out DIR [--camera DEV] [--size WxH] [--crop x0,y0,x1,y1] [--clean] [--screen black|white|off]");
             System.exit(2);
         }
         for (int i = 1; i < args.length; i++) switch (args[i]) {
@@ -50,12 +52,18 @@ public class LedCam {
             case "--size" -> size = args[++i];
             case "--crop" -> crop = Arrays.stream(args[++i].split(",")).mapToInt(Integer::parseInt).toArray();
             case "--clean" -> clean = true;
+            case "--screen" -> screen = args[++i];
             default -> { System.err.println("unknown option " + args[i]); System.exit(2); }
         }
         if (port == null) { System.err.println("--port is required"); System.exit(2); }
         Files.createDirectories(Path.of(out));
+        // The laptop screen is a light source in the picture: show a full black page (or white, for a photo) while filming.
+        boolean lit = !screen.equals("off");
+        if (lit) { try { Light.show(screen); } catch (Exception e) { System.err.println("screen " + screen + ": " + e.getMessage() + " (continuing)"); lit = false; } }
         try (Link link = new Link(port)) {
-            if (args[0].equals("pins")) pins(link); else colours(link);
+            if (args[0].equals("pins")) pins(link); else if (args[0].equals("dark")) dark(link); else if (args[0].equals("locks")) locks(link); else colours(link);
+        } finally {
+            if (lit) { try { Light.show("off"); } catch (Exception ignored) { } }
         }
     }
 
@@ -264,6 +272,118 @@ public class LedCam {
         System.out.println("numeric CHECKs: " + bad + " (weak signal, the glow is only a few brightness levels; judge " + png + " by eye)");
         if (clean) deleteFrames();
     }
+
+    // ------------------------------------------------------------------ dark: LEDS OFF really switches the bar off
+    /** Films the bar with LEDS ON (layer 0, blue), LEDS OFF twice and LEDS LOCKS on a layer page, and compares. Restores LEDS ON. */
+    static void dark(Link l) throws Exception {
+        int fails = 0;
+        l.send("SET defaults 1"); l.readUntil("OK", 1500);
+        layer(l, 0);
+        Frame on = shot(l, "LEDS ON", "on.jpg");
+        Frame off1 = shot(l, "LEDS OFF", "off1.jpg");
+        Frame off2 = shot(l, "LEDS OFF", "off2.jpg");
+        Frame locks = shot(l, "LEDS LOCKS", "locks.jpg");
+        Frame back = shot(l, "LEDS ON", "back.jpg");
+        int[] c = crop != null ? crop : new int[]{0, 0, on.planes.w, on.planes.h};
+        double onOff = mag(roiMeanDiff(on.planes, off1.planes, c[0], c[1], c[2], c[3]));
+        double noise = mag(roiMeanDiff(off1.planes, off2.planes, c[0], c[1], c[2], c[3]));
+        double locksVsOff = mag(roiMeanDiff(locks.planes, off1.planes, c[0], c[1], c[2], c[3]));
+        double backVsOn = mag(roiMeanDiff(back.planes, on.planes, c[0], c[1], c[2], c[3]));
+        System.out.printf("glow LEDS ON vs OFF: %.1f   OFF vs OFF (camera noise): %.1f   LEDS LOCKS vs OFF: %.1f   back ON vs first ON: %.1f%n", onOff, noise, locksVsOff, backVsOn);
+        fails += verdictLine("LEDS OFF is clearly darker than LEDS ON", onOff > 6 && onOff > 4 * noise);
+        fails += verdictLine("two LEDS OFF frames look the same (the bar is really dark)", noise < 3);
+        // "Locks only" shows the host lock state on every page: dark when no lock is on, lit when one is.
+        l.send("STATE?");
+        boolean anyLock = false;
+        for (String line : l.readUntil("OK STATE", 1500)) { Matcher m = Pattern.compile("caps=(\\d) num=(\\d) scroll=(\\d)").matcher(line); if (m.find()) anyLock = !(m.group(1) + m.group(2) + m.group(3)).equals("000"); }
+        fails += verdictLine("LEDS LOCKS on a layer page " + (anyLock ? "shows the lock that is on (host lock active)" : "is as dark as OFF (no lock is on)"),
+                anyLock ? locksVsOff > Math.max(6, noise * 4) : locksVsOff < Math.max(3, noise * 2));
+        fails += verdictLine("LEDS ON brings the colours back", backVsOn < onOff * 0.35);
+        l.send("LEDS ON"); l.readUntil("OK", 1500);
+        if (clean) deleteFrames();
+        System.out.println(fails == 0 ? "dark: PASS" : "dark: " + fails + " FAIL");
+        if (fails > 0) System.exit(1);
+    }
+
+    // ------------------------------------------------------------------ locks: the Locks page colours
+    /** Reads caps/num/scroll from STATE?, or null. */
+    static int[] lockState(Link l) throws Exception {
+        l.send("STATE?");
+        for (String line : l.readUntil("OK STATE", 1500)) {
+            Matcher m = Pattern.compile("caps=(\\d) num=(\\d) scroll=(\\d)").matcher(line);
+            if (m.find()) return new int[]{Integer.parseInt(m.group(1)), Integer.parseInt(m.group(2)), Integer.parseInt(m.group(3))};
+        }
+        return null;
+    }
+
+    /**
+     * Films the bar on the Locks page for none, each single lock and some mixes, and compares the hue with the colours the
+     * firmware uses (caps orange, num green, scroll blue, additive mix). The locks are toggled with KEY on the Locks page,
+     * which types the real keys on the host and, on a Bluetooth-only board, toggles the shown state at once (the Core2); the
+     * original lock state is restored. A board with a USB host (CoreS3) follows the host's own LED report instead.
+     */
+    static void locks(Link l) throws Exception {
+        l.send("INFO");
+        int lockPage = -1;
+        for (String line : l.readUntil("OK INFO", 3000)) { Matcher m = Pattern.compile("locks=(\\d+)").matcher(line); if (m.find()) lockPage = Integer.parseInt(m.group(1)); }
+        if (lockPage < 0) throw new IllegalStateException("board did not answer INFO");
+        layer(l, lockPage);
+        int[] start = lockState(l);
+        if (start == null) throw new IllegalStateException("no STATE? answer");
+        int[][] combos = {{0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {1, 1, 0}, {0, 1, 1}, {1, 1, 1}};
+        String[] names = {"none", "caps", "num", "scroll", "caps+num", "num+scroll", "all three"};
+        int[][] rgb = {{255, 80, 0}, {0, 220, 60}, {40, 80, 255}};
+        List<Frame> frames = new ArrayList<>(); List<Expect> exp = new ArrayList<>();
+        Frame base = null; int bad = 0, unreachable = 0;
+        for (int k = 0; k < combos.length; k++) {
+            int[] want = combos[k];
+            for (int attempt = 0; attempt < 3; attempt++) {
+                int[] st = lockState(l);
+                if (st == null || Arrays.equals(st, want)) break;
+                for (int b = 0; b < 3; b++) if (st[b] != want[b]) { l.send("KEY " + lockPage + " " + b); l.readUntil("OK", 1500); Thread.sleep(500); }
+                Thread.sleep(600);
+            }
+            int[] got = lockState(l);
+            if (got == null || !Arrays.equals(got, want)) { System.out.printf("%-10s state %s could not be reached (board shows %s): skipped%n", names[k], Arrays.toString(want), Arrays.toString(got)); unreachable++; continue; }
+            Thread.sleep(700);
+            Frame f = frame("lock" + k + ".jpg");
+            int[] e = {0, 0, 0}; int n = 0;
+            for (int b = 0; b < 3; b++) if (want[b] == 1) { for (int c = 0; c < 3; c++) e[c] = Math.min(255, e[c] + rgb[b][c]); n++; }
+            if (k == 0) { base = f; System.out.println("baseline (no lock on): captured"); frames.add(f); exp.add(new Expect(names[k], new int[]{128, 128, 128})); continue; }
+            int w = f.planes.w, h = f.planes.h;
+            int[][] rois = {{w / 5, h * 3 / 5, w * 3 / 5, h}, {w * 3 / 5, h * 3 / 5, w, h}};
+            double[] m0 = roiMeanDiff(f.planes, base.planes, rois[0][0], rois[0][1], rois[0][2], rois[0][3]);
+            double[] m1 = roiMeanDiff(f.planes, base.planes, rois[1][0], rois[1][1], rois[1][2], rois[1][3]);
+            double[] m = mag(m0) >= mag(m1) ? m0 : m1;
+            String v = verdict(e, m);
+            if (v.startsWith("CHECK")) bad++;
+            System.out.printf("%-10s exp=%s glow=%s mag=%5.1f %s%n", names[k], Arrays.toString(e), Arrays.toString(round(m)), mag(m), v);
+            frames.add(f); exp.add(new Expect(names[k], e));
+        }
+        ensureState(l, lockPage, start);
+        Path png = Path.of(out, "locks.png");
+        montage(frames, exp, png);
+        System.out.println("locks: " + bad + " numeric CHECKs, " + unreachable + " states not reachable; judge " + png + " by eye");
+        if (clean) deleteFrames();
+    }
+
+    /** Toggles the locks back to the state they had at the start. */
+    static void ensureState(Link l, int lockPage, int[] want) throws Exception {
+        for (int attempt = 0; attempt < 3; attempt++) {
+            int[] st = lockState(l);
+            if (st == null || Arrays.equals(st, want)) return;
+            for (int b = 0; b < 3; b++) if (st[b] != want[b]) { l.send("KEY " + lockPage + " " + b); l.readUntil("OK", 1500); Thread.sleep(500); }
+            Thread.sleep(500);
+        }
+    }
+
+    static Frame shot(Link l, String cmd, String name) throws Exception {
+        l.send(cmd); l.readUntil("OK", 1500);
+        Thread.sleep(1500);
+        return frame(name);
+    }
+
+    static int verdictLine(String what, boolean ok) { System.out.println((ok ? "PASS " : "FAIL ") + what); return ok ? 0 : 1; }
 
     static void layer(Link l, int n) throws Exception { l.send("LAYER " + n); Thread.sleep(1200); }
 

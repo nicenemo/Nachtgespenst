@@ -1,7 +1,7 @@
 #pragma once
 #include <FastLED.h>
 
-const CRGB LAYER_COLORS[] = {
+inline constexpr CRGB LAYER_COLORS[] = {
     CRGB::Blue,         CRGB::Red,          CRGB::Orange,       CRGB::Green,
     CRGB::Purple,       CRGB::Cyan,         CRGB::Yellow,       CRGB::White,
     CRGB::Magenta,      CRGB::Lime,
@@ -37,7 +37,7 @@ const CRGB LAYER_COLORS[] = {
 // ---------- Lock indicator colours (Core2 LED bar + Locks page) ----------
 enum LockId : uint8_t { LK_CAPS = 0, LK_NUM = 1, LK_SCROLL = 2, LK_NONE = 255 };
 // activeMask bits: caps=1, num=2, scroll=4 (not the HID LED bits)
-const CRGB LOCK_COLORS[3] = { CRGB(255, 80, 0), CRGB(0, 220, 60), CRGB(40, 80, 255) };
+inline constexpr CRGB LOCK_COLORS[3] = { CRGB(255, 80, 0), CRGB(0, 220, 60), CRGB(40, 80, 255) };
 
 // Additive mix of n colours (saturating)
 inline CRGB mixColors(const CRGB* c, uint8_t n) {
@@ -49,11 +49,11 @@ inline CRGB mixColors(const CRGB* c, uint8_t n) {
 }
 
 // Bar in segments 4/3/3 (caps/num/scroll). One active lock fills its segment; with several active
-// the colours add up over the whole bar. Nothing active: faint white.
-inline void ledBarLocks(CRGB* leds, uint8_t count, uint8_t activeMask) {
+// the colours add up over the whole bar. Nothing active: faint white (or dark in the "locks only" LED mode).
+inline void ledBarLocks(CRGB* leds, uint8_t count, uint8_t activeMask, bool faintWhenIdle = true) {
     CRGB act[3]; uint8_t n = 0;
     for (uint8_t i = 0; i < 3; i++) if (activeMask & (1u << i)) act[n++] = LOCK_COLORS[i];
-    if (n == 0) { fill_solid(leds, count, CRGB(6, 6, 6)); return; }
+    if (n == 0) { fill_solid(leds, count, faintWhenIdle ? CRGB(6, 6, 6) : CRGB::Black); return; }
     if (n > 1)  { fill_solid(leds, count, mixColors(act, n)); return; }
     fill_solid(leds, count, CRGB::Black);
     uint8_t seg = (activeMask & 1) ? 0 : (activeMask & 2) ? 1 : 2;

@@ -4,6 +4,7 @@
 #include "ui.h"
 #include "HIDManager.h"
 #include "Lamps.h"
+#include "Settings.h"
 
 namespace {
 char g_buf[64];
@@ -33,6 +34,25 @@ void handle(char* line) {
                       __DATE__, __TIME__, (int)M5.Display.width(), (int)M5.Display.height(),
                       (int)ui_page_count(), (int)ui_locks_page());
     else if (!strcmp(cmd, "STATE?") && !a) Serial.printf("OK %s\n", ui_state().c_str());
+    // WAKE: restart the idle timers (screen and LED bar on again). BL <16..255|AUTO>: fixed backlight for tests and photos.
+    else if (!strcmp(cmd, "WAKE") && !a) { ui_wake(); ui_leds_refresh(); Serial.println("OK WAKE"); }
+    else if (!strcmp(cmd, "BL") && a && !b) {
+        for (char* p = a; *p; p++) *p = toupper((unsigned char)*p);
+        if (!strcmp(a, "AUTO")) { ui_backlight(-1); Serial.println("OK BL AUTO"); }
+        else if (num(a, x) && x >= 0 && x <= 255) { ui_backlight(x); Serial.printf("OK BL %d\n", x); }
+        else Serial.println("ERR bl");
+    }
+    // LEDS OFF|LOCKS|ON (stored): bar dark with its 5 V rail off | only the host lock state | layer colours. SET key value / SET? for the rest.
+    else if (!strcmp(cmd, "LEDS") && a && !b) {
+        for (char* p = a; *p; p++) *p = toupper((unsigned char)*p);
+        if (Settings::set("led", a)) { ui_leds_refresh(); Serial.printf("OK LEDS %s\n", a); } else Serial.println("ERR leds");
+    }
+    else if (!strcmp(cmd, "LEDS?") && !a) Serial.printf("OK LEDS %s\n", Settings::summary().c_str());
+    else if (!strcmp(cmd, "SET") && a && b && !extra) {
+        if (Settings::set(a, b)) { ui_leds_refresh(); if (!strcasecmp(a, "prefer")) HIDManager::setPrefer((HIDManager::Prefer)Settings::prefer()); Serial.printf("OK SET %s\n", Settings::summary().c_str()); }
+        else Serial.println("ERR set");
+    }
+    else if (!strcmp(cmd, "SET?") && !a) Serial.printf("OK SET %s\n", Settings::summary().c_str());
     else if (!strcmp(cmd, "PERF?") && !a) Serial.printf("OK %s\n", ui_perf().c_str());
     // PREFER USB: while USB is mounted, keys go over USB only (default).
     // PREFER BLE: while BLE is connected, keys go over BLE only (lets tests exercise BLE with USB attached).
@@ -77,9 +97,11 @@ void handle(char* line) {
         if (x < 0 || x >= (int)ui_page_count()) Serial.println("ERR range");
         else { ui_set_layer(x); Serial.printf("OK LAYER %d\n", ui_layer()); }
     }
+#if NG_SERIAL_INPUT   // TAP and KEY really type on the host: build with -D NG_SERIAL_INPUT=0 to leave them out
     else if (!strcmp(cmd, "TAP") && num(a, x) && num(b, y) && !extra) { ui_tap(x, y); Serial.println("OK TAP"); }
     else if (!strcmp(cmd, "KEY") && num(a, x) && num(b, y) && !extra)
         Serial.println(ui_press(x, y) ? "OK KEY" : "ERR key");
+#endif
     else Serial.println("ERR unknown");
 }
 } // namespace

@@ -61,6 +61,10 @@ Set-up that works: bar towards the camera, at least 15 cm between the boards, a 
 
 Pitfall: opening the CoreS3 serial port from Java (jSerialComm) can reset the native USB chip; allow 1.5 s after opening before the first command (`LedCam pins` retries `LIST`).
 
+**The laptop screen is a lamp in the picture.** `LedCam` and `LampTest bar --crop ...` therefore show a full black page on the laptop for the length of the test (`--screen black`, the default; `--screen off` leaves the screen alone). `jbang tools/Light.java white|black|off` does the same by hand: it opens `tools/lightbox/white.html` or `black.html` in a Firefox kiosk window with a throw-away profile (the owner's browser is not touched) and closes it again with `off`. A white page lights the boards for a photo. It cannot light anything while the session is locked: the lock screen covers the window, so unlock the screen first for a photo (the tools never touch the lock). The screens of the boards can be woken or pinned with the serial commands `WAKE` and `BL <16..255|AUTO>`.
+
+`jbang tools/LedCam.java dark --port ... --crop ...` checks the LED switch: it films the bar with `LEDS ON`, twice with `LEDS OFF`, and with `LEDS LOCKS`, and compares: OFF must be clearly darker than ON (about 60 to 70 against camera noise of 0.2 to 0.3 on both boards), two OFF frames must look the same, and `LEDS LOCKS` must follow the host lock state (dark when no lock is on, lit when one is). It restores `LEDS ON` and the default settings.
+
 ## 7. After testing
 
 - Leave the boards on the firmware of the branch you consider current (check `INFO fw=`), on layer 0.

@@ -24,6 +24,8 @@ namespace HIDManager {
 
     // --- Public constants ---
     const unsigned long RELEASE_DELAY = 15; // ms
+    // Host LED output report bits (HID LED page): Num Lock, Caps Lock, Scroll Lock.
+    constexpr uint8_t LED_NUM = 0x01, LED_CAPS = 0x02, LED_SCROLL = 0x04;
 
     // Initialise Bluetooth and HID
     void begin(const char* deviceName, const char* manufacturer);
@@ -45,6 +47,7 @@ namespace HIDManager {
 
     // The central send method (decides which report is sent)
     void send(const Binding& b);
+    bool canSend(const Binding& b);   // false for usages without a report in the report map (they would be ignored)
     
     // Event-driven functionality
     void setEventListener(HIDEventListener listener);

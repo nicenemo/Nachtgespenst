@@ -13,6 +13,9 @@
 #ifndef NG_PNP_VERSION
 #define NG_PNP_VERSION 0x0001
 #endif
+#ifndef NG_SERIAL_INPUT
+#define NG_SERIAL_INPUT 1   // serial KEY and TAP commands (tests); 0 removes them from a build that must not type on its own
+#endif
 // Temporary diagnostics (see docs/OVERNIGHT.md): a heartbeat line every second and extra BLE logging.
 #ifndef NG_DEBUG_HEARTBEAT
 #define NG_DEBUG_HEARTBEAT 0
