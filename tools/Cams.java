@@ -38,6 +38,8 @@ final class Cams {
 
     /** One capture per device, shared by everything that has the device open: the same camera in two panels is no problem. */
     private static final Map<String, Shared> OPEN = new HashMap<>();
+    /** How many cameras are being read at this moment (one capture per device): the tests check that only one video stream runs. */
+    static int openCount() { synchronized (OPEN) { return OPEN.size(); } }
 
     private static final class Shared {
         final String node; volatile BufferedImage frame; volatile String problem;

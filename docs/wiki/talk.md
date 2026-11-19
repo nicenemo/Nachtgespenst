@@ -29,7 +29,7 @@ Keys: space or right arrow next slide, left arrow previous, `P` pause, `H` hide 
 
 ## Cameras
 
-The window can show two webcams: the one on the tripod above the board and the laptop camera. Open the camera popup (camera icon in the toolbar), tick a camera to open it and pick the device from the list; the icon buttons turn and mirror the picture; untick it and the device is released at once, so the laptop camera is free for Teams (or any other call) while the window is closed or the box is empty. A camera that is not there is not an error: the panel says so. The choice of devices is remembered.
+The window can show two webcams: the one on the tripod above the board and the laptop camera. Open the camera settings (gear in the toolbar), pick the device from the list; the icon buttons turn and mirror the picture; untick it and the device is released at once, so the laptop camera is free for Teams (or any other call) while the window is closed or the box is empty. A camera that is not there is not an error: the panel says so. The choice of devices is remembered.
 
 Cameras are read in plain Java through Video4Linux (`tools/V4l2.java`, the foreign function API: `open`, `ioctl`, `mmap` of libc), so nothing has to be installed. The picture is asked as YUYV (raw); a camera with only MJPEG is decoded with the Java image library. The user needs access to `/dev/video*` (a normal desktop session has it). If another program holds the camera the panel says so ("the camera is in use by another program"); a camera that answers with an input/output error is probably a bad USB connection. The same camera can be shown in both panels.
 
@@ -42,3 +42,7 @@ Cameras are read in plain Java through Video4Linux (`tools/V4l2.java`, the forei
 ## The window
 
 The title of the slide is shown large in the header. A row of icon buttons sits at the bottom left (every button has a tooltip): start, pause, previous, next and stop of the talk, stop of a running demo, and the popups for the demos, the cameras, the microphone, the speaker and the log. The rest of the window belongs to the slide; the cameras, the board and the lamps share the right-hand column, the cameras getting most of it. The real metrics of a demo (speeds, hash check) and the progress of the talk appear in the display next to the buttons; what is running is shown in the info bar at the top right. Command line: `jbang tools/DemoApp.java --tripod 1 --laptop 0` switches cameras on at the start, `jbang tools/CamTool.java list|snap` works without a window.
+
+## Driving the window from tests and scripts
+
+`jbang tools/DemoApp.java --control` reads commands on standard input and answers with one line each (`OK ...` or `ERR ...`); `--headless` runs the same application without a window (add `--no-board` to skip the connection to the board). Commands: `state`, `talk start|stop|pause|next|prev|goto N`, `demo ID`, `wait SECONDS`, `camera off|tripod|laptop`, `camera turn left|right|half`, `camera mirror|flip`, `blank`, `toolbar`, `shot FILE [WxH]`, `quit`. `jbang tools/DemoTest.java [--board] [--shot DIR]` uses it: it checks the talk (start, next, previous, pause, goto, stop), the black screen, the toolbar, the camera rule (one stream at a time), a screenshot and, with `--board`, a short demo on the real board.

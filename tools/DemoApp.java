@@ -68,7 +68,8 @@ public class DemoApp {
     final Talk.SlidePanel slidePanel = new Talk.SlidePanel();
     Talk.Player player;
     final Cams.CamPanel[] camPanel = {new Cams.CamPanel(), new Cams.CamPanel()};            // 0 = the camera on the tripod above the board, 1 = the laptop camera
-    final JCheckBox[] camBox = {check("Tripod camera above the board", false), check("Laptop camera", false)};
+    int activeCam = -1;                                                                              // -1 = no camera: only one video stream runs at a time (the USB bandwidth belongs to the file transfer)
+    final ConsoleUi.IconButton[] camBtn = new ConsoleUi.IconButton[2];
     final JComboBox<Cams.Device> camPick0 = new JComboBox<>(), camPick1 = new JComboBox<>();
     final JComboBox<?>[] camPick = {camPick0, camPick1};
     ConsoleUi.Frame camsFrame; JComponent sideScroll; JPanel southPane;
@@ -133,7 +134,10 @@ public class DemoApp {
         tools.add(Box.createHorizontalStrut(10));
         stop.setPreferredSize(new Dimension(44, 34)); stop.setMaximumSize(new Dimension(44, 34)); tools.add(stop);
         tools.add(tb(ConsoleUi.IconButton.Kind.DEMOS, "Demos: the cycle and every part on its own", ConsoleTheme.LAVENDER, () -> popup("Demos", demoPane)));
-        tools.add(tb(ConsoleUi.IconButton.Kind.CAMERA, "Cameras: choose, turn and mirror", ConsoleTheme.LAVENDER, () -> popup("Cameras", camPane)));
+        camBtn[0] = tb(ConsoleUi.IconButton.Kind.CAMERA, "Camera above the board: show or hide (one camera at a time)", ConsoleTheme.LAVENDER, () -> setCamera(activeCam == 0 ? -1 : 0));
+        camBtn[1] = tb(ConsoleUi.IconButton.Kind.LAPTOP, "Laptop camera: show or hide (one camera at a time)", ConsoleTheme.LAVENDER, () -> setCamera(activeCam == 1 ? -1 : 1));
+        tools.add(camBtn[0]); tools.add(camBtn[1]);
+        tools.add(tb(ConsoleUi.IconButton.Kind.GEAR, "Camera settings: device, turn and mirror of each camera", ConsoleTheme.LAVENDER, () -> popup("Camera settings", camPane)));
         tools.add(tb(ConsoleUi.IconButton.Kind.MIC, "Microphone: device, gain and level", ConsoleTheme.LAVENDER, this::micPopup));
         tools.add(tb(ConsoleUi.IconButton.Kind.SPEAKER, "Speaker: device and volume", ConsoleTheme.LAVENDER, () -> popup("Speaker", speakerPane)));
         tools.add(tb(ConsoleUi.IconButton.Kind.LOG, "What is happening: the log", ConsoleTheme.LAVENDER, () -> popup("What is happening", logPaneOuter)));
@@ -187,8 +191,7 @@ public class DemoApp {
             camPick[i].setFont(ConsoleTheme.mono(12f)); camPick[i].setAlignmentX(Component.LEFT_ALIGNMENT); camPick[i].setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
             String want = pr.get("cam" + i, null);
             if (want != null) for (int j = 0; j < camPick[i].getItemCount(); j++) if (camPick[i].getItemAt(j).toString().equals(want)) camPick[i].setSelectedIndex(j);
-            camBox[i].addActionListener(e -> camToggle(k));
-            camPick[i].addActionListener(e -> { if (camBox[k].isSelected()) camToggle(k); });
+            camPick[i].addActionListener(e -> { if (activeCam == k) setCamera(k); });                       // another device: open that one
             camPanel[i].quarter = pr.getInt("rot" + i, 0); camPanel[i].mirror = pr.getBoolean("mir" + i, false);
             camPanel[i].flip = pr.getBoolean("flip" + i, false);
             JPanel row = new JPanel(new GridLayout(1, 5, 4, 0)); row.setOpaque(false); row.setAlignmentX(Component.LEFT_ALIGNMENT); row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
@@ -197,7 +200,7 @@ public class DemoApp {
             row.add(iconButton(ConsoleUi.IconButton.Kind.TURN_HALF, "Turn half a circle", () -> { camPanel[k].quarter = (camPanel[k].quarter + 2) & 3; camSaved(k); }));
             row.add(iconButton(ConsoleUi.IconButton.Kind.MIRROR_H, "Mirror left to right", () -> { camPanel[k].mirror = !camPanel[k].mirror; camSaved(k); }));
             row.add(iconButton(ConsoleUi.IconButton.Kind.MIRROR_V, "Mirror top to bottom", () -> { camPanel[k].flip = !camPanel[k].flip; camSaved(k); }));
-            camPane.add(camBox[i]); camPane.add(camPick[i]); camPane.add(Box.createVerticalStrut(4)); camPane.add(row); camPane.add(Box.createVerticalStrut(2 * gap));
+            camPane.add(label(i == 0 ? "Camera above the board" : "Laptop camera")); camPane.add(camPick[i]); camPane.add(Box.createVerticalStrut(4)); camPane.add(row); camPane.add(Box.createVerticalStrut(2 * gap));
         }
         camPane.setPreferredSize(new Dimension(380, 220));
         buildAudioPanes(pr);
@@ -208,7 +211,7 @@ public class DemoApp {
         JScrollPane logPane = new JScrollPane(log); logPane.setBorder(null); logPane.getViewport().setBackground(ConsoleTheme.BLACK);
         logPaneOuter.setLayout(new BorderLayout()); logPaneOuter.setOpaque(false); logPaneOuter.add(logPane); logPaneOuter.setPreferredSize(new Dimension(640, 360));
         ConsoleUi.Frame slideFrame = new ConsoleUi.Frame("The talk", ConsoleTheme.AMBER); slideFrame.setLayout(new BorderLayout()); slideFrame.add(slidePanel);
-                camsFrame = new ConsoleUi.Frame("The cameras", ConsoleTheme.PEACH); camsFrame.setLayout(new Cams.CamLayout(gap)); camsFrame.setVisible(false);
+                camsFrame = new ConsoleUi.Frame("Camera", ConsoleTheme.PEACH); camsFrame.setLayout(new Cams.CamLayout(gap)); camsFrame.setVisible(false);
         for (int i = 0; i < 2; i++) { camPanel[i].setPreferredSize(new Dimension(10, 10)); camPanel[i].setVisible(false); camsFrame.add(camPanel[i]); }
         ConsoleUi.Frame boardFrame = new ConsoleUi.Frame("Board screenshot", ConsoleTheme.LAVENDER); boardFrame.setLayout(new BorderLayout()); boardFrame.add(screenPanel);
         ConsoleUi.Frame lampFrame = new ConsoleUi.Frame("Lamps on PC", ConsoleTheme.AMBER); lampFrame.setLayout(new BorderLayout()); lampFrame.add(lampPanel);
@@ -217,8 +220,8 @@ public class DemoApp {
         JPanel left = new JPanel(new BorderLayout()); left.setOpaque(false); left.add(slideFrame);
         JPanel right = new JPanel(new GridBagLayout()); right.setOpaque(false);
         GridBagConstraints rc = new GridBagConstraints(); rc.fill = GridBagConstraints.BOTH; rc.weightx = 1; rc.gridx = 0; rc.insets = new Insets(0, 0, gap, 0);
-        rc.gridy = 0; rc.weighty = 0.56; right.add(camsFrame, rc);
-        rc.gridy = 1; rc.weighty = 0.18; right.add(boardFrame, rc);
+        rc.gridy = 0; rc.weighty = 0.40; right.add(camsFrame, rc);
+        rc.gridy = 1; rc.weighty = 0.34; right.add(boardFrame, rc);
         rc.gridy = 2; rc.weighty = 0.26; rc.insets = new Insets(0, 0, 0, 0); right.add(lampFrame, rc);
         JPanel centre = new JPanel(new GridBagLayout()); centre.setOpaque(false);
         GridBagConstraints cc = new GridBagConstraints(); cc.fill = GridBagConstraints.BOTH; cc.weighty = 1; cc.gridy = 0;
@@ -399,31 +402,126 @@ public class DemoApp {
         camPanel[i].refresh(); camsFrame.revalidate();
     }
 
-    // ---- cameras: a camera is only open while its box is ticked
-    void camToggle(int i) {
-        Cams.CamPanel p = camPanel[i];
-        Cams.Cam old = p.cam; p.cam = null; if (old != null) old.close();
-        if (camBox[i].isSelected()) {
-            Cams.Device d = (Cams.Device) camPick[i].getSelectedItem();
-            if (d == null) p.text = "no camera found"; else { p.cam = new Cams.Cam(d.node(), p::refresh); java.util.prefs.Preferences.userNodeForPackage(DemoApp.class).put("cam" + i, d.toString()); }
-        } else p.text = "off";
-        p.setVisible(camBox[i].isSelected());
-        camsFrame.setVisible(camBox[0].isSelected() || camBox[1].isSelected());
-        p.refresh(); root.revalidate(); root.repaint();
+    // ---- cameras: one at a time, and only while it is shown. Every camera keeps its own device, turn and mirror.
+    void setCamera(int which) {
+        for (int i = 0; i < 2; i++) {                                                             // close everything first: at most one video stream
+            Cams.Cam old = camPanel[i].cam; camPanel[i].cam = null; if (old != null) old.close();
+            camPanel[i].setVisible(false); camPanel[i].text = "off"; if (camBtn[i] != null) camBtn[i].setActive(false);
+        }
+        activeCam = which;
+        if (which >= 0) {
+            Cams.CamPanel p = camPanel[which]; Cams.Device d = (Cams.Device) camPick[which].getSelectedItem();
+            if (d == null) p.text = "no camera found"; else { p.cam = new Cams.Cam(d.node(), p::refresh); java.util.prefs.Preferences.userNodeForPackage(DemoApp.class).put("cam" + which, d.toString()); }
+            p.setVisible(true); if (camBtn[which] != null) camBtn[which].setActive(true); p.refresh();
+        }
+        camsFrame.setVisible(which >= 0);
+        root.revalidate(); root.repaint();
     }
-    /** Switch a camera on from the command line: by number (the order of --list in CamTool) or by device node, which need not be in the list. The same camera may serve both panels. */
+    /** Switch a camera on from the command line: by number (the order of CamTool list) or by device node, which need not be in the list. */
     void camStart(int i, String which) {
         Cams.Device pick = null; List<Cams.Device> all = Cams.list();
         if (which.matches("\\d+") && Integer.parseInt(which) < all.size()) pick = all.get(Integer.parseInt(which));
         else if (which.startsWith("/dev/")) { for (Cams.Device d : all) if (d.node().equals(which)) pick = d; if (pick == null) pick = new Cams.Device(which, which); }
-        if (pick == null) { camPanel[i].text = "no camera " + which; camPanel[i].setVisible(true); camsFrame.setVisible(true); return; }
+        if (pick == null) { setCamera(-1); camPanel[i].text = "no camera " + which; camPanel[i].setVisible(true); camsFrame.setVisible(true); return; }
         JComboBox<Cams.Device> box = camPick(i); boolean known = false;
         for (int j = 0; j < box.getItemCount(); j++) if (box.getItemAt(j).node().equals(pick.node())) { box.setSelectedIndex(j); known = true; }
         if (!known) { box.addItem(pick); box.setSelectedItem(pick); }
-        camBox[i].setSelected(true); camToggle(i);
+        setCamera(i);
     }
     @SuppressWarnings("unchecked") JComboBox<Cams.Device> camPick(int i) { return (JComboBox<Cams.Device>) camPick[i]; }
     void closeCams() { for (int i = 0; i < 2; i++) { Cams.Cam c = camPanel[i].cam; camPanel[i].cam = null; if (c != null) c.close(); } }
+
+    // ---- control: commands on standard input (or from a test), one reply line each. With --headless there is no window; the same commands drive the real one.
+    static <T> T edt(Callable<T> c) throws Exception {
+        if (SwingUtilities.isEventDispatchThread()) return c.call();
+        final Object[] r = new Object[1]; final Exception[] ex = new Exception[1];
+        SwingUtilities.invokeAndWait(() -> { try { r[0] = c.call(); } catch (Exception e) { ex[0] = e; } });
+        if (ex[0] != null) throw ex[0];
+        @SuppressWarnings("unchecked") T t = (T) r[0]; return t;
+    }
+
+    String stateLine() {
+        boolean talk = player != null && player.running;
+        return "OK STATE slide=" + (slidePanel.shownIndex() + 1) + "/" + slidePanel.shownCount() + " title=\"" + slidePanel.shownTitle() + "\" talk=" + (talk ? "running" : "stopped") + " paused=" + (talk && player.paused ? 1 : 0)
+            + " demo=" + (worker != null && worker.isAlive() ? "running" : "idle") + " camera=" + (activeCam < 0 ? "off" : activeCam == 0 ? "tripod" : "laptop") + " streams=" + Cams.openCount()
+            + " blank=" + (blank ? 1 : 0) + " toolbar=" + (sideScroll.isVisible() ? 1 : 0) + " board=" + (sc != null ? "connected" : "none") + " info=\"" + (busyText != null ? busyText : connText) + "\"";
+    }
+
+    String control(String line) {
+        String[] t = line.trim().split("\\s+");
+        try {
+            switch (t[0]) {
+                case "", "#" -> { return "OK"; }
+                case "state" -> { return edt(this::stateLine); }
+                case "talk" -> {
+                    if (t.length < 2) return "ERR talk start|stop|pause|next|prev|goto N";
+                    return edt(() -> {
+                        switch (t[1]) {
+                            case "start" -> talkStart(); case "stop" -> talkStop(); case "pause" -> { if (player != null) player.pause(); }
+                            case "next" -> { if (player != null) player.next(); } case "prev" -> { if (player != null) player.prev(); }
+                            case "goto" -> { int n = Integer.parseInt(t[2]); if (player == null || n < 1 || n > player.slides.size()) return "ERR no such slide"; if (player.running) player.go(n - 1); else slidePanel.show(player.slides.get(n - 1), n - 1, player.slides.size()); }
+                            default -> { return "ERR talk start|stop|pause|next|prev|goto N"; }
+                        }
+                        return "OK";
+                    });
+                }
+                case "demo" -> {
+                    if (t.length < 2) return "ERR demo ID";
+                    if (sc == null) return "ERR no board";
+                    Callable<String> d = demoFor(t[1]); if (d == null) return "ERR unknown demo";
+                    return edt(() -> { run(t[1], d); return "OK"; });
+                }
+                case "wait" -> {
+                    long end = System.currentTimeMillis() + (long) (Double.parseDouble(t.length > 1 ? t[1] : "60") * 1000);
+                    while (worker != null && worker.isAlive() && System.currentTimeMillis() < end) Thread.sleep(100);
+                    return worker != null && worker.isAlive() ? "ERR still running" : "OK";
+                }
+                case "camera" -> {
+                    if (t.length < 2) return "ERR camera off|tripod|laptop|turn left|right|half|mirror|flip";
+                    return edt(() -> {
+                        switch (t[1]) {
+                            case "off" -> setCamera(-1); case "tripod" -> setCamera(0); case "laptop" -> setCamera(1);
+                            case "turn", "mirror", "flip" -> {
+                                if (activeCam < 0) return "ERR no camera is shown";
+                                Cams.CamPanel p = camPanel[activeCam];
+                                if (t[1].equals("mirror")) p.mirror = !p.mirror; else if (t[1].equals("flip")) p.flip = !p.flip;
+                                else p.quarter = (p.quarter + (t.length > 2 && t[2].equals("left") ? 3 : t.length > 2 && t[2].equals("half") ? 2 : 1)) & 3;
+                                camSaved(activeCam);
+                            }
+                            default -> { return "ERR camera off|tripod|laptop|turn left|right|half|mirror|flip"; }
+                        }
+                        return "OK";
+                    });
+                }
+                case "blank" -> { return edt(() -> { toggleBlank(); return "OK"; }); }
+                case "toolbar" -> { return edt(() -> { toggleSidebar(); return "OK"; }); }
+                case "shot" -> {
+                    if (t.length < 2) return "ERR shot FILE [WxH]";
+                    int w = root.getWidth() > 0 ? root.getWidth() : 1280, h = root.getHeight() > 0 ? root.getHeight() : 820;
+                    if (t.length > 2) { String[] wh = t[2].split("x"); w = Integer.parseInt(wh[0]); h = Integer.parseInt(wh[1]); }
+                    final int fw = w, fh = h;
+                    return edt(() -> {
+                        root.setSize(fw, fh); layout(root);
+                        BufferedImage img = new BufferedImage(fw, fh, BufferedImage.TYPE_INT_RGB); Graphics2D g2 = img.createGraphics();
+                        g2.setColor(Color.BLACK); g2.fillRect(0, 0, fw, fh); root.print(g2); g2.dispose();
+                        ImageIO.write(img, "png", new java.io.File(t[1])); return "OK " + t[1];
+                    });
+                }
+                case "quit" -> { return "OK BYE"; }
+                default -> { return "ERR unknown command"; }
+            }
+        } catch (Exception e) { return "ERR " + e; }
+    }
+
+    /** Reads commands from standard input until "quit" or the end of the input. */
+    static void controlLoop(DemoApp app) throws Exception {
+        var in = new java.io.BufferedReader(new java.io.InputStreamReader(System.in));
+        for (String line; (line = in.readLine()) != null; ) {
+            String r = app.control(line); System.out.println(r); System.out.flush();
+            if (r.equals("OK BYE")) break;
+        }
+        app.stopRun(); app.closeCams(); if (app.sc != null) app.sc.release(); app.close();
+    }
 
     // ---- the talk
     static final Path TALK_DIR = Boards.repoRoot().resolve("tools/talk");
@@ -621,12 +719,15 @@ public class DemoApp {
 
     // ---- main
     public static void main(String[] args) throws Exception {
-        String shot = null, scopeShot = null; int shotW = 1280, shotH = 820, shotSlide = 0; final String[] camArg = new String[2];             // --tripod CAM and --laptop CAM: a camera number or /dev/videoN, switched on at the start
+        String shot = null, scopeShot = null; int shotW = 1280, shotH = 820, shotSlide = 0; boolean control = false, headless = false, noBoard = false; final String[] camArg = new String[2];             // --tripod CAM and --laptop CAM: a camera number or /dev/videoN, switched on at the start
         for (int i = 0; i < args.length; i++) {
             if (args[i].equals("--shot")) shot = args[++i];
             else if (args[i].equals("--scope-shot")) scopeShot = args[++i];
             else if (args[i].equals("--size")) { String[] wh = args[++i].split("x"); shotW = Integer.parseInt(wh[0]); shotH = Integer.parseInt(wh[1]); }
             else if (args[i].equals("--slide")) shotSlide = Integer.parseInt(args[++i]);
+            else if (args[i].equals("--control")) control = true;
+            else if (args[i].equals("--headless")) headless = true;
+            else if (args[i].equals("--no-board")) noBoard = true;
             else if (args[i].equals("--tripod")) camArg[0] = args[++i];
             else if (args[i].equals("--laptop")) camArg[1] = args[++i];
         }
@@ -643,13 +744,13 @@ public class DemoApp {
             ImageIO.write(im, "png", new java.io.File(scopeShot)); System.out.println("wrote " + scopeShot); return;
         }
         FlatLaf.setGlobalExtraDefaults(Map.of("@accentColor", "#9D7BFF"));
-        if (shot != null) System.setProperty("java.awt.headless", "true");
+        if (shot != null || (control && headless)) System.setProperty("java.awt.headless", "true");
         FlatDarkLaf.setup();
         if (shot != null) {
             DemoApp app = new DemoApp();
             app.infoBar.setText("Connected: NG-S3, 30 pages");
             app.log.setText("Connected. Pick a demo, or start the cycle.\n=== Jules Verne to the SD card and back\nbook 618734 bytes, raw deflate 232700 bytes (38%)\nsent 232700 compressed bytes in 7,95 s = 28,6 kB/s\nloaded back 618734 bytes in 16,37 s = 36,9 kB/s over the gamepad\nSHA-256 of the received file equals the original\n");
-            for (int i = 0; i < 2; i++) { app.camPanel[i].setVisible(true); app.camPanel[i].text = i == 0 ? "tripod camera" : "laptop camera"; }  // the layout with both camera panels
+            app.camPanel[0].setVisible(true); app.camPanel[0].text = "camera above the board"; app.camBtn[0].setActive(true);              // the layout with the camera panel
             app.camsFrame.setVisible(true);
             app.setEnabledActions(true);
             app.lcd.talk(0.42, "4:12 / 10:10", 0.6, "slide 6/17   0:18 left|6/17  0:18|6/17"); app.lcd.set("send kB/s", 28.6, 60, "28.6", ConsoleTheme.AMBER); app.lcd.set("load kB/s", 36.9, 60, "36.9", ConsoleTheme.AMBER); app.lcd.set("SHA-256", 1, 1, "match", ConsoleTheme.PEACH);
@@ -675,6 +776,13 @@ public class DemoApp {
             System.out.println("wrote " + shot);
             return;
         }
+        if (control && headless) {                                     // no window: the commands on standard input drive the same application
+            final DemoApp[] box = new DemoApp[1];
+            SwingUtilities.invokeAndWait(() -> { box[0] = new DemoApp(); box[0].root.setSize(1280, 820); layout(box[0].root); for (int i = 0; i < 2; i++) if (camArg[i] != null) box[0].camStart(i, camArg[i]); });
+            if (!noBoard) box[0].connect();
+            controlLoop(box[0]); System.exit(0); return;
+        }
+        final boolean wantControl = control, skipBoard = noBoard;
         SwingUtilities.invokeAndWait(() -> {
             DemoApp app = new DemoApp();
             JFrame f = new JFrame("Nachtgespenst demo");
@@ -693,7 +801,8 @@ public class DemoApp {
             app.frame = f; app.autoHideCursor(f);
             for (int i = 0; i < 2; i++) if (camArg[i] != null) app.camStart(i, camArg[i]);
             f.setVisible(true);
-            app.connect();
+            if (!skipBoard) app.connect();
+            if (wantControl) Thread.ofVirtual().start(() -> { try { controlLoop(app); System.exit(0); } catch (Exception e) { System.err.println(e); } });      // the commands also drive this window
         });
     }
 

@@ -146,10 +146,12 @@ final class ConsoleUi {
 
     /** A small block with a drawn symbol instead of text: a turn clockwise or anticlockwise, a half turn, a mirror left to right or top to bottom. */
     static class IconButton extends BlockButton {
-        enum Kind { TURN_RIGHT, TURN_LEFT, TURN_HALF, MIRROR_H, MIRROR_V, CAMERA, MIC, SPEAKER, PLAY, PAUSE, PREV, NEXT, STOP, CANCEL, DEMOS, LOG }
-        private final Kind kind;
+        enum Kind { TURN_RIGHT, TURN_LEFT, TURN_HALF, MIRROR_H, MIRROR_V, CAMERA, MIC, SPEAKER, PLAY, PAUSE, PREV, NEXT, STOP, CANCEL, DEMOS, LOG, LAPTOP, GEAR }
+        private final Kind kind; private final Color normal;
+        /** A toggle button looks active (amber) while it is on. */
+        void setActive(boolean on) { base = on ? ConsoleTheme.AMBER : normal; repaint(); }
         IconButton(Kind kind, String tip, Color base) {
-            super("", base); this.kind = kind; setToolTipText(tip); getAccessibleContext().setAccessibleName(tip);
+            super("", base); this.kind = kind; this.normal = base; setToolTipText(tip); getAccessibleContext().setAccessibleName(tip);
             setPreferredSize(new Dimension(40, 30)); setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
         }
         @Override protected void paintComponent(Graphics g0) {
@@ -180,6 +182,11 @@ final class ConsoleUi {
                 case CANCEL -> { g.draw(new java.awt.geom.Line2D.Double(-6, -6, 6, 6)); g.draw(new java.awt.geom.Line2D.Double(6, -6, -6, 6)); }
                 case DEMOS -> { for (int i = 0; i < 4; i++) g.fill(new RoundRectangle2D.Double(i % 2 == 0 ? -8 : 1, i < 2 ? -8 : 1, 7, 7, 2, 2)); }
                 case LOG -> { for (int i = 0; i < 3; i++) { g.fill(new Ellipse2D.Double(-9, i * 6 - 8, 3, 3)); g.draw(new java.awt.geom.Line2D.Double(-3.5, i * 6 - 6.5, 8, i * 6 - 6.5)); } }
+                case LAPTOP -> { g.draw(new RoundRectangle2D.Double(-7, -7, 14, 9, 2, 2)); g.draw(new java.awt.geom.Line2D.Double(-10, 5, 10, 5)); }
+                case GEAR -> {
+                    g.draw(new Ellipse2D.Double(-4, -4, 8, 8));
+                    for (int k = 0; k < 8; k++) { double a = k * Math.PI / 4; g.draw(new java.awt.geom.Line2D.Double(5.5 * Math.cos(a), 5.5 * Math.sin(a), 8 * Math.cos(a), 8 * Math.sin(a))); }
+                }
                 case CAMERA -> {
                     g.draw(new RoundRectangle2D.Double(-9, -5, 18, 12, 4, 4));
                     g.draw(new Ellipse2D.Double(-3.5, -2.5, 7, 7));

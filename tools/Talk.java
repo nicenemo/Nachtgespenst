@@ -67,6 +67,7 @@ final class Talk {
         private volatile Slide slide; private volatile int index, count;
         java.util.function.Consumer<String> onTitle;                  // the title of the slide is shown by the window (in its header), not on the slide
         SlidePanel() { setOpaque(false); setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12)); }
+        int shownIndex() { return index; } int shownCount() { return count; } String shownTitle() { Slide s = slide; return s == null ? "" : s.title(); }
         void show(Slide s, int i, int n) { slide = s; index = i; count = n; if (onTitle != null) onTitle.accept(s.title()); repaint(); }
 
         @Override protected void paintComponent(Graphics g0) {
