@@ -1,6 +1,6 @@
 # 0010 HID LampArray lighting, a photo and webcam page, and a JBang tool on the PC
 
-Status: Proposed. Nothing is implemented. Builds on [0009](0009-unicode-pages-and-host-os-awareness.md) for the page menu and on [0007](0007-page-switching-speed-and-prerendering.md) for rendering.
+Status: Proposed. The test bench of the first phase is built and measured (branch `feature/lamparray`, [wiki](../wiki/lamparray-testing.md)); the Windows side and the photo page are not. Builds on [0009](0009-unicode-pages-and-host-os-awareness.md) for the page menu and on [0007](0007-page-switching-speed-and-prerendering.md) for rendering.
 
 ## Context
 The boards have two things the owner wants to use for something fun: a 10-pixel LED bar (M5GO base, GPIO25 on the Core2 and GPIO5 on the CoreS3) and a 320 x 240 screen. The HID specification has a page for exactly this: Lighting and Illumination (usage page 0x59, "LampArray"). The generated vocabulary in `include/hid_pages/LightingAndIllumination.h` already contains all 33 usages (the LampArray collection, its attributes report, the lamp attributes request and response, the multi-update and range-update reports, the control report and autonomous mode). `HID_Specs.h` has a small placeholder `LightingBlock` (one output report with an ID and three colour bytes) that is deliberately not advertised: it is not a real LampArray, so a host would expect reports the firmware does not provide.
@@ -53,6 +53,14 @@ Every tile of the screen and even every pixel can be described as a lamp, but th
 **Physical pixels are the other extreme.** A WS2812 matrix on the Grove port (8 x 8, 16 x 16 or 32 x 8 modules) makes real lamps: at 800 kHz a LED takes about 30 microseconds, so 256 LEDs update in about 8 ms and 1024 LEDs in about 31 ms, faster than any HID transport can feed them. The limit is power: a white LED draws up to 60 mA, so 256 LEDs would need about 15 A; the matrix needs its own supply and a software current limit (FastLED `setMaxPowerInVoltsAndMilliamps`), and the M-Bus 5 V cannot feed it. As a LampArray it is the same descriptor with 256 lamps (tier C or D numbers apply to the HID side).
 
 Recommendation: build tier B first (bar plus tiles), design the lamp layout table so a tier C matrix is a configuration change, and leave full pixels to the Photo and video channel.
+
+## Measured 2026-11-19 (the test bench, Linux host)
+The estimates above can be replaced by numbers. Full table and method: [lamparray-testing](../wiki/lamparray-testing.md).
+- **It works as a real LampArray.** Linux parses the 434-byte descriptor on all three links, the attributes, per-lamp attributes, multi and range updates and the autonomous-mode report all work, and every lamp that was set can be seen: by readback, by screenshot (all grid sizes) and, for the bar, by webcam, including the intensity ramp.
+- **USB:** 1,000 reports per second, 8,000 lamps per second, no loss. The tier table holds: 16 x 12 at 42 fps, 32 x 24 at 10 fps, 128 x 96 at 0.7 fps, one lamp per pixel (60,800 lamps) at 0.1 fps. Enumeration costs 0.4 ms per lamp.
+- **Bluetooth is two orders of magnitude slower on a BlueZ host:** 16 to 30 reports per second (CoreS3) and 29 (Core2), so 126 to 300 lamps per second, and 61 ms per lamp to enumerate. BlueZ queues output reports without a bound and drains them at about one per 30 ms connection interval, so a flood arrives minutes late and range updates are dropped past about 50 queued. Tier A (the bar) and B (about 34 lamps) are fine over Bluetooth, tier C and up are not.
+- **Consequence for the decisions:** the lamp work targets USB on the CoreS3 for anything beyond the bar; the Core2 can show the bar and slow effects over Bluetooth; pictures belong to the Photo channel. Whether Windows Dynamic Lighting accepts the device over Bluetooth, and how fast it is there, is the one open question and needs the owner's Windows machine.
+- **Intensity needs a curve.** At the global brightness of 40 of 255 the lowest 12 to 24 intensity steps are invisible; a gamma curve (or a higher global brightness) is a firmware follow-up.
 
 ## Phasing
 1. LampArray descriptor and USB handling on the CoreS3 with autonomous mode; check in Windows Dynamic Lighting and with a tool on Linux.
