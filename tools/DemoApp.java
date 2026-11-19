@@ -220,8 +220,8 @@ public class DemoApp {
         rc.gridy = 2; rc.weighty = 0.26; rc.insets = new Insets(0, 0, 0, 0); right.add(lampFrame, rc);
         JPanel centre = new JPanel(new GridBagLayout()); centre.setOpaque(false);
         GridBagConstraints cc = new GridBagConstraints(); cc.fill = GridBagConstraints.BOTH; cc.weighty = 1; cc.gridy = 0;
-        cc.gridx = 0; cc.weightx = 0.78; cc.insets = new Insets(0, 0, 0, gap); centre.add(left, cc);
-        cc.gridx = 1; cc.weightx = 0.22; cc.insets = new Insets(0, 0, 0, 0); centre.add(right, cc);
+        cc.gridx = 0; cc.weightx = 0.70; cc.insets = new Insets(0, 0, 0, gap); centre.add(left, cc);
+        cc.gridx = 1; cc.weightx = 0.30; cc.insets = new Insets(0, 0, 0, 0); centre.add(right, cc);
         root.add(centre, BorderLayout.CENTER);
 
         statusBar.setText("Ready");
