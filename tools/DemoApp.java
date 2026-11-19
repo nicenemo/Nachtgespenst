@@ -311,6 +311,18 @@ public class DemoApp {
         camsFrame.setVisible(camBox[0].isSelected() || camBox[1].isSelected());
         p.refresh(); root.revalidate(); root.repaint();
     }
+    /** Switch a camera on from the command line: by number (the order of --list in CamTool) or by device node, which need not be in the list. The same camera may serve both panels. */
+    void camStart(int i, String which) {
+        Cams.Device pick = null; List<Cams.Device> all = Cams.list();
+        if (which.matches("\\d+") && Integer.parseInt(which) < all.size()) pick = all.get(Integer.parseInt(which));
+        else if (which.startsWith("/dev/")) { for (Cams.Device d : all) if (d.node().equals(which)) pick = d; if (pick == null) pick = new Cams.Device(which, which); }
+        if (pick == null) { camPanel[i].text = "no camera " + which; camPanel[i].setVisible(true); camsFrame.setVisible(true); return; }
+        JComboBox<Cams.Device> box = camPick(i); boolean known = false;
+        for (int j = 0; j < box.getItemCount(); j++) if (box.getItemAt(j).node().equals(pick.node())) { box.setSelectedIndex(j); known = true; }
+        if (!known) { box.addItem(pick); box.setSelectedItem(pick); }
+        camBox[i].setSelected(true); camToggle(i);
+    }
+    @SuppressWarnings("unchecked") JComboBox<Cams.Device> camPick(int i) { return (JComboBox<Cams.Device>) camPick[i]; }
     void closeCams() { for (int i = 0; i < 2; i++) { Cams.Cam c = camPanel[i].cam; camPanel[i].cam = null; if (c != null) c.close(); } }
 
     // ---- the talk
@@ -469,8 +481,13 @@ public class DemoApp {
 
     // ---- main
     public static void main(String[] args) throws Exception {
-        String shot = null, scopeShot = null;
-        for (int i = 0; i < args.length; i++) { if (args[i].equals("--shot")) shot = args[++i]; if (args[i].equals("--scope-shot")) scopeShot = args[++i]; }
+        String shot = null, scopeShot = null; final String[] camArg = new String[2];             // --tripod CAM and --laptop CAM: a camera number or /dev/videoN, switched on at the start
+        for (int i = 0; i < args.length; i++) {
+            if (args[i].equals("--shot")) shot = args[++i];
+            else if (args[i].equals("--scope-shot")) scopeShot = args[++i];
+            else if (args[i].equals("--tripod")) camArg[0] = args[++i];
+            else if (args[i].equals("--laptop")) camArg[1] = args[++i];
+        }
         if (scopeShot != null) {                               // the oscilloscope for a synthetic tone, without a board
             System.setProperty("java.awt.headless", "true");
             Scope sc = new Scope(160, 95); java.util.Random rnd = new java.util.Random(1);
@@ -529,6 +546,7 @@ public class DemoApp {
             app.root.getActionMap().put("full", new AbstractAction() { public void actionPerformed(java.awt.event.ActionEvent e) { fullScreen(f, null); } });
             app.root.getActionMap().put("unfull", new AbstractAction() { public void actionPerformed(java.awt.event.ActionEvent e) { if (app.blank) app.toggleBlank(); else fullScreen(f, false); } });
             app.frame = f; app.autoHideCursor(f);
+            for (int i = 0; i < 2; i++) if (camArg[i] != null) app.camStart(i, camArg[i]);
             f.setVisible(true);
             app.connect();
         });

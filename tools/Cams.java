@@ -36,19 +36,26 @@ final class Cams {
         return out;
     }
 
-    /** One running camera: an ffmpeg process that writes JPEG frames to a pipe, read on a virtual thread. */
-    static final class Cam implements AutoCloseable {
-        final String node; volatile BufferedImage frame; volatile String problem;
-        private Process proc; private final AtomicBoolean stop = new AtomicBoolean(); private final Runnable onFrame;
-        Cam(String node, Runnable onFrame) { this.node = node; this.onFrame = onFrame; start(true); }
+    /** One ffmpeg process per device, shared by everything that has the device open: the same camera in two panels is no problem. */
+    private static final Map<String, Shared> OPEN = new HashMap<>();
+
+    private static final class Shared {
+        final String node; volatile BufferedImage frame; volatile String problem, lastError;
+        final List<Runnable> listeners = new java.util.concurrent.CopyOnWriteArrayList<>();
+        private Process proc; private final AtomicBoolean stop = new AtomicBoolean();
+        Shared(String node) { this.node = node; start(true); }
+
+        private void notifyAll_() { for (Runnable r : listeners) { try { r.run(); } catch (RuntimeException ignored) { } } }
 
         private void start(boolean mjpegIn) {
             try {
                 List<String> cmd = new ArrayList<>(List.of("ffmpeg", "-loglevel", "error", "-f", "v4l2"));
                 if (mjpegIn) cmd.addAll(List.of("-input_format", "mjpeg"));
                 cmd.addAll(List.of("-video_size", "640x360", "-framerate", "15", "-i", node, "-an", "-c:v", mjpegIn ? "copy" : "mjpeg", "-q:v", "6", "-f", "image2pipe", "-"));
-                proc = new ProcessBuilder(cmd).redirectError(ProcessBuilder.Redirect.DISCARD).start();
-            } catch (IOException e) { problem = "ffmpeg is not available"; return; }
+                proc = new ProcessBuilder(cmd).start();
+                Process ep = proc;
+                Thread.ofVirtual().start(() -> { try (var br = new BufferedReader(new InputStreamReader(ep.getErrorStream()))) { String l; while ((l = br.readLine()) != null) lastError = l; } catch (IOException ignored) { } });
+            } catch (IOException e) { problem = "ffmpeg is not available"; notifyAll_(); return; }
             Process p = proc;
             Thread.ofVirtual().name("cam " + node).start(() -> {
                 long got = 0;
@@ -59,8 +66,9 @@ final class Cams {
                         if (prev == 0xFF && b == 0xD8) { buf.reset(); buf.write(0xFF); }
                         buf.write(b);
                         if (prev == 0xFF && b == 0xD9 && buf.size() > 4) {
-                            BufferedImage im = ImageIO.read(new ByteArrayInputStream(buf.toByteArray()));
-                            if (im != null) { frame = im; problem = null; got++; onFrame.run(); }
+                            BufferedImage im = null;
+                            try { im = ImageIO.read(new ByteArrayInputStream(buf.toByteArray())); } catch (IOException | RuntimeException ignored) { }
+                            if (im != null) { frame = im; problem = null; got++; notifyAll_(); }
                             buf.reset();
                         }
                         prev = b;
@@ -68,16 +76,30 @@ final class Cams {
                 } catch (IOException ignored) { }
                 if (!stop.get() && got == 0) {
                     if (mjpegIn) { start(false); return; }          // the camera does not do MJPEG: let ffmpeg convert it
-                    problem = "cannot open " + node + " (in use?)";
-                    onFrame.run();
+                    problem = "cannot open " + node + (lastError != null ? ": " + lastError : " (in use by another program?)");
+                    notifyAll_();
                 }
             });
         }
 
+        void end() { stop.set(true); Process p = proc; if (p != null) p.destroy(); frame = null; }   // the device is free again once ffmpeg has gone
+    }
+
+    /** A handle on a camera. Opening never throws: a camera that is missing or busy only has a problem text. */
+    static final class Cam implements AutoCloseable {
+        final String node; private final Shared sh; private final Runnable onFrame; private boolean closed;
+        Cam(String node, Runnable onFrame) {
+            this.node = node; this.onFrame = onFrame;
+            synchronized (OPEN) { sh = OPEN.computeIfAbsent(node, Shared::new); sh.listeners.add(onFrame); }
+        }
+        BufferedImage frame() { return sh.frame; }
+        String problem() { return sh.problem; }
         @Override public void close() {
-            stop.set(true);
-            Process p = proc; if (p != null) p.destroy();          // the device is free again once ffmpeg has gone
-            frame = null;
+            synchronized (OPEN) {
+                if (closed) return; closed = true;
+                sh.listeners.remove(onFrame);
+                if (sh.listeners.isEmpty()) { OPEN.remove(node, sh); sh.end(); }
+            }
         }
     }
 
@@ -90,11 +112,11 @@ final class Cams {
         void refresh() { if (!pending.getAndSet(true)) SwingUtilities.invokeLater(() -> { pending.set(false); repaint(); }); }
         @Override protected void paintComponent(Graphics g0) {
             Graphics2D g = (Graphics2D) g0.create(); ConsoleUi.quality(g);
-            Cam c = cam; BufferedImage im = c == null ? null : c.frame;
+            Cam c = cam; BufferedImage im = c == null ? null : c.frame();
             int w = getWidth(), h = getHeight();
             if (im == null) {
                 g.setColor(ConsoleTheme.mix(ConsoleTheme.PEACH, ConsoleTheme.BLACK, 0.5)); g.setFont(ConsoleTheme.mono(12f));
-                String t = c != null && c.problem != null ? c.problem : c != null ? "waiting for the camera …" : text;
+                String t = c != null && c.problem() != null ? c.problem() : c != null ? "waiting for the camera …" : text;
                 g.drawString(t, 8, h / 2);
             } else {
                 int iw = im.getWidth(), ih = im.getHeight(), q = quarter & 3; boolean odd = (q & 1) == 1;
