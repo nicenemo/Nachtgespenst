@@ -6,6 +6,8 @@
 #include "HIDManager.h"
 #include "Lamps.h"
 #include "Disk.h"
+#include "BarFx.h"
+#include "Telem.h"
 #include "Settings.h"
 #include "Theme.h"
 #include "Icons.h"
@@ -69,6 +71,7 @@ int g_injX = 0, g_injY = 0;
 uint32_t g_injUntil = 0;
 
 CRGB g_leds[LED_COUNT];
+volatile uint32_t g_barSnap[10];   // what the bar shows, for BAR? (the demo window mirrors it)
 
 // Timing for PERF? (microseconds). Build = last buildPage(); render and flush are accumulated since that build
 // (render = time inside lv_timer_handler/lv_refr_now that actually drew strips, flush = the part spent in pushImage).
@@ -125,6 +128,7 @@ void updateLedsLocked() {
     LM mode = Settings::ledMode();
     if (mode == LM::Off || g_ledIdleOff) {
         fill_solid(g_leds, LED_COUNT, CRGB::Black);
+        for (int i = 0; i < 10; i++) g_barSnap[i] = 0;
         FastLED.show();
         if (mode == LM::Off && g_barPowered) { M5.Power.setExtOutput(false); g_barPowered = false; }
         return;
@@ -146,10 +150,26 @@ void updateLedsLocked() {
     } else if (mode == LM::Locks) {
         ledBarLocks(g_leds, LED_COUNT, mask, false);
     } else {
-        fill_solid(g_leds, LED_COUNT, LAYERS[g_page].color);
+        Settings::Effect fx = Settings::effect();                           // an autonomous effect in the colour of the layer, or the plain colour
+        if (fx != Settings::Effect::None) BarFx::render(fx, g_leds, millis(), LAYERS[g_page].color);
+        else fill_solid(g_leds, LED_COUNT, LAYERS[g_page].color);
     }
+    for (int i = 0; i < 10 && i < LED_COUNT; i++) g_barSnap[i] = ((uint32_t)g_leds[i].r << 16) | ((uint32_t)g_leds[i].g << 8) | g_leds[i].b;
     FastLED.show();
 #endif
+}
+
+// Runs on the other core: draws the autonomous bar effects about 60 times a second and feeds the microphone effect and MIC?.
+void effectTask(void*) {
+    for (;;) {
+        Settings::Effect fx = Settings::effect();
+        bool layerPage = g_page < LAYER_COUNT && Settings::ledMode() == Settings::LedMode::Layers && !g_ledIdleOff;
+        BarFx::micWanted((fx == Settings::Effect::Vu && layerPage) || BarFx::micCommandOn() || Telem::wantsMic());
+        BarFx::micLoop();
+        Telem::loop();
+        if (fx != Settings::Effect::None && layerPage) updateLeds();
+        vTaskDelay(pdMS_TO_TICKS(fx != Settings::Effect::None ? 16 : 20));
+    }
 }
 
 void onHid(HIDManager::HIDEvent e, uint8_t led) {
@@ -444,7 +464,8 @@ void ui_begin() {
     FastLED.addLeds<WS2812, LED_PIN, GRB>(g_leds, LED_COUNT);   // the 5 V rail and the brightness follow the settings (updateLeds)
 #endif
     g_ledMutex = xSemaphoreCreateMutex();
-    Lamps::setBarSink(updateLeds);   // the lamp worker task puts lamps 0..9 on the bar without waiting for the main loop
+    Lamps::setBarSink(updateLeds);
+    xTaskCreatePinnedToCore(effectTask, "bar-fx", 4096, nullptr, 1, nullptr, ARDUINO_RUNNING_CORE == 0 ? 1 : 0);   // the lamp worker task puts lamps 0..9 on the bar without waiting for the main loop
     HIDManager::setEventListener(onHid);
     g_hostLed = HIDManager::getLedStatus();
 
@@ -552,6 +573,7 @@ bool ui_press(int layer, int idx, bool fromSerial) {
 }
 
 void ui_leds_refresh() { g_ledDirty = true; }
+void ui_bar_colors(uint32_t out[10]) { for (int i = 0; i < 10; i++) out[i] = g_barSnap[i]; }
 
 bool ui_tap(int x, int y) {
     flushPage();

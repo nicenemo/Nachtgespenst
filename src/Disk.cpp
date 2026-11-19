@@ -269,6 +269,7 @@ void enter() {
     Lamps::setFrameSink(onFrame);
     s_blocks = e_blocks; s_start = e_start; s_err = e_err;
     sdMount();
+    if (!M5.Speaker.isEnabled()) M5.Speaker.begin();                       // the microphone effect may have taken the I2S port
     M5.Speaker.setVolume(96);
     g_active = true;
 }

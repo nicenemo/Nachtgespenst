@@ -10,6 +10,7 @@
 //SOURCES Proto.java
 //SOURCES DiskDrive.java
 //SOURCES BarEffects.java
+//SOURCES Tones.java
 //SOURCES LedCam.java
 //COMPILE_OPTIONS --add-modules=jdk.incubator.vector
 //JAVA_OPTIONS --add-modules=jdk.incubator.vector --enable-native-access=ALL-UNNAMED
@@ -129,6 +130,7 @@ public class LampTest {
                     case "disk" -> disk(s, h);
                     case "barmap" -> barmap(s, h);
                     case "effectcheck" -> effectcheck(s, h);
+                    case "mic" -> mic(s);
                     case "all" -> { enumerate(s, h); bar(s, h); rate(s, h); screen(s, h); }
                     default -> usage("unknown command " + c);
                 }
@@ -467,6 +469,34 @@ public class LampTest {
             try { s.cmd("LAMPS BRIGHT 40", 2000); } catch (Exception ignored) { }
             deleteFrames(); LedCam.otherBars(ownPort, true);
         }
+    }
+
+    /**
+     * The microphone of the board heard through the PC speaker: silence, then tones of 440, 1000 and 2000 Hz, each for two seconds. The board reports
+     * the level (RMS), the peak and the dominant frequency (from zero crossings) with MIC?. Checks that a tone is louder than the silence before it and
+     * that the frequency it reports is within 10% of the tone. Needs the speaker of the PC on and the board within reach of it.
+     */
+    static void mic(Ser s) throws Exception {
+        s.cmd("LAYER 0", 3000);
+        s.cmd("MIC ON", 2000); Thread.sleep(1200);
+        java.util.function.Supplier<Map<String, String>> read = () -> { try { return s.kv("MIC?"); } catch (Exception e) { return Map.of(); } };
+        Thread.sleep(500);
+        long quiet = 0; for (int i = 0; i < 5; i++) { quiet += Proto.num(read.get(), "level"); Thread.sleep(150); } quiet /= 5;
+        info("silence: level " + quiet);
+        check("the microphone listens (buffers arrive)", Proto.num(read.get(), "buffers") > 5, String.valueOf(read.get()));
+        for (int hz : new int[]{440, 1000, 2000}) {
+            Thread t = Tones.playAsync(hz, 2.2, 0.6);
+            Thread.sleep(900);
+            long lv = 0, fq = 0, n = 0, peak = 0;
+            for (int i = 0; i < 6; i++) { Map<String, String> m = read.get(); lv += Proto.num(m, "level"); fq += Proto.num(m, "freq"); peak = Math.max(peak, Proto.num(m, "peak")); n++; Thread.sleep(120); }
+            t.join();
+            lv /= n; fq /= n;
+            info(String.format("%d Hz: level %d, peak %d, frequency heard %d Hz", hz, lv, peak, fq));
+            check(hz + " Hz is louder than the silence (3 times)", lv > Math.max(40, quiet * 3), "level " + lv + " silence " + quiet);
+            check(hz + " Hz: the frequency the board hears is within 10%", Math.abs(fq - hz) <= hz * 0.10, fq + " Hz");
+            Thread.sleep(500);
+        }
+        s.cmd("MIC OFF", 2000);
     }
 
     /**

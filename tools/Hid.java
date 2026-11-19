@@ -11,8 +11,9 @@ import static java.lang.foreign.ValueLayout.*;
 
     /** A /dev/hidrawN node: output reports with write(), feature reports with the HIDIOCSFEATURE and HIDIOCGFEATURE ioctls. */
     final class Hid implements AutoCloseable {
-        final int fd;
+        final int fd; final String path;
         Hid(String path) throws IOException {
+            this.path = path;
             try {
                 fd = (int) Libc.OPEN.invoke(Libc.CAPTURE, Libc.ARENA.allocateFrom(path), 2);   // O_RDWR
             } catch (Throwable t) { throw new IOException(t); }

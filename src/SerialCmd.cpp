@@ -5,6 +5,8 @@
 #include "HIDManager.h"
 #include "Lamps.h"
 #include "Disk.h"
+#include "BarFx.h"
+#include "Telem.h"
 #include "Settings.h"
 
 namespace {
@@ -103,6 +105,19 @@ void handle(char* line) {
     else if (!strcmp(cmd, "DISK") && a && !b && !strcasecmp(a, "RESET")) { Disk::reset(); Serial.println("OK DISK RESET"); }
     else if (!strcmp(cmd, "DISK") && a && !b && !strcasecmp(a, "DIR")) Serial.printf("OK DIR\n%s", Disk::dir().c_str());
     else if (!strcmp(cmd, "DISK") && a && b && !extra && !strcasecmp(a, "SOUND") && (!strcasecmp(b, "ON") || !strcasecmp(b, "OFF"))) { Disk::setSound(!strcasecmp(b, "ON")); Serial.printf("OK DISK SOUND %s\n", b); }
+    // Microphone (BarFx.cpp): MIC? gives level, peak and the dominant frequency; MIC ON|OFF samples without the vu effect
+    else if (!strcmp(cmd, "MIC?") && !a) Serial.printf("OK %s\n", BarFx::micStatus().c_str());
+    else if (!strcmp(cmd, "MIC") && a && !b && (!strcasecmp(a, "ON") || !strcasecmp(a, "OFF"))) { BarFx::micCommand(!strcasecmp(a, "ON")); Serial.printf("OK MIC %s\n", a); }
+    // BAR?: the ten LED colours as hex, so that the demo window can mirror what an autonomous effect does
+    else if (!strcmp(cmd, "BAR?") && !a) { uint32_t c[10]; ui_bar_colors(c); Serial.print("OK BAR"); for (int i = 0; i < 10; i++) Serial.printf(" %06lx", (unsigned long)c[i]); Serial.println(); }
+    // WAVE?: the last microphone buffer, 512 signed 16-bit samples as hex (the demo window draws the oscilloscope on the lamp grid)
+    else if (!strcmp(cmd, "WAVE?") && !a) { static int16_t w[BarFx::WAVE_SAMPLES]; BarFx::micWave(w); String o = "OK WAVE "; o.reserve(8 + 4 * BarFx::WAVE_SAMPLES + 2); char h[5]; for (int i = 0; i < BarFx::WAVE_SAMPLES; i++) { snprintf(h, sizeof(h), "%04x", (uint16_t)w[i]); o += h; } Serial.println(o); }
+    // TELEM BAR|WAVE|BOTH|OFF: the bar colours and the microphone waveform go to the PC as game pad reports (the demo window reads them from the HID node)
+    else if (!strcmp(cmd, "TELEM") && a && !b) {
+        for (char* p = a; *p; p++) *p = toupper((unsigned char)*p);
+        int m = !strcmp(a, "OFF") ? 0 : !strcmp(a, "BAR") ? 1 : !strcmp(a, "WAVE") ? 2 : !strcmp(a, "BOTH") ? 3 : -1;
+        if (m < 0) Serial.println("ERR telem"); else { Telem::set((uint8_t)m); Serial.printf("OK TELEM %s\n", a); }
+    }
     else if (!strcmp(cmd, "SD?") && !a) Serial.printf("OK %s\n", Disk::sdStatus().c_str());
     else if (!strcmp(cmd, "SHOT") && !a) { Serial.print("OK "); ui_screenshot(Serial); }
     else if (!strcmp(cmd, "LAYER") && num(a, x) && !b) {

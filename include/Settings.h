@@ -6,6 +6,11 @@
 namespace Settings {
     enum class LedMode : uint8_t { Off = 0, Locks = 1, Layers = 2 };
 
+    // Autonomous effects of the LED bar on the layer pages (BarFx.h); none keeps the plain layer colour.
+    enum class Effect : uint8_t { None = 0, Nightrider, Breath, Rainbow, Comet, Sparkle, Vu, Count };
+    const char* effectName(Effect e);
+    Effect effect();
+
     void begin();                                   // open NVS and load the stored values (call first in setup())
 
     LedMode ledMode();                              // Off: bar dark and its 5 V rail off; Locks: only host lock state; Layers: layer colours
@@ -16,8 +21,8 @@ namespace Settings {
     uint16_t offSec();                              // seconds without activity before the screen goes off
     uint8_t prefer();                               // HIDManager::Prefer as a number (0 USB, 1 BLE, 2 BOTH)
 
-    // key: led (off|locks|on), bright, ledidle, bl, dim, off, prefer (usb|ble|both), defaults (any value).
+    // key: led (off|locks|on), effect (none|nightrider|breath|rainbow|comet|sparkle|vu), bright, ledidle, bl, dim, off, prefer (usb|ble|both), defaults (any value).
     // Returns false for an unknown key or a value out of range; a valid value is stored at once.
     bool set(const char* key, const char* value);
-    String summary();                               // "led=on bright=40 ledidle=0 bl=128 dim=60 off=300 prefer=usb"
+    String summary();                               // "led=on bright=40 ledidle=0 bl=128 dim=60 off=300 prefer=usb effect=none"
 }

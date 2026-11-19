@@ -255,21 +255,27 @@ uint16_t onGetFeature(uint8_t id, uint8_t* out, uint16_t maxLen) {
     uint8_t* p = buf;
     if (id == HID::Reports::LAMP_ATTR) {
         put16(p, lampTotal());
-        put32(p, 120000); put32(p, 60000); put32(p, 1000);   // bounding box in micrometres
+        put32(p, 54000); put32(p, 54000); put32(p, 32000);   // bounding box in micrometres: the 54 mm square body, 32 mm deep
         put32(p, 4);                                         // LampArrayKind: peripheral
         put32(p, 1000);                                      // minimum update interval: 1 ms
     } else if (id == HID::Reports::LAMP_RESP) {
         uint16_t lid = g_reqId < lampTotal() ? g_reqId : 0;
         uint32_t x, y;
         uint32_t purposes;
-        if (lid < BAR_LAMPS) { x = lid * 12000; y = 0; purposes = 0x02; }           // bar: accent, 12 mm pitch
-        else {
-            uint32_t k = lid - BAR_LAMPS, c = k % g_cols, r = k / g_cols;           // screen: 40.8 x 30.6 mm below the bar
-            x = 33600 + (uint32_t)((2 * c + 1) * 20400ull / g_cols);
-            y = 20000 + (uint32_t)((2 * r + 1) * 15300ull / g_rows);
+        uint32_t z;
+        if (lid < BAR_LAMPS) {                                                      // the bar: one U-shaped chain (measured with the webcam)
+            bool rightSide = lid < 5;                                              // lamps 0..4 run down the right side, 5..9 run up the left side
+            uint32_t row = rightSide ? lid : 9 - lid;                               // row 0..4 from the top
+            x = rightSide ? 54000 : 0; y = 8000 + row * 9500; z = 8000;             // on the edges of the base, behind the screen (the 9.5 mm pitch is an estimate)
+            purposes = 0x02;                                                        // accent
+        } else {
+            uint32_t k = lid - BAR_LAMPS, c = k % g_cols, r = k / g_cols;           // the screen: a logical grid over the 40.8 x 30.6 mm panel, in front of the bar
+            x = 6600 + (uint32_t)((2 * c + 1) * 20400ull / g_cols);
+            y = 9000 + (uint32_t)((2 * r + 1) * 15300ull / g_rows);
+            z = 30000;
             purposes = 0x20;                                                        // presentation
         }
-        put16(p, lid); put32(p, x); put32(p, y); put32(p, 0);
+        put16(p, lid); put32(p, x); put32(p, y); put32(p, z);
         put32(p, purposes); put32(p, 1000);
         *p++ = 255; *p++ = 255; *p++ = 255; *p++ = 255; *p++ = 1; *p++ = 0;
     } else return 0;

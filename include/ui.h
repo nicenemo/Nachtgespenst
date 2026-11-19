@@ -17,6 +17,7 @@ bool ui_tap(int x, int y);               // inject a ~120 ms touch at screen coo
 String ui_state();                       // one-line "key=value" state summary
 void ui_wake();                          // restart the idle timers: backlight and LED bar come back, BL override cleared
 void ui_backlight(int level);            // fixed backlight level 0..255, -1 = automatic
+void ui_bar_colors(uint32_t out[10]);  // the colours the ten bar LEDs were last set to (0xRRGGBB, before the global brightness)
 void ui_leds_refresh();                  // recompute the LED bar (after a lamp reset or a brightness change)
 String ui_perf();                        // "PERF build_ms=.. render_ms=.. flush_ms=.. strips=.. page=..": timing of the last page
 void ui_screenshot(Stream& out);         // "SHOT w h\n" + RGB888 rows + "\nEND\n"

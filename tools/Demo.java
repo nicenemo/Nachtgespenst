@@ -13,6 +13,9 @@
 //SOURCES BarEffects.java
 //SOURCES GridEffects.java
 //SOURCES Photos.java
+//SOURCES Tones.java
+//SOURCES Telemetry.java
+//SOURCES Scope.java
 //SOURCES Scenarios.java
 //JAVA_OPTIONS --enable-native-access=ALL-UNNAMED
 
@@ -68,10 +71,11 @@ public class Demo {
             try {
                 for (int c = 1; cycles == 0 || c <= cycles; c++) {
                     System.out.println("=== cycle " + c + " ===");
-                    if (want.size() == 5) all.addAll(sc.cycle(fast));
+                    if (want.size() == 5 && want.contains("pages")) all.addAll(sc.cycle(fast));
                     else for (String w : want) {
                         long t0 = System.nanoTime(); String note = switch (w) {
                             case "pages" -> sc.walkPages(); case "disk" -> sc.disk(false); case "bar" -> sc.bar(); case "grid" -> sc.grid(); case "photos" -> sc.photos();
+                            case "mic" -> sc.micDemo(); case "scope" -> sc.micScope(); case "board" -> { String r = ""; for (String e : Scenarios.BOARD_EFFECTS) r = sc.boardEffect(e); yield r; }
                             default -> "unknown scenario"; };
                         all.add(new String[]{w, String.format("%.1f s", (System.nanoTime() - t0) / 1e9), note});
                     }

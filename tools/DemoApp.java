@@ -14,6 +14,9 @@
 //SOURCES BarEffects.java
 //SOURCES GridEffects.java
 //SOURCES Photos.java
+//SOURCES Tones.java
+//SOURCES Telemetry.java
+//SOURCES Scope.java
 //SOURCES Scenarios.java
 //JAVA_OPTIONS --enable-native-access=ALL-UNNAMED
 
@@ -114,6 +117,13 @@ public class DemoApp {
         for (String n : Scenarios.BAR_EFFECTS) br.add(action(Character.toUpperCase(n.charAt(0)) + n.substring(1), () -> sc.barEffect(n), false));
         br.add(action("All of them", () -> sc.bar(), false));
         bar.add(br); left.add(bar);
+
+        JPanel board = section("On the board itself (autonomous)");
+        JPanel bb = new JPanel(new GridLayout(0, 2, 6, 6));
+        for (String n : Scenarios.BOARD_EFFECTS) bb.add(action(Character.toUpperCase(n.charAt(0)) + n.substring(1), () -> sc.boardEffect(n), false));
+        bb.add(action("Microphone VU (tones from the PC)", () -> sc.micDemo(), false));
+        bb.add(action("Microphone waveform on the lamps", () -> sc.micScope(), false));
+        board.add(bb); left.add(board);
 
         JPanel grid = section("Lamp grid (C64 style)");
         for (String n : Scenarios.GRID_EFFECTS) grid.add(action(Character.toUpperCase(n.charAt(0)) + n.substring(1), () -> sc.gridEffect(n), false));
@@ -264,8 +274,20 @@ public class DemoApp {
 
     // ---- main
     public static void main(String[] args) throws Exception {
-        String shot = null;
-        for (int i = 0; i < args.length; i++) if (args[i].equals("--shot")) shot = args[++i];
+        String shot = null, scopeShot = null;
+        for (int i = 0; i < args.length; i++) { if (args[i].equals("--shot")) shot = args[++i]; if (args[i].equals("--scope-shot")) scopeShot = args[++i]; }
+        if (scopeShot != null) {                               // the oscilloscope for a synthetic tone, without a board
+            System.setProperty("java.awt.headless", "true");
+            Scope sc = new Scope(160, 95); java.util.Random rnd = new java.util.Random(1);
+            for (int f = 0; f < 6; f++) {
+                int[] v = new int[512]; double ph = rnd.nextDouble() * 6.28;
+                for (int i = 0; i < 512; i++) v[i] = (int) (3000 * Math.sin(2 * Math.PI * 880 * i / 16000.0 + ph) + rnd.nextGaussian() * 120);
+                sc.frame(null, v);
+            }
+            BufferedImage im = new BufferedImage(160 * 4, 95 * 4, BufferedImage.TYPE_INT_RGB);
+            for (int y = 0; y < 95; y++) for (int x = 0; x < 160; x++) for (int dy = 0; dy < 4; dy++) for (int dx = 0; dx < 4; dx++) im.setRGB(x * 4 + dx, y * 4 + dy, sc.pix[y * 160 + x]);
+            ImageIO.write(im, "png", new java.io.File(scopeShot)); System.out.println("wrote " + scopeShot); return;
+        }
         FlatLaf.setGlobalExtraDefaults(Map.of("@accentColor", "#9D7BFF"));
         if (shot != null) System.setProperty("java.awt.headless", "true");
         FlatDarkLaf.setup();

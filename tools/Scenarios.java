@@ -15,12 +15,15 @@ final class Scenarios {
     }
 
     static final String[] BAR_EFFECTS = {"nightrider", "breath", "rainbow", "comet", "sparkle"};
+    static final String[] BOARD_EFFECTS = {"nightrider", "breath", "rainbow", "comet", "sparkle"};
     static final String[] GRID_EFFECTS = {"raster bars", "sine scroller"};
 
     final Ser s; final Hid h; final Log log; final String tag; final int pages;
     volatile double seconds = 8;
     volatile String photoGrid = "160x95";
     volatile Preview preview = null;
+    private Telemetry telemetry;                          // the bar colours and the microphone waveform come back over the game pad, not over serial
+    private volatile int[] lastWave; private volatile long waveSeq;
     volatile String shotDir = null;                  // when set, the screen of the board is saved here after every photo
     volatile int pass = 0, fail = 0;
 
@@ -116,6 +119,95 @@ final class Scenarios {
         return String.format("%s: %d reports", name, c.reports);
     }
 
+    /** Starts reading the telemetry of the board (the game pad reports of the HID node) for the window. */
+    synchronized void telemetryOn(boolean bar, boolean wave) throws Exception {
+        if (telemetry == null) {
+            telemetry = new Telemetry(h.path, new Telemetry.Sink() {
+                public void bar(int[] rgb) { Preview pv = preview; if (pv != null) pv.bar(rgb); }
+                public void wave(int[] samples) { lastWave = samples; waveSeq++; }
+            });
+        }
+        s.cmd("TELEM " + (bar && wave ? "BOTH" : wave ? "WAVE" : bar ? "BAR" : "OFF"), 1500);
+    }
+    synchronized void telemetryOff() {
+        try { s.cmd("TELEM OFF", 1500); } catch (Exception ignored) { }
+        if (telemetry != null) { telemetry.close(); telemetry = null; }
+    }
+
+    /** Mirrors the bar of the board in the window while an effect that runs on the board goes on: the board sends the colours over the game pad. */
+    void mirrorBar(long ms) throws Exception {
+        Thread.sleep(ms);
+    }
+
+    /** An effect that runs on the board itself (SET effect ...), in the colour of the layer; no lamp updates are sent. */
+    String boardEffect(String name) throws Exception {
+        s.cmd("LAYER 0", 3000); Thread.sleep(300);
+        say("the board runs " + name + " on its own (the lamps are not used)");
+        if (preview != null) telemetryOn(true, false);
+        s.cmd("SET effect " + name, 2000);
+        try { mirrorBar((long) (seconds * 1000)); } finally { s.cmd("SET effect none", 2000); telemetryOff(); }
+        pass++;
+        return name + " on the board";
+    }
+
+    /** The vu effect: the board listens with its microphone while the PC plays tones, and the bar follows the level. */
+    String micDemo() throws Exception {
+        s.cmd("LAYER 0", 3000); Thread.sleep(300);
+        say("the vu meter on the bar follows the microphone; the PC plays tones of 440, 1000 and 2000 Hz");
+        telemetryOn(true, true);
+        s.cmd("SET effect vu", 2000); mirrorBar(1500);
+        StringBuilder note = new StringBuilder();
+        Scope probe = new Scope(160, 95);
+        try {
+            for (int hz : new int[]{440, 1000, 2000}) {
+                Thread t = Tones.playAsync(hz, 2.2, 0.6);
+                mirrorBar(1000);
+                int[] w = lastWave;
+                if (w != null) { probe.frame(null, w); say(String.format("%d Hz: the board hears about %.0f Hz (from its waveform, peak %d)", hz, probe.lastFreq, probe.lastPeak)); note.append(hz).append("->").append(Math.round(probe.lastFreq)).append(" "); }
+                mirrorBar(1100);
+                t.join();
+                mirrorBar(600);
+            }
+        } finally { s.cmd("SET effect none", 2000); telemetryOff(); }
+        pass++;
+        return "microphone: " + note.toString().trim();
+    }
+
+    /**
+     * The microphone as an oscilloscope on the lamps: the PC asks the board for the waveform it hears (WAVE?) and paints it on the 160 x 95 lamp
+     * grid, so it shows on the screen of the board and in the window. The PC plays tones of 440, 880 and 1500 Hz through its speaker.
+     */
+    String micScope() throws Exception {
+        goGridPage();
+        Canvas c = canvas(80, 47);                         // 4 x 4 pixels per lamp: a scope that the lamp updates can keep up with
+        Scope scope = new Scope(80, 47);
+        s.cmd("MIC ON", 2000);
+        telemetryOn(preview != null, true);
+        mirrorWait(1200);
+        Thread tones = Thread.ofVirtual().name("tones").start(() -> {
+            try { Tones.play(440, 3.0, 0.5); Tones.play(880, 3.0, 0.5); Tones.play(1500, 3.0, 0.5); } catch (Exception e) { say("cannot play tones: " + e); }
+        });
+        say("the board listens and sends the waveform over the game pad; the oscilloscope is painted on the lamps (the PC plays 440, 880 and 1500 Hz)");
+        long end = System.currentTimeMillis() + (long) Math.max(10000, seconds * 1000);
+        int frames = 0; double lastFreq = 0; long seen = waveSeq; long t0 = System.currentTimeMillis(); boolean shotA = false, shotB = false;
+        try {
+            while (System.currentTimeMillis() < end) {
+                if (waveSeq == seen || lastWave == null) { Thread.sleep(5); continue; }
+                seen = waveSeq;
+                scope.frame(c, lastWave);
+                c.present(); frames++; if (scope.lastFreq > 0) lastFreq = scope.lastFreq;
+                long el = System.currentTimeMillis() - t0;
+                if (!shotA && el > 4500) { shotA = true; grabScreen(); } else if (!shotB && el > 7800) { shotB = true; grabScreen(); }
+            }
+        } finally { s.cmd("MIC OFF", 2000); telemetryOff(); }
+        say(frames + " frames; the last frequency measured: " + Math.round(lastFreq) + " Hz");
+        grabScreen();
+        pass++;
+        return frames + " scope frames from the microphone, painted on the lamps";
+    }
+
+    void mirrorWait(long ms) throws InterruptedException { Thread.sleep(ms); }
+
     String grid() throws Exception { for (String n : GRID_EFFECTS) gridEffect(n); return "raster bars and a sine scroller"; }
 
     /** Five photos, dissolved into each other with prime moduli. */
@@ -175,6 +267,6 @@ final class Scenarios {
 
     /** Gives the lamps back to the board and goes to the first page. */
     void release() {
-        try { h.write(Proto.control(true)); s.cmd("LAMPS RESET", 2000); s.cmd("LAYER 0", 3000); s.cmd("WAKE", 1000); } catch (Exception ignored) { }
+        try { telemetryOff(); s.cmd("SET effect none", 1500); s.cmd("MIC OFF", 1500); h.write(Proto.control(true)); s.cmd("LAMPS RESET", 2000); s.cmd("LAYER 0", 3000); s.cmd("WAKE", 1000); } catch (Exception ignored) { }
     }
 }

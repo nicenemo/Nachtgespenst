@@ -10,9 +10,11 @@
 
 void setup() {
     auto cfg = M5.config();
-    cfg.internal_spk = false; // no beeps: speaker/amp never initialised
-    cfg.internal_mic = false;
+    cfg.internal_spk = true;  // the Disk demo plays modem sounds and the microphone feeds the VU effect, so both are set up ...
+    cfg.internal_mic = true;
     M5.begin(cfg);
+    M5.Speaker.stop();        // ... but the speaker stays silent until something asks for a sound (no beeps at boot)
+    M5.Speaker.setVolume(0);
     Serial.begin(115200);
 #if ARDUINO_USB_CDC_ON_BOOT
     for (uint32_t t = millis(); !Serial && millis() - t < 1500;) yield(); // wait for CDC, bounded

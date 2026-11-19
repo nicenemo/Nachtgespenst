@@ -7,12 +7,14 @@ namespace {
 Preferences g_prefs;
 bool g_open = false;
 LedMode g_led = LedMode::Layers;
-uint8_t g_bright = 40, g_bl = 128, g_prefer = 0;
+uint8_t g_bright = 40, g_bl = 128, g_prefer = 0, g_effect = 0;
 uint16_t g_ledIdle = 0, g_dim = 60, g_off = 300;
 
 void defaults() {
-    g_led = LedMode::Layers; g_bright = 40; g_ledIdle = 0; g_bl = 128; g_dim = 60; g_off = 300; g_prefer = 0;
+    g_led = LedMode::Layers; g_bright = 40; g_ledIdle = 0; g_bl = 128; g_dim = 60; g_off = 300; g_prefer = 0; g_effect = 0;
 }
+
+const char* const EFFECTS[] = {"none", "nightrider", "breath", "rainbow", "comet", "sparkle", "vu"};
 
 void load() {
     defaults();
@@ -25,6 +27,7 @@ void load() {
     g_dim = constrain(g_prefs.getUShort("dim", 60), 5, 3600);
     g_off = std::max<uint16_t>(g_prefs.getUShort("off", 300), g_dim + 10);
     g_prefer = g_prefs.getUChar("prefer", 0) <= 2 ? g_prefs.getUChar("prefer", 0) : 0;
+    g_effect = g_prefs.getUChar("fx", 0) < (uint8_t)Effect::Count ? g_prefs.getUChar("fx", 0) : 0;
 }
 
 bool number(const char* v, long lo, long hi, long& out) {
@@ -44,6 +47,8 @@ uint8_t backlight() { return g_bl; }
 uint16_t dimSec() { return g_dim; }
 uint16_t offSec() { return g_off; }
 uint8_t prefer() { return g_prefer; }
+Effect effect() { return (Effect)g_effect; }
+const char* effectName(Effect e) { return EFFECTS[(int)e < (int)Effect::Count ? (int)e : 0]; }
 
 bool set(const char* key, const char* value) {
     if (!key || !value) return false;
@@ -72,6 +77,11 @@ bool set(const char* key, const char* value) {
     } else if (k == "prefer") {
         if (v == "usb") g_prefer = 0; else if (v == "ble") g_prefer = 1; else if (v == "both") g_prefer = 2; else return false;
         if (g_open) g_prefs.putUChar("prefer", g_prefer);
+    } else if (k == "effect") {
+        int found = -1;
+        for (int i = 0; i < (int)Effect::Count; i++) if (v == EFFECTS[i]) found = i;
+        if (found < 0) return false;
+        g_effect = (uint8_t)found; if (g_open) g_prefs.putUChar("fx", g_effect);
     } else if (k == "defaults") {
         if (g_open) g_prefs.clear();
         defaults();
@@ -82,8 +92,8 @@ bool set(const char* key, const char* value) {
 String summary() {
     static const char* const led[] = {"off", "locks", "on"};
     static const char* const pref[] = {"usb", "ble", "both"};
-    char b[120];
-    snprintf(b, sizeof(b), "led=%s bright=%u ledidle=%u bl=%u dim=%u off=%u prefer=%s", led[(int)g_led], g_bright, g_ledIdle, g_bl, g_dim, g_off, pref[g_prefer]);
+    char b[140];
+    snprintf(b, sizeof(b), "led=%s bright=%u ledidle=%u bl=%u dim=%u off=%u prefer=%s effect=%s", led[(int)g_led], g_bright, g_ledIdle, g_bl, g_dim, g_off, pref[g_prefer], EFFECTS[g_effect]);
     return String(b);
 }
 }  // namespace Settings
