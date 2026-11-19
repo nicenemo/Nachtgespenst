@@ -10,6 +10,7 @@ All notable changes to Nachtgespenst. The project has no tagged releases yet, so
 - **Persistent settings** in NVS (`SET`, `SET?`): LED mode off, locks or on, bar brightness, LED idle time, backlight, dim and off times, USB/BLE preference. `LEDS OFF` also cuts the 5 V rail of the base. `WAKE`, `BL` and `LEDS` serial commands.
 - **System Control report** (Power Down, Sleep, Wake Up) and tiles for it; the firmware refuses Power Down and Sleep over the serial port, so tests cannot suspend the host.
 - **Device identity:** pid.codes test ID 1209:0001, Bluetooth PnP ID, short names NG-S3 and NG-C2 on USB, and a moon and ghost emoji in the Bluetooth names (`...-c2`, `...-cs3`).
+- **Lamp bar worker task** on the second core with a FastLED mutex (`LAMPS WORKER ON|OFF`) and latency counters in `LAMPS?`: a lamp frame is on the bar 1.4 to 3 ms after its last report (6 ms and up to 40 ms from the main loop). `LampTest latency` and `LampTest ingest` (intake without drawing: 1.5 to 1.9 million lamps per second).
 - **Camera tests:** the Locks page colours (all seven states on the Core2 on a sheet of white paper, now on the site), a `dark` test for `LEDS OFF`, and the bar of the other board is switched off during a test.
 - **Site:** the page split into pages with a hamburger menu, a LampArray page, a banner with the moon and ghost.
 
@@ -19,6 +20,7 @@ All notable changes to Nachtgespenst. The project has no tagged releases yet, so
 - The GitHub repository is `nicenemo/nachtgespenst`; `tools/Flash.java` also finds the bootloader IDs.
 
 ### Fixed
+- Lowering BlueZ's connection interval (kos ADR 0015) did not raise the Bluetooth report rate (still about 30 per second): documented as a negative result.
 - A burst of lamp reports no longer fills the host queue in the tests; counters no longer count the control report as an update; the System Control check reads the keyboard node where Linux folds it in.
 
 ## 2026-11-17 to 2026-11-18

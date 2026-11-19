@@ -15,26 +15,26 @@ Written at the start of the night. The owner is asleep, the room is dark (camera
    - [x] Camera (lights off): `LedCam colours` on both boards, all 26 layer colours show the right hue.
 2. **Regression: the Core2 stops answering on serial while a Bluetooth host is bonded** (found while testing step 1)
    - [~] Symptom: with the bond `SerialTest --board C2` loses replies for 20 to 30 seconds after every port open (the open resets the board); without the bond 11 of 11 pass. The CoreS3 is not affected.
-   - [ ] Diagnose with a heartbeat build, fix, test with and without a bond on both boards.
+   - [~] Heartbeat diagnostics are built in (`NG_DEBUG_HEARTBEAT`, default 0); the stall did not reproduce on later runs (stale bonds suspected). Kept in the TODO as a flake.
 3. **LampArray without root** (the hidraw nodes are `root:root 0600`, so `LampTest` cannot run until the owner installs the udev rule)
-   - [ ] Check the report descriptors the kernel got (USB and BLE) through sysfs and a small parser; check the feature report counters over serial (`featget`).
-   - [ ] Keep `LampTest` ready (compiles, documented); results go to the wiki when the owner has run it.
+   - [x] The kernel parses the 434-byte descriptor on USB and BLE; `featget` counts the attribute reads.
+   - [x] The udev rule was installed; `LampTest` ran on all three links and the results are in the wiki (including controller comparison, USB limits, intake without drawing and latency).
 4. **Page switching speed** ([ADR 0007](adr/0007-page-switching-speed-and-prerendering.md), accepted)
-   - [ ] Stage 1: coalesce page changes; measure with `SerialTest --latency`.
-   - [ ] Stage 2: slimmer pages (tile pool, flatter styles, the display buffer question), measure again; stop when the numbers stop improving.
+   - [x] Stage 1: coalesced page changes, measured.
+   - [x] Stage 2: `-O2` and 48-row strips; CoreS3 727 to 318 ms, Core2 838 to 380 ms.
 5. **LEDs off, persistent settings, Settings page** ([ADR 0014](adr/0014-settings-page-and-leds-off.md))
-   - [ ] `LEDS OFF|LOCKS|ON`, brightness, idle off, stored in NVS; camera test of the dark bar.
-   - [ ] Settings page (LED, screen, routing) with screenshots on both boards.
+   - [x] Done and verified with the camera on both boards.
+   - [ ] Not built: the touch page is still open (the settings backend and serial commands exist).
 6. **Review items from the TODO that need no decision**
-   - [ ] System-control keys rejected at compile time (a descriptor change would force another re-pairing).
-   - [ ] `STATE?` gets `usb=` and `ble=` next to `conn=`; the magic LED bits get names; `LAYER_COLORS` becomes `inline constexpr`; the NimBLE `startServices()` warning.
-   - [ ] `KEY`/`TAP` behind `NG_SERIAL_INPUT`.
+   - [x] Instead of rejecting them, a real System Control report was added; Power Down and Sleep are refused over serial.
+   - [~] `STATE?` has `usb=` and `ble=`, the LED bits have names in `HIDManager`; `LAYER_COLORS` and the NimBLE warning are still open.
+   - [x] Behind `NG_SERIAL_INPUT`; `TAP` only on the Locks page.
 7. **Stress and flakes**
-   - [ ] `SerialTest` repeated on both boards (S3 USB and BLE, C2); record anything odd for the two unexplained cases in the TODO.
+   - [x] `SerialTest`: CoreS3 43 of 43, Core2 25 of 25 on the final firmware.
 8. **Camera**
-   - [ ] Locks page colours (caps, num, scroll and the mixes) with the camera on both boards (the TODO's open item 2).
+   - [~] Core2 done (all seven states, photo on the site); the CoreS3 bar follows the host LED report only.
 9. **Documentation, site, changelog**
-   - [ ] TODO, ADR status lines, wiki (hardware testing, LampArray, workflow lessons), site (pages that mention the features, the story), README, CHANGELOG.
+   - [x] TODO, ADRs 0007 and 0010, wiki, CHANGELOG and the site pages are updated on `feature/lamparray`; publishing the site to GitHub Pages is not done.
 
 ## Needs the owner (not done tonight)
 - **udev rule** (`udev-setup.yml`, kos project): without it `LampTest` cannot open `/dev/hidrawN`. Everything else about the LampArray is built and flashed.

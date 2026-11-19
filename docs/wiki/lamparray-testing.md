@@ -66,7 +66,7 @@ Screen frame rate that follows from the delivery rate (all lamps changing every 
 
 What this means:
 - **USB is the transport for lamps.** 8,000 lamps per second is enough for the 10-lamp bar at hundreds of frames per second, for a 16 x 12 matrix at 40 fps and for a 32 x 24 matrix at 10 fps. One lamp per pixel is possible but takes seconds per frame: use the Photo channel of ADR 0010 for video-like content.
-- **Bluetooth carries the bar and effects, not pictures.** About 30 range updates per second is a smooth 30 fps for the whole bar in one colour; per-lamp colours on the ten lamps need two multi updates, so 8 to 14 fps. A full tile layer (tier B, about 34 lamps) is about 5 multi updates, so 3 to 6 fps. The limit is the host side: BlueZ sends one queued write per connection interval (about 30 ms) and ignores the 7.5 to 15 ms the firmware asks for; Windows, with shorter intervals, is expected to be faster and has to be measured.
+- **Bluetooth carries the bar and effects, not pictures.** About 30 range updates per second is a smooth 30 fps for the whole bar in one colour; per-lamp colours on the ten lamps need two multi updates, so 8 to 14 fps. A full tile layer (tier B, about 34 lamps) is about 5 multi updates, so 3 to 6 fps. The limit is the host side: the host delivers about one queued write per 33 ms and lowering BlueZ's connection interval did not change that (see below); Windows is expected to behave differently and has to be measured.
 - **Do not flood Bluetooth.** BlueZ queues output reports without limit and drains them at those rates, so a burst arrives minutes late (2,000 reports take about 70 seconds), and the 10-byte range updates start to be dropped when more than about 50 are queued. Send at most one report per 30 ms, and let the queue drain between tests (`LampTest` does).
 - **Enumeration over Bluetooth is slow** because every lamp needs a write and a read: 768 lamps take about 48 seconds when a host connects, 3,072 lamps about 3 minutes. Windows enumerates all lamps, so a tier C or D matrix over Bluetooth is not practical; tier A or B (10 or about 34 lamps) is.
 - **Intensity.** Every lamp has red, green, blue and intensity (0 to 255) and the shown colour is `colour x intensity / 255`. On the bar, at the global brightness of 40 of 255, the camera sees no difference for intensities 1 to 12 and a steady, monotonic rise from 16 (CoreS3: 11 of 16 steps visible) or 32 (Core2: 7 of 16, with a jump between 24 and 32 that is partly the webcam's exposure): the ten-bit style range is squeezed into about 40 real levels. `LAMPS BRIGHT n` raises the global brightness (to 120 at most); a gamma curve in the firmware would spread the steps better.
@@ -84,7 +84,7 @@ Two Bluetooth controllers sit in the laptop and both were used: `hci1` is the bu
 | Core2 | multi update, 51 bytes | 29.2 /s = 234 lamps/s | 30.4 /s = 243 lamps/s |
 | Core2 | range update, 10 bytes | 30.1 /s | 30.4 /s |
 
-So no: neither controller handles more than about 30 reports per second, and the number is the same with a Bluetooth 4.0 and a Bluetooth 5 radio, i.e. it is not the radio. 30 per second is one write per 33 ms: BlueZ sends one queued write per connection event and its default connection interval is about 30 ms; the 7.5 to 15 ms the firmware asks for is not applied. To test that explanation the interval has to be lowered on the host (root: the debugfs files `/sys/kernel/debug/bluetooth/hciN/conn_min_interval` and `conn_max_interval`, in units of 1.25 ms, then reconnect; for the owner in fish: `sudo sh -c 'echo 6 > /sys/kernel/debug/bluetooth/hci0/conn_min_interval; echo 12 > /sys/kernel/debug/bluetooth/hci0/conn_max_interval'`). Not done yet. Open question: why the CoreS3 manages only half the rate with 51-byte writes (16 against 30 per second) while the Core2 does not; both controllers show it, so it is on the board's side (the ESP32-S3 stack, its MTU or data length negotiation) and has to be looked into before the multi update is used over Bluetooth on the CoreS3. The range update (one colour for many lamps) is the efficient Bluetooth report anyway: 30 reports per second can switch up to 30 times 60,800 lamps.
+So no: neither controller handles more than about 30 reports per second, and the number is the same with a Bluetooth 4.0 and a Bluetooth 5 radio, i.e. it is not the radio. 30 per second is one write per 33 ms: BlueZ sends one queued write per connection event and its default connection interval is about 30 ms; the 7.5 to 15 ms the firmware asks for is not applied. **Tested: lowering the connection interval does not help.** The interval was lowered through BlueZ's `main.conf` (`MinConnectionInterval` 6, `MaxConnectionInterval` 9, i.e. 7.5 to 11.25 ms; kos ADR 0015, `bluez-setup.yml`), `bluetoothd` was restarted, the kernel showed 6 and 9 in `conn_min_interval` and `conn_max_interval` of both controllers and the boards reconnected. The Core2 then still delivered 30.1 to 30.6 reports per second at every send interval. So either the link did not use the new interval (the board may request another one, or the host keeps 30 ms for HID over GATT) or the limit is elsewhere in BlueZ's write path. Next step: a `btmon` capture while a board reconnects, to see the interval that is really negotiated. The tuning is still active and can be removed with `bluez-teardown.yml`. Open question: why the CoreS3 manages only half the rate with 51-byte writes (16 against 30 per second) while the Core2 does not; both controllers show it, so it is on the board's side (the ESP32-S3 stack, its MTU or data length negotiation) and has to be looked into before the multi update is used over Bluetooth on the CoreS3. The range update (one colour for many lamps) is the efficient Bluetooth report anyway: 30 reports per second can switch up to 30 times 60,800 lamps.
 
 **USB (CoreS3 only): 1,000 reports per second is the ceiling, then the firmware.** Full-speed USB polls an interrupt endpoint once per millisecond, so one report per millisecond:
 
@@ -98,7 +98,7 @@ So no: neither controller handles more than about 30 reports per second, and the
 | range, 12,288 lamps | 62 | 761,000 |
 | range, 60,800 lamps (every pixel) | 13 | 810,000 |
 
-From about 3,000 lamps per report the limit is no longer USB but the firmware: storing a lamp takes about 1.25 microseconds, so about 800,000 lamps per second whatever the report size (the board's own counter agrees to 0.5%). Lamp storage could be made faster (set the changed bits per range instead of per lamp) if that ever matters. What the screen shows is limited by the panel instead: a changed screen takes 45 ms to draw (175 ms for all 60,800 pixels), so at most about 20 frames per second, and frames are merged when updates come faster.
+From about 3,000 lamps per report the limit is no longer USB but the firmware. On a lamp page, where the board also draws, about 800,000 lamps per second get through (storing and drawing share the CPU); with nothing drawn the intake is much higher, see `ingest` below. Lamp storage could be made faster (set the changed bits per range instead of per lamp) if that ever matters. What the screen shows is limited by the panel instead: a changed screen takes 45 ms to draw (175 ms for all 60,800 pixels), so at most about 20 frames per second, and frames are merged when updates come faster.
 
 **What disturbs the measurement?** Tested with `interference` (a burst with and without a serial PING every 10 ms, on the bar page, on the screen lamp page where the board redraws, and on a layer page with no lamp drawing):
 - **The USB serial console is not in the way.** On the CoreS3 over USB the rate moves by +0.3 to +0.4% (952 against 948 reports per second) with or without 100 serial messages per second, and with or without drawing. The serial port and the HID interface share the bus, but at these rates the bus has room.
@@ -108,3 +108,32 @@ From about 3,000 lamps per report the limit is no longer USB but the firmware: s
 - **Do not test the Power Down and Sleep tiles.** They really power down or suspend the computer. The test tools only press the Wake Up tile of the Media page (harmless); the firmware now refuses Power Down and Sleep over the serial port (`KEY` and `TAP` answer `ERR`).
 
 How the numbers are produced: `LampTest.java screen`, `bar` and `rate` (`jbang tools/LampTest.java rate --board S3 --via ble --pace-us 1` sweeps the send interval and reports what the board actually saw). Camera brightness curves: `bar --crop ...`.
+
+## Intake without drawing (`ingest`, 2026-11-19)
+`LampTest ingest` is the speed test on an ordinary layer page: nothing is drawn and the bar does not follow the lamps, so it measures the intake of the board alone. CoreS3 over USB, every report arrived:
+
+| Report | Reports per second | Lamps per second |
+|---|---|---|
+| multi update, 8 lamps | 963 | 7,700 |
+| range, 1 lamp | 908 | 908 |
+| range, 192 lamps | 908 | 174,000 |
+| range, 768 lamps | 908 | 698,000 |
+| range, 3,072 lamps | 476 | 1.46 million |
+| range, 12,288 lamps | 129 | 1.58 million |
+| range, 60,800 lamps | 31 | 1.86 million |
+
+Storing a lamp therefore costs about 0.5 microseconds, not the 1.25 that the numbers on a lamp page suggested: the rest was the drawing competing for the CPU. More lamps do not help: a lamp ID is 16 bits, so one LampArray holds at most 65,535 lamps and the 60,810 of the grid and the bar are already 93% of that.
+
+## Latency to the LED bar and the screen, and the bar worker task (2026-11-19)
+Question: do the screen drawing, the bar update in the main loop or sleeping in the main loop delay what the user sees? The board stamps the report that completes a frame and measures until the bar has been shown (`bar_lat_us`) and until the screen has been drawn (`scr_lat_us`), average and maximum, in `LAMPS?`. `LampTest latency` sends 40 frames 150 ms apart (the bar lamps plus a 16 x 12 grid) on the bar page and on the screen lamp page, once with the bar shown by a worker task on the second core (`LAMPS WORKER ON`, the default) and once by the main loop (`LAMPS WORKER OFF`). The worker task takes the FastLED mutex that the main loop uses for the layer colours, so the two cannot write the bar at the same time, and `ui_loop` no longer sleeps while a lamp frame is waiting to be drawn.
+
+| Board and link | Bar, worker on (avg / max) | Bar, main loop (avg / max) | Screen drawn |
+|---|---|---|---|
+| CoreS3, USB, bar page | 1.4 / 2.5 ms | 5.9 / 10.9 ms | 56 / 62 ms |
+| CoreS3, USB, screen lamp page | 1.4 / 2.5 ms | 6.7 / 41 ms | 40 / 201 ms |
+| CoreS3, Bluetooth, bar page | 1.6 / 2.7 ms | 5.2 / 11.9 ms | 57 / 63 ms |
+| CoreS3, Bluetooth, screen lamp page | 1.6 / 2.7 ms | 5.7 / 10.9 ms | 36 to 39 ms |
+| Core2, Bluetooth, bar page | 3.0 / 3.1 ms | 6.0 / 10.9 ms | 59 / 63 ms |
+| Core2, Bluetooth, screen lamp page | 3.4 / 5.0 ms | 5.9 / 17 ms | 48 / 205 ms |
+
+The worker makes the bar two to four times faster and keeps the maximum low while the screen is drawing, so a lamp frame is on the bar within a few milliseconds of its last report on both boards, and the screen follows 40 to 60 ms later because drawing takes that long. The screen drawing is unchanged by the worker. Remaining latency on the Core2 (3 ms against 1.4 ms) is its slower FastLED path and the shared core of the Bluetooth stack.

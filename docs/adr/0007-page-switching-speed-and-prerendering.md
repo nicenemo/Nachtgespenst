@@ -47,6 +47,9 @@ Reading: the panel transfer is only about a tenth of a page; building and LVGL's
 ## Stage 1 measured (2026-11-19, coalescing)
 `ui_set_layer()` now records the target and updates the header; the body is built once in `ui_loop()` after 25 ms, or earlier when a screenshot or an injected tap needs it. On the CoreS3: the `LAYER` acknowledgement went from 140 to 230 ms to 11 ms, the burst of ten changes 150 ms apart now has the last page on screen after 1,803 ms (was 2,009) and 303 ms after the last press (was 509). A single page costs the same as before (about 160 to 240 ms build and 290 to 320 ms render, also when the same page is shown a second time, so a cold glyph cache is not the cost): coalescing helps bursts, not the base cost. Next: compiler optimisation (-O2 instead of -Os) and taller strips (48 rows instead of 24), then fewer widgets per page.
 
+## Stage 2 measured (2026-11-19, -O2 and taller strips)
+With `-O2` instead of `-Os` and display strips of 48 rows (`NG_DISP_ROWS`) a page switch takes 318 ms on the CoreS3 (was 727 ms: 57 ms build, 87 ms render) and 380 ms on the Core2 (was 838 ms: 95 ms build, 122 ms render). Both boards pass `SerialTest` (43 and 25 checks). The numbers stop improving here; pre-rendering stays optional.
+
 ## Recommendation
 Stage it and measure after each stage (`SerialTest --latency`, plus a quick-paging test: send `LAYER n+1` ten times at 150 ms intervals and time until the last page is on screen):
 1. **Coalesce** page changes (option 1). Cheap, helps fast paging immediately.
