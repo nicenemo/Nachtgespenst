@@ -58,8 +58,8 @@ jbang tools/Flash.java cores3      # does the 1200-baud touch into the ROM bootl
 <h3>Change the keymap</h3>
 <p>Layers live in <code>include/Keymap.h</code> as an array of <code>GridLayer</code> (title, bindings, rows, columns, LED colour). Edit, rebuild, flash.</p>
 <h3>Test it</h3>
-<pre>jbang tools/SerialTest.java --board S3    # 29 checks, including USB and BLE routing
-jbang tools/SerialTest.java --board C2    # 11 checks
+<pre>jbang tools/SerialTest.java --board S3    # 43 checks, including USB and BLE routing, settings and System Control
+jbang tools/SerialTest.java --board C2    # 25 checks
 jbang tools/SerialTest.java --shot shots  # screenshots of every page
 jbang tools/LedCam.java colours --port /dev/ttyUSB0 --out cam --crop x0,y0,x1,y1</pre>
 <h3>Regenerate the HID vocabulary</h3>

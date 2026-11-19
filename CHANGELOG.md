@@ -2,7 +2,26 @@
 
 All notable changes to Nachtgespenst. The project has no tagged releases yet, so entries are grouped by milestone and dated by the commits they come from. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## Unreleased (2026-11-17 to 2026-11-18)
+## Unreleased (2026-11-19): LampArray, identity and settings
+
+### Added
+- **HID LampArray** (usage page 0x59) on both boards, over USB and Bluetooth: lamps 0 to 9 are the LED bar, lamps 10 and up a screen grid of up to 320 x 190 lamps in PSRAM; two test pages (screen lamps, bar lamps). Measured in `docs/wiki/lamparray-testing.md` and on the site ([ADR 0010](docs/adr/0010-lamparray-lighting-and-picture-pages.md)).
+- **`tools/LampTest.java`** (info, enum, bar, screen, rate, speed, interference) and the `LAMPS*` serial commands; the CoreS3 delivers 1,000 reports and up to about 810,000 lamps per second over USB, both boards about 30 reports per second over BlueZ with either laptop controller.
+- **Persistent settings** in NVS (`SET`, `SET?`): LED mode off, locks or on, bar brightness, LED idle time, backlight, dim and off times, USB/BLE preference. `LEDS OFF` also cuts the 5 V rail of the base. `WAKE`, `BL` and `LEDS` serial commands.
+- **System Control report** (Power Down, Sleep, Wake Up) and tiles for it; the firmware refuses Power Down and Sleep over the serial port, so tests cannot suspend the host.
+- **Device identity:** pid.codes test ID 1209:0001, Bluetooth PnP ID, short names NG-S3 and NG-C2 on USB, and a moon and ghost emoji in the Bluetooth names (`...-c2`, `...-cs3`).
+- **Camera tests:** the Locks page colours (all seven states on the Core2 on a sheet of white paper, now on the site), a `dark` test for `LEDS OFF`, and the bar of the other board is switched off during a test.
+- **Site:** the page split into pages with a hamburger menu, a LampArray page, a banner with the moon and ghost.
+
+### Changed
+- Page changes are coalesced (25 ms) and the firmware builds with `-O2`: a page switch takes about 320 ms on the CoreS3 (was 730) and 380 ms on the Core2 (was 840).
+- `SerialTest` has 43 checks on the CoreS3 and 25 on the Core2 (settings, System Control, serial guards).
+- The GitHub repository is `nicenemo/nachtgespenst`; `tools/Flash.java` also finds the bootloader IDs.
+
+### Fixed
+- A burst of lamp reports no longer fills the host queue in the tests; counters no longer count the control report as an update; the System Control check reads the keyboard node where Linux folds it in.
+
+## 2026-11-17 to 2026-11-18
 
 ### Added
 - **CoreS3 LED bar.** The M5GO base bar on the CoreS3 is driven from GPIO5 (M-Bus pin 8), like GPIO25 on the Core2. Found with a camera-driven pin sweep and confirmed on all 26 layer colours.

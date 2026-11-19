@@ -40,7 +40,7 @@
 </div></header>
 <main class="wrap">
 <section id="lamps">
-<p>A <b>HID LampArray</b> is the standard way for a keyboard, a mouse or a light strip to tell a computer "these are my lamps, here is where they are, set their colours". Windows 11 uses it for Dynamic Lighting. For this project it turns the board's ten-LED bar and its screen into lamps that any computer can paint, with no driver and no serial cable. This page is the result of the first test bench, run on 19 November 2026.</p>
+<p>A <b>HID LampArray</b> is the standard way for a keyboard, a mouse or a light strip to tell a computer "these are my lamps, here is where they are, set their colours". Windows 11 uses it for Dynamic Lighting. For this project it turns the board's ten-LED bar and its screen into lamps that any computer can paint, with no driver and no serial cable. This page is the result of the test bench, run on 19 November 2026 on a Linux laptop with two Bluetooth controllers.</p>
 <h2>What was built</h2>
 <ul>
 <li><b>One LampArray on both boards.</b> Lamps 0 to 9 are the LED bar; lamps 10 and up are a grid of screen lamps whose size can be changed at run time, from 8 &times; 6 up to 320 &times; 190, so one lamp can be a single pixel of the 320 &times; 240 screen.</li>
@@ -70,9 +70,11 @@
 <h2>What it means</h2>
 <ul>
 <li><b>USB is the transport for lamps.</b> 8,000 lamps per second drives the bar at hundreds of frames per second and a 32 &times; 24 matrix at 10 fps. One lamp per pixel works too, but at one frame every eight seconds: pictures and video belong to a separate channel.</li>
-<li><b>Bluetooth carries the bar and slow effects.</b> About 30 range updates per second is a smooth 30 fps for the whole bar in one colour. The limit sits on the host: BlueZ delivers one queued write per 30 ms connection interval, and ignores the 7.5 to 15 ms the firmware asks for. Windows, with shorter intervals, is expected to do better and still has to be measured.</li>
+<li><b>Bluetooth carries the bar and slow effects.</b> About 30 range updates per second is a smooth 30 fps for the whole bar in one colour. The limit sits on the host, not in the radio: a Bluetooth 5 controller (the laptop's built-in Intel) and a Bluetooth 4.0 USB dongle both deliver about 30 reports per second, because BlueZ sends one queued write per connection interval of about 30 ms and does not apply the 7.5 to 15 ms the firmware asks for. Lowering the interval on the host (a BlueZ setting, root needed) is the next experiment; Windows is expected to do better and still has to be measured.</li>
 <li><b>Do not flood Bluetooth.</b> BlueZ queues output reports without a bound and drains them slowly, so a burst of 2,000 reports arrives over more than a minute, and short range updates start to be dropped once about 50 are queued. The test tool paces its sending and waits for the queue to drain.</li>
 <li><b>Enumeration is the hidden cost.</b> A host asks for every lamp's attributes when the device appears: 12 seconds for the 202 lamps of the default layout over Bluetooth, almost a minute for 768 lamps, minutes for more.</li>
+<li><b>USB tops out at 1,000 reports per second</b> (full-speed USB polls once per millisecond). With range updates that is up to 810,000 lamps per second, because from about 3,000 lamps per report the firmware, at 1.25 &micro;s per stored lamp, is the limit, not the bus.</li>
+<li><b>The serial console and the drawing hardly disturb the measurement.</b> On the CoreS3 the rate changes by less than half a per cent with 100 serial messages per second, on the Bluetooth link too; the Core2 loses 2 to 7 per cent. The real errors are host-side queues and other Bluetooth devices on the same controller, which the test tool paces and waits out.</li>
 <li><b>Intensity needs a curve.</b> Each lamp has red, green, blue and an intensity of 0 to 255, but at the bar's global brightness of 40 of 255 the webcam sees no difference for the lowest 12 to 24 intensity steps. The curve from there up is smooth and rises monotonically.</li>
 </ul>
 <h2>Try it</h2>
@@ -80,7 +82,7 @@
 jbang tools/LampTest.java bar    --board S3 --via ble --crop x0,y0,x1,y1   # webcam intensity ramp
 jbang tools/LampTest.java screen --board C2 --via ble --tiers 8x6,16x12,32x24
 jbang tools/LampTest.java rate   --board S3 --via ble --pace-us 1          # how fast does the link deliver?</pre>
-<p>The method, the raw numbers and the limits are in the <a href="https://github.com/nicenemo/nachtgespenst/blob/feature/lamparray/docs/wiki/lamparray-testing.md">LampArray test bench</a> wiki page, the plan behind it is <a href="https://github.com/nicenemo/nachtgespenst/blob/feature/lamparray/docs/adr/0010-lamparray-lighting-and-picture-pages.md">ADR 0010</a>. Not tested yet: Windows Dynamic Lighting, which would show whether Windows accepts the device over Bluetooth and how fast it is there.</p>
+<p>The method, the raw numbers and the limits are in the <a href="https://github.com/nicenemo/nachtgespenst/blob/feature/lamparray/docs/wiki/lamparray-testing.md">LampArray test bench</a> wiki page, the plan behind it is <a href="https://github.com/nicenemo/nachtgespenst/blob/feature/lamparray/docs/adr/0010-lamparray-lighting-and-picture-pages.md">ADR 0010</a>. Also on the board now: a System Control report (only Wake Up is ever pressed in tests; Power Down and Sleep are refused over serial), and persistent settings for the LED bar and the backlight. Not tested yet: Windows Dynamic Lighting, which would show whether Windows accepts the device over Bluetooth and how fast it is there.</p>
 </section>
 <nav class="pager" aria-label="Previous and next page"><a class="prev" href="camera.html"><small>&larr; Previous</small><br>Camera tests</a><a class="next" href="setup.html"><small>Next &rarr;</small><br>Set-up</a></nav>
 

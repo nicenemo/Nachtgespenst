@@ -46,7 +46,11 @@
 <p>The tool then cycles <code>LAYER 0</code> to <code>LAYER 25</code> on each board and films the bar. The contact sheets below put every frame next to a swatch of the colour the firmware was asked to show. All 26 layers come out with the right hue on both boards. Dark colours (Maroon, Navy, DarkGreen, Indigo) are dimmer, as they should be. Pale colours (PaleGreen, Khaki, Lavender, MistyRose) look blue-white because the camera's white balance shifts when the bar is the only light in the room. The numeric check is weak (the glow is only a few brightness levels), so the verdict comes from looking at the sheets.</p>
 <h3>Core2</h3><img class="wide" src="img/camera/core2-colours.jpg" width="1440" height="840" loading="lazy" alt="Contact sheet of 26 camera frames of the Core2 LED bar, one per layer, each labelled with the expected colour">
 <h3>CoreS3</h3><img class="wide" src="img/camera/cores3-colours.jpg" width="1440" height="840" loading="lazy" alt="Contact sheet of 26 camera frames of the CoreS3 LED bar, one per layer, each labelled with the expected colour">
-<p>Not covered yet: the Locks page colours (caps orange, num green, scroll blue, and the additive mix when several are on).</p>
+<h3>The Locks page</h3>
+<p>The Locks page lights the bar from the host's Caps, Num and Scroll Lock state: caps orange, num green, scroll blue, and an additive mix when several are on. The test sets every combination through the host keyboard LEDs and films the Core2 on a sheet of white paper, which makes the glow easy to see. All seven states come out right, including the orange of Caps Lock on its own, and white when all three are on.</p>
+<img class="wide" src="img/camera/core2-locks.jpg" width="1440" height="336" loading="lazy" alt="Seven camera frames of the Core2 LED bar on a white sheet: none lit, caps orange, num green, scroll blue, caps and num yellow, num and scroll cyan, all three white">
+<h3>Bar off means off</h3>
+<p>The <code>dark</code> test switches the bar off (<code>LEDS OFF</code>, which also cuts the 5 V rail of the base) and compares the camera with a dark baseline: the difference is 62 to 70 against a noise floor of 0.2 to 0.3, on both boards. When a board is tested, the bar of the other board is switched off too, so that it cannot light the scene.</p>
 </section>
 <nav class="pager" aria-label="Previous and next page"><a class="prev" href="interfaces.html"><small>&larr; Previous</small><br>Interfaces</a><a class="next" href="lamps.html"><small>Next &rarr;</small><br>LampArray bench</a></nav>
 
