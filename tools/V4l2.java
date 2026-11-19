@@ -65,8 +65,14 @@ final class V4l2 {
         fd = f;
         try {
             MemorySegment fm = arena.allocate(208);                                  // struct v4l2_format
-            fm.set(JAVA_INT, 0, BUF_TYPE_CAPTURE); fm.set(JAVA_INT, 8, wantW); fm.set(JAVA_INT, 12, wantH); fm.set(JAVA_INT, 16, YUYV); fm.set(JAVA_INT, 20, 0);
-            if (ioctl(S_FMT, fm) < 0) throw new IOException("cannot set the picture format: " + errText(errno()));
+            int[][] tries = {{wantW, wantH, YUYV}, {640, 480, YUYV}, {wantW, wantH, MJPG}, {640, 480, MJPG}, {320, 240, YUYV}};        // some cameras refuse the first size or format
+            int lastErr = 0; boolean set = false;
+            for (int[] t : tries) {
+                fm.fill((byte) 0); fm.set(JAVA_INT, 0, BUF_TYPE_CAPTURE); fm.set(JAVA_INT, 8, t[0]); fm.set(JAVA_INT, 12, t[1]); fm.set(JAVA_INT, 16, t[2]); fm.set(JAVA_INT, 20, 0);
+                if (ioctl(S_FMT, fm) >= 0) { set = true; break; }
+                lastErr = errno();
+            }
+            if (!set) throw new IOException("cannot set the picture format: " + errText(lastErr));
             width = fm.get(JAVA_INT, 8); height = fm.get(JAVA_INT, 12); fmt = fm.get(JAVA_INT, 16); int bpl = fm.get(JAVA_INT, 24);
             if (fmt != YUYV && fmt != MJPG) throw new IOException("the camera has neither YUYV nor MJPEG (format " + Integer.toHexString(fmt) + ")");
             stride = bpl > 0 ? bpl : width * 2;
