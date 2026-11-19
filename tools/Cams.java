@@ -109,6 +109,12 @@ final class Cams {
         volatile int quarter; volatile boolean mirror, flip;      // quarter turns clockwise (0..3) and a left-right mirror, applied when drawing
         private final AtomicBoolean pending = new AtomicBoolean();
         CamPanel() { setOpaque(false); }
+        /** Width over height of the picture as it is shown (after the turn); 16:9 until a frame has arrived. */
+        double aspect() {
+            Cam c = cam; BufferedImage im = c == null ? null : c.frame();
+            double a = im == null ? 16.0 / 9 : (double) im.getWidth() / im.getHeight();
+            return (quarter & 1) == 1 ? 1 / a : a;
+        }
         void refresh() { if (!pending.getAndSet(true)) SwingUtilities.invokeLater(() -> { pending.set(false); repaint(); }); }
         @Override protected void paintComponent(Graphics g0) {
             Graphics2D g = (Graphics2D) g0.create(); ConsoleUi.quality(g);
@@ -130,6 +136,27 @@ final class Cams {
                 g.drawImage(im, at, null);
             }
             g.dispose();
+        }
+    }
+
+    /** Lays the visible camera panels side by side or one above the other, whichever shows the pictures larger (a turned camera is tall, not wide). */
+    static final class CamLayout implements LayoutManager {
+        private final int gap;
+        CamLayout(int gap) { this.gap = gap; }
+        public void addLayoutComponent(String n, Component c) { }
+        public void removeLayoutComponent(Component c) { }
+        public Dimension preferredLayoutSize(Container c) { return new Dimension(10, 10); }
+        public Dimension minimumLayoutSize(Container c) { return new Dimension(10, 10); }
+        private static double area(double cw, double ch, double aspect) { double w = Math.min(cw, ch * aspect); return w * (w / aspect); }
+        public void layoutContainer(Container c) {
+            List<CamPanel> v = new ArrayList<>(); for (Component k : c.getComponents()) if (k.isVisible() && k instanceof CamPanel p) v.add(p);
+            Insets in = c.getInsets(); int w = c.getWidth() - in.left - in.right, h = c.getHeight() - in.top - in.bottom;
+            if (v.isEmpty() || w <= 0 || h <= 0) return;
+            if (v.size() == 1) { v.get(0).setBounds(in.left, in.top, w, h); return; }
+            double cw = (w - gap) / 2.0, ch = (h - gap) / 2.0, row = 0, col = 0;
+            for (CamPanel p : v) { row += area(cw, h, p.aspect()); col += area(w, ch, p.aspect()); }
+            if (row >= col) { int x = in.left; int cwi = (int) cw; for (CamPanel p : v) { p.setBounds(x, in.top, cwi, h); x += cwi + gap; } }
+            else { int y = in.top; int chi = (int) ch; for (CamPanel p : v) { p.setBounds(in.left, y, w, chi); y += chi + gap; } }
         }
     }
 }

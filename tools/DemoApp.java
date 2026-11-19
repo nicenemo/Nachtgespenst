@@ -215,9 +215,8 @@ public class DemoApp {
         JScrollPane logPane = new JScrollPane(log); logPane.setBorder(null); logPane.getViewport().setBackground(ConsoleTheme.BLACK);
         logPaneOuter.setLayout(new BorderLayout()); logPaneOuter.setOpaque(false); logPaneOuter.add(logPane); logPaneOuter.setPreferredSize(new Dimension(640, 360));
         ConsoleUi.Frame slideFrame = new ConsoleUi.Frame("The talk", ConsoleTheme.AMBER); slideFrame.setLayout(new BorderLayout()); slideFrame.add(slidePanel);
-                camsFrame = new ConsoleUi.Frame("The cameras", ConsoleTheme.PEACH); camsFrame.setLayout(new GridBagLayout()); camsFrame.setVisible(false);
-        GridBagConstraints kc = new GridBagConstraints(); kc.fill = GridBagConstraints.BOTH; kc.weightx = 1; kc.weighty = 1;
-        for (int i = 0; i < 2; i++) { kc.gridx = i; kc.insets = new Insets(0, i == 0 ? 0 : gap, 0, 0); camPanel[i].setPreferredSize(new Dimension(10, 10)); camPanel[i].setVisible(false); camsFrame.add(camPanel[i], kc); }
+                camsFrame = new ConsoleUi.Frame("The cameras", ConsoleTheme.PEACH); camsFrame.setLayout(new Cams.CamLayout(gap)); camsFrame.setVisible(false);
+        for (int i = 0; i < 2; i++) { camPanel[i].setPreferredSize(new Dimension(10, 10)); camPanel[i].setVisible(false); camsFrame.add(camPanel[i]); }
         ConsoleUi.Frame boardFrame = new ConsoleUi.Frame("The board", ConsoleTheme.LAVENDER); boardFrame.setLayout(new BorderLayout()); boardFrame.add(screenPanel);
         ConsoleUi.Frame lampFrame = new ConsoleUi.Frame("The lamps, worked out on the PC", ConsoleTheme.AMBER); lampFrame.setLayout(new BorderLayout()); lampFrame.add(lampPanel);
         // the centre grows and shrinks with the window: two fifths for the slide and the log, three fifths for the pictures
@@ -225,9 +224,9 @@ public class DemoApp {
         JPanel left = new JPanel(new BorderLayout()); left.setOpaque(false); left.add(slideFrame);
         JPanel right = new JPanel(new GridBagLayout()); right.setOpaque(false);
         GridBagConstraints rc = new GridBagConstraints(); rc.fill = GridBagConstraints.BOTH; rc.weightx = 1; rc.gridx = 0; rc.insets = new Insets(0, 0, gap, 0);
-        rc.gridy = 0; rc.weighty = 0.34; right.add(camsFrame, rc);
-        rc.gridy = 1; rc.weighty = 0.28; right.add(boardFrame, rc);
-        rc.gridy = 2; rc.weighty = 0.38; rc.insets = new Insets(0, 0, 0, 0); right.add(lampFrame, rc);
+        rc.gridy = 0; rc.weighty = 0.56; right.add(camsFrame, rc);
+        rc.gridy = 1; rc.weighty = 0.18; right.add(boardFrame, rc);
+        rc.gridy = 2; rc.weighty = 0.26; rc.insets = new Insets(0, 0, 0, 0); right.add(lampFrame, rc);
         JPanel centre = new JPanel(new GridBagLayout()); centre.setOpaque(false);
         GridBagConstraints cc = new GridBagConstraints(); cc.fill = GridBagConstraints.BOTH; cc.weighty = 1; cc.gridy = 0;
         cc.gridx = 0; cc.weightx = 0.52; cc.insets = new Insets(0, 0, 0, gap); centre.add(left, cc);
@@ -400,7 +399,7 @@ public class DemoApp {
     void camSaved(int i) {
         var pr = java.util.prefs.Preferences.userNodeForPackage(DemoApp.class);
         pr.putInt("rot" + i, camPanel[i].quarter); pr.putBoolean("mir" + i, camPanel[i].mirror); pr.putBoolean("flip" + i, camPanel[i].flip);
-        camPanel[i].refresh();
+        camPanel[i].refresh(); camsFrame.revalidate();
     }
 
     // ---- cameras: a camera is only open while its box is ticked
@@ -614,6 +613,8 @@ public class DemoApp {
             DemoApp app = new DemoApp();
             app.infoBar.setText("Connected: NG-S3, firmware Nov 19 2026, 30 pages");
             app.log.setText("Connected. Pick a demo, or start the cycle.\n=== Jules Verne to the SD card and back\nbook 618734 bytes, raw deflate 232700 bytes (38%)\nsent 232700 compressed bytes in 7,95 s = 28,6 kB/s\nloaded back 618734 bytes in 16,37 s = 36,9 kB/s over the gamepad\nSHA-256 of the received file equals the original\n");
+            for (int i = 0; i < 2; i++) { app.camPanel[i].setVisible(true); app.camPanel[i].text = i == 0 ? "tripod camera" : "laptop camera"; }  // the layout with both camera panels
+            app.camsFrame.setVisible(true);
             app.setEnabledActions(true); app.metricsBar.setText("loaded back 618734 bytes in 16,37 s = 36,9 kB/s over the gamepad");
             try {
                 BufferedImage sample = ImageIO.read(Boards.repoRoot().resolve("site/img/lamps/scope-880.png").toFile());
