@@ -3,3 +3,5 @@ out.txt
 tools/include/
 *.pdf
 tools/icons/subset.ttf
+tools/data/pg*.txt
+tools/data/photos/
