@@ -25,7 +25,7 @@ namespace HIDManager {
     // --- Public constants ---
     const unsigned long RELEASE_DELAY = 15; // ms
     // Host LED output report bits (HID LED page): Num Lock, Caps Lock, Scroll Lock.
-    constexpr uint8_t LED_NUM = 0x01, LED_CAPS = 0x02, LED_SCROLL = 0x04;
+    constexpr uint8_t LED_NUM = 0x01, LED_CAPS = 0x02, LED_SCROLL = 0x04, LED_COMPOSE = 0x08, LED_KANA = 0x10;
 
     // Initialise Bluetooth and HID
     void begin(const char* deviceName, const char* manufacturer);

@@ -1,99 +1,258 @@
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * An oscilloscope on the lamp grid. It gets the last microphone buffer of the board (512 samples at 16 kHz), finds a rising zero crossing to trigger
- * on so that the trace stands still, picks the time base so that about three periods fit, scales the amplitude automatically, lets the trace
- * glow and fade like phosphor, and draws a graticule of 8 x 8 divisions with the frequency and the time base in a tiny 3 x 5 font.
+ * Virtual oscilloscope rendered onto the 2D LED matrix display.
+ * <p>
+ * Processes raw PCM microphone audio frames (512 samples at 16 kHz) acquired from the board,
+ * computes triggering zero-crossings, applies dynamic gain scaling, renders phosphor decay persistence,
+ * superimposes an 8&times;8 graticule, and stamps live frequency/timebase metrics using a 3&times;5 bitmapped font.
+ * </p>
  */
 final class Scope {
-    static final int RATE = 16000;
-    final int cols, rows;
+
+    /** Audio sampling rate of the board's microphone in Hz. */
+    public static final int SAMPLE_RATE = 16000;
+
+    final int cols;
+    final int rows;
+
+    /** Phosphor intensity persistence map [0.0f, 1.0f] per pixel. */
     final float[] glow;
+
+    /** Current RGB pixel framebuffer (length {@code cols * rows}). */
     final int[] pix;
-    double lastFreq = 0, lastSpanMs = 0; int lastPeak = 0;
 
-    Scope(int cols, int rows) { this.cols = cols; this.rows = rows; glow = new float[cols * rows]; pix = new int[cols * rows]; }
+    double lastFreq = 0.0;
+    double lastSpanMs = 0.0;
+    int lastPeak = 0;
 
-    /** Draws one frame for the samples into the canvas picture (call Canvas.present() afterwards). */
-    void frame(Canvas c, int[] v) {
-        int n = v.length, peak = 1;
-        for (int s : v) peak = Math.max(peak, Math.abs(s));
-        // rising zero crossings that lead to a real swing (not the noise around zero)
-        List<Integer> cross = new ArrayList<>();
-        for (int i = 1; i < n - 8; i++) {
-            if (v[i - 1] < 0 && v[i] >= 0) {
-                int hi = 0; for (int k = i; k < Math.min(n, i + 10); k++) hi = Math.max(hi, v[k]);
-                if (hi > Math.max(40, peak / 4)) cross.add(i);
-            }
-        }
-        double freq = 0;
-        if (cross.size() >= 2) freq = (double) RATE * (cross.size() - 1) / (cross.get(cross.size() - 1) - cross.get(0));
-        int span = freq > 0 ? (int) Math.max(48, Math.min(300, 3.0 * RATE / freq)) : 200;
-        int trig = 0;
-        for (int t : cross) if (t + span < n) { trig = t; break; }
-        if (trig + span >= n) span = n - trig - 1;
-        lastFreq = freq; lastSpanMs = span * 1000.0 / RATE; lastPeak = peak;
-        int seen = 1; for (int i = trig; i <= trig + span && i < n; i++) seen = Math.max(seen, Math.abs(v[i]));
-        double gain = rows * 0.40 / Math.max(80, seen);                            // quiet noise stays small, a tone fills the screen
-
-        for (int i = 0; i < glow.length; i++) glow[i] *= 0.62f;                     // the phosphor fades
-        int prev = -1;
-        for (int x = 0; x < cols; x++) {
-            double pos = trig + x * (double) (span - 1) / (cols - 1);
-            int i0 = (int) pos; double f = pos - i0; int i1 = Math.min(n - 1, i0 + 1);
-            double val = v[i0] * (1 - f) + v[i1] * f;
-            int y = (int) Math.round(rows / 2.0 - val * gain);
-            y = Math.max(0, Math.min(rows - 1, y));
-            int a = prev < 0 ? y : prev;
-            for (int yy = Math.min(a, y); yy <= Math.max(a, y); yy++) glow[yy * cols + x] = 1f;   // join the points with a vertical run
-            prev = y;
-        }
-        for (int y = 0; y < rows; y++) for (int x = 0; x < cols; x++) {
-            int bg = graticule(x, y), g = (int) (Math.min(1f, glow[y * cols + x]) * 255);
-            pix[y * cols + x] = g > 8 ? trace(glow[y * cols + x]) : bg;
-        }
-        String top = freq > 0 ? String.format("%dHZ", Math.round(freq)) : "NO TONE";
-        text(0, 1, top, 0xFFCC99);
-        String right = String.format("%.1fMS", lastSpanMs);
-        text(cols - 4 * right.length() - 1, 1, right, 0x9999FF);
-        if (c != null) c.setAll(pix);
+    /**
+     * Initializes an oscilloscope canvas with the specified matrix dimensions.
+     *
+     * @param cols matrix columns
+     * @param rows matrix rows
+     */
+    Scope(int cols, int rows) {
+        this.cols = cols;
+        this.rows = rows;
+        this.glow = new float[cols * rows];
+        this.pix = new int[cols * rows];
     }
 
-    /** 8 x 8 divisions in the console colours: dotted lines, brighter lavender axes with a tick every four lamps, on black. */
+    /**
+     * Computes an oscilloscope frame from 16 kHz audio samples and updates the canvas.
+     *
+     * @param canvas the target canvas to update (or {@code null} to update internal buffer only)
+     * @param samples array of raw 16-bit signed PCM audio samples
+     */
+    void frame(Canvas canvas, int[] samples) {
+        int sampleCount = samples.length;
+        int peak = 1;
+        for (int s : samples) {
+            peak = Math.max(peak, Math.abs(s));
+        }
+
+        // Locate rising zero crossings that exceed the noise threshold
+        List<Integer> crossings = new ArrayList<>();
+        int noiseThreshold = Math.max(40, peak / 4);
+
+        for (int i = 1; i < sampleCount - 8; i++) {
+            if (samples[i - 1] < 0 && samples[i] >= 0) {
+                int localMax = 0;
+                for (int k = i; k < Math.min(sampleCount, i + 10); k++) {
+                    localMax = Math.max(localMax, samples[k]);
+                }
+                if (localMax > noiseThreshold) {
+                    crossings.add(i);
+                }
+            }
+        }
+
+        // Calculate fundamental frequency from crossing intervals
+        double freq = 0.0;
+        if (crossings.size() >= 2) {
+            int firstCross = crossings.getFirst();
+            int lastCross = crossings.getLast();
+            freq = (double) SAMPLE_RATE * (crossings.size() - 1) / (lastCross - firstCross);
+        }
+
+        // Determine span (display timebase) to fit approximately 3 full cycles
+        int span = (freq > 0)
+                ? (int) Math.clamp(3.0 * SAMPLE_RATE / freq, 48, 300)
+                : 200;
+
+        int triggerIndex = 0;
+        for (int t : crossings) {
+            if (t + span < sampleCount) {
+                triggerIndex = t;
+                break;
+            }
+        }
+        if (triggerIndex + span >= sampleCount) {
+            span = sampleCount - triggerIndex - 1;
+        }
+
+        lastFreq = freq;
+        lastSpanMs = span * 1000.0 / SAMPLE_RATE;
+        lastPeak = peak;
+
+        // Auto-gain scaling
+        int maxSeen = 1;
+        for (int i = triggerIndex; i <= triggerIndex + span && i < sampleCount; i++) {
+            maxSeen = Math.max(maxSeen, Math.abs(samples[i]));
+        }
+        double gain = (rows * 0.40) / Math.max(80, maxSeen);
+
+        // Phosphor decay: fade existing trace
+        for (int i = 0; i < glow.length; i++) {
+            glow[i] *= 0.62f;
+        }
+
+        // Plot new trace with linear interpolation and vertical continuity
+        int previousY = -1;
+        for (int x = 0; x < cols; x++) {
+            double samplePos = triggerIndex + x * (double) (span - 1) / (cols - 1);
+            int idx0 = (int) samplePos;
+            double frac = samplePos - idx0;
+            int idx1 = Math.min(sampleCount - 1, idx0 + 1);
+
+            double interpolatedVal = samples[idx0] * (1.0 - frac) + samples[idx1] * frac;
+            int y = (int) Math.round(rows / 2.0 - interpolatedVal * gain);
+            y = Math.clamp(y, 0, rows - 1);
+
+            int startY = (previousY < 0) ? y : previousY;
+            int minY = Math.min(startY, y);
+            int maxY = Math.max(startY, y);
+            for (int cy = minY; cy <= maxY; cy++) {
+                glow[cy * cols + x] = 1.0f;
+            }
+            previousY = y;
+        }
+
+        // Composite phosphor glow over graticule background
+        for (int y = 0; y < rows; y++) {
+            for (int x = 0; x < cols; x++) {
+                int index = y * cols + x;
+                float intensity = Math.min(1.0f, glow[index]);
+                int bg = graticule(x, y);
+                pix[index] = (intensity * 255.0f > 8) ? traceColor(intensity) : bg;
+            }
+        }
+
+        // On-screen telemetry text overlay
+        String topText = (freq > 0) ? String.format("%dHZ", Math.round(freq)) : "NO TONE";
+        drawText(0, 1, topText, 0xFFCC99);
+
+        String rightText = String.format("%.1fMS", lastSpanMs);
+        drawText(cols - 4 * rightText.length() - 1, 1, rightText, 0x9999FF);
+
+        if (canvas != null) {
+            canvas.setAll(pix);
+        }
+    }
+
+    /**
+     * Computes the graticule background colour for coordinate (x, y).
+     *
+     * @param x column index
+     * @param y row index
+     * @return 24-bit 0xRRGGBB colour
+     */
     int graticule(int x, int y) {
-        int cx = cols / 2, cy = rows / 2;
-        if (y == cy) return (x % 4 == 0) ? 0x4A4A8C : 0x2E2E58;
-        if (x == cx) return (y % 4 == 0) ? 0x4A4A8C : 0x2E2E58;
-        boolean vline = x % (cols / 8) == 0, hline = y % Math.max(1, rows / 8) == 0;
-        if ((vline && y % 2 == 0) || (hline && x % 2 == 0)) return 0x16162C;
+        int centreX = cols / 2;
+        int centreY = rows / 2;
+
+        if (y == centreY) {
+            return (x % 4 == 0) ? 0x4A4A8C : 0x2E2E58; // Major horizontal axis
+        }
+        if (x == centreX) {
+            return (y % 4 == 0) ? 0x4A4A8C : 0x2E2E58; // Major vertical axis
+        }
+
+        boolean vGrid = (x % Math.max(1, cols / 8) == 0);
+        boolean hGrid = (y % Math.max(1, rows / 8) == 0);
+        if ((vGrid && y % 2 == 0) || (hGrid && x % 2 == 0)) {
+            return 0x16162C; // Minor dotted division lines
+        }
         return 0x000000;
     }
 
-    /** The trace: amber where it is fading, through peach to a near white core where it is fresh. */
-    static int trace(float g) {
-        g = Math.min(1f, g);
-        float k = Math.max(0f, (g - 0.55f) / 0.45f);                              // 0 .. 1 from amber to the white core
-        float d = (float) Math.sqrt(g);                                            // fade to a dark amber, not to red
-        int r = (int) (255 * d), gr = (int) (153 * d + (240 - 153) * k * d), b = (int) (232 * k * k * d);
+    /**
+     * Converts phosphor glow intensity into a multi-stage thermal/phosphor color ramp.
+     * Transitions from dark amber through peach to an intense white-hot core.
+     *
+     * @param g normalized glow intensity [0.0, 1.0]
+     * @return 24-bit 0xRRGGBB colour
+     */
+    static int traceColor(float g) {
+        float intensity = Math.clamp(g, 0.0f, 1.0f);
+        float core = Math.max(0.0f, (intensity - 0.55f) / 0.45f);
+        float decay = (float) Math.sqrt(intensity);
+
+        int r = (int) (255 * decay);
+        int gr = (int) (153 * decay + (240 - 153) * core * decay);
+        int b = (int) (232 * core * core * decay);
+
         return (r << 16) | (Math.min(255, gr) << 8) | Math.min(255, b);
     }
 
-    // ---- a 3 x 5 font for the readout
-    static final Map<Character, String> FONT = new HashMap<>();
+    // --- 3x5 font table encoded as 15-bit integers ---
+    private static final short[] FONT_BITS = new short[128];
     static {
-        String[] f = {"0:111101101101111", "1:010110010010111", "2:111001111100111", "3:111001111001111", "4:101101111001001", "5:111100111001111",
-                      "6:111100111101111", "7:111001001001001", "8:111101111101111", "9:111101111001111", "H:101101111101101", "Z:111001010100111",
-                      "M:101111111101101", "S:111100111001111", "N:111101101101101", "O:111101101101111", "T:111010010010010", "E:111100110100111",
-                      "A:010101111101101", ".:000000000000010", "-:000000111000000", "K:101101110101101", "V:101101101101010", "P:111101111100100", " :000000000000000"};
-        for (String e : f) FONT.put(e.charAt(0), e.substring(2));
-    }
-    void text(int x0, int y0, String s, int rgb) {
-        for (int ci = 0; ci < s.length(); ci++) {
-            String g = FONT.get(s.charAt(ci)); if (g == null) continue;
-            for (int k = 0; k < 15; k++) if (g.charAt(k) == '1') {
-                int x = x0 + ci * 4 + k % 3, y = y0 + k / 3;
-                if (x >= 0 && x < cols && y >= 0 && y < rows) pix[y * cols + x] = rgb;
+        String[] fontDefs = {
+                "0:111101101101111", "1:010110010010111", "2:111001111100111", "3:111001111001111",
+                "4:101101111001001", "5:111100111001111", "6:111100111101111", "7:111001001001001",
+                "8:111101111101111", "9:111101111001111", "H:101101111101101", "Z:111001010100111",
+                "M:101111111101101", "S:111100111001111", "N:111101101101101", "O:111101101101111",
+                "T:111010010010010", "E:111100110100111", "A:010101111101101", ".:000000000000010",
+                "-:000000111000000", "K:101101110101101", "V:101101101101010", "P:111101111100100",
+                " :000000000000000"
+        };
+        for (String def : fontDefs) {
+            char ch = def.charAt(0);
+            String bits = def.substring(2);
+            short val = 0;
+            for (int k = 0; k < 15; k++) {
+                if (bits.charAt(k) == '1') {
+                    val |= (short) (1 << (14 - k));
+                }
+            }
+            if (ch < FONT_BITS.length) {
+                FONT_BITS[ch] = val;
             }
         }
+    }
+
+    /**
+     * Renders a text string into the internal pixel framebuffer using the compact 3&times;5 font.
+     *
+     * @param x0  origin column
+     * @param y0  origin row
+     * @param str text message to render
+     * @param rgb 24-bit 0xRRGGBB font colour
+     */
+    void drawText(int x0, int y0, String str, int rgb) {
+        for (int ci = 0; ci < str.length(); ci++) {
+            char c = str.charAt(ci);
+            if (c >= FONT_BITS.length) continue;
+            short glyph = FONT_BITS[c];
+            if (glyph == 0 && c != ' ') continue;
+
+            for (int k = 0; k < 15; k++) {
+                if (((glyph >> (14 - k)) & 1) == 1) {
+                    int x = x0 + ci * 4 + (k % 3);
+                    int y = y0 + (k / 3);
+                    if (x >= 0 && x < cols && y >= 0 && y < rows) {
+                        pix[y * cols + x] = rgb;
+                    }
+                }
+            }
+        }
+    }
+
+    /** Compatibility alias for {@link #drawText(int, int, String, int)}. */
+    void text(int x0, int y0, String s, int rgb) {
+        drawText(x0, y0, s, rgb);
     }
 }

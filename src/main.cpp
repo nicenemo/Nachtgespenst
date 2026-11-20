@@ -6,6 +6,7 @@
 #include "Disk.h"
 #include "Settings.h"
 #include "ui.h"
+#include "Presenter.h"
 #include "SerialCmd.h"
 
 void setup() {
@@ -28,6 +29,7 @@ void setup() {
     HIDManager::setPrefer((HIDManager::Prefer)Settings::prefer());     // routing chosen with SET prefer (default USB)   // the Bluetooth name carries the emoji; USB strings stay ASCII
 
     ui_begin();
+    Presenter::begin();
 }
 
 void loop() {
@@ -39,12 +41,16 @@ void loop() {
 #endif
 
     HIDManager::handleAsyncEvents();
+    Presenter::loop();                                  // the air mouse (does nothing unless the pointer is on)
 
 #if NG_HAS_BTNS
     // Core2 capacitive buttons below the screen: A = previous page, B = Locks page <-> back, C = next page
-    if (M5.BtnA.wasPressed()) ui_set_layer(ui_layer() - 1);
-    if (M5.BtnB.wasPressed()) ui_toggle_locks();
-    if (M5.BtnC.wasPressed()) ui_set_layer(ui_layer() + 1);
+    if (M5.BtnA.wasPressed()) ui_button(0, true);
+    if (M5.BtnB.wasPressed()) ui_button(1, true);
+    if (M5.BtnC.wasPressed()) ui_button(2, true);
+    if (M5.BtnA.wasReleased()) ui_button(0, false);
+    if (M5.BtnB.wasReleased()) ui_button(1, false);
+    if (M5.BtnC.wasReleased()) ui_button(2, false);
 #endif
     delay(ui_loop()); // sleep until LVGL's next job (1..10 ms) instead of spinning
 }

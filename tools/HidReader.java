@@ -1,34 +1,90 @@
-import com.fazecast.jSerialComm.SerialPort;
 import java.io.IOException;
-import java.lang.foreign.*;
-import java.lang.invoke.MethodHandle;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
-import java.util.*;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import static java.lang.foreign.ValueLayout.*;
+import java.lang.foreign.Arena;
+import java.lang.foreign.MemorySegment;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.locks.LockSupport;
 
-    /** Reads the input reports of the board's HID node (the gamepad, report ID 11) without blocking the writer. */
-    final class HidReader implements AutoCloseable {
-        final int fd; final java.util.concurrent.ConcurrentLinkedQueue<byte[]> q = new java.util.concurrent.ConcurrentLinkedQueue<>();
-        volatile boolean run = true; final Thread t; volatile long reports = 0;
-        HidReader(String path) throws IOException {
-            int f;
-            try { f = (int) Libc.OPEN.invoke(Libc.CAPTURE, Libc.ARENA.allocateFrom(path), 2048); } catch (Throwable e) { throw new IOException(e); }   // O_RDONLY | O_NONBLOCK
-            if (f < 0) throw new IOException("cannot open " + path + " for reading (errno " + Libc.errno() + ")");
-            fd = f;
-            Arena a = Arena.ofShared(); MemorySegment buf = a.allocate(256);
-            t = Thread.ofVirtual().name("hid-reader").unstarted(() -> {
-                try {
-                    while (run) {
-                        long n = (long) Libc.READ.invoke(fd, buf, 256L);
-                        if (n <= 0) { java.util.concurrent.locks.LockSupport.parkNanos(40_000); continue; }
-                        if ((buf.get(JAVA_BYTE, 0) & 255) == Proto.GAMEPAD_ID && n >= 49) { q.add(buf.asSlice(1, 48).toArray(JAVA_BYTE)); reports++; }
-                    }
-                } catch (Throwable e) { }
-            });
-            t.start();
+import static java.lang.foreign.ValueLayout.JAVA_BYTE;
+
+/**
+ * Asynchronous background reader for board HID input reports.
+ * <p>
+ * Reads input reports from the board's raw HID interface in a non-blocking loop
+ * executed on a virtual thread. Filters for gamepad input reports
+ * (Report ID {@value Proto#GAMEPAD_ID}) carrying telemetry and disk load packets,
+ * and queues 48-byte payload slices for consumption without stalling the main thread.
+ * </p>
+ */
+final class HidReader implements AutoCloseable {
+
+    private static final int BUFFER_SIZE = 256;
+    private static final int REQUIRED_REPORT_SIZE = 49;
+    private static final int PAYLOAD_SIZE = 48;
+
+    final int fd;
+    final ConcurrentLinkedQueue<byte[]> q = new ConcurrentLinkedQueue<>();
+    private final Arena arena = Arena.ofShared();
+    private final Thread readerThread;
+    private volatile boolean running = true;
+    volatile long reports = 0;
+
+    /**
+     * Opens the HID device node in non-blocking mode and launches the reader thread.
+     *
+     * @param path device node path (e.g. {@code /dev/hidraw1})
+     * @throws IOException if opening the device fails
+     */
+    HidReader(String path) throws IOException {
+        int openedFd;
+        try {
+            openedFd = (int) Libc.OPEN.invoke(
+                    Libc.CAPTURE,
+                    Libc.ARENA.allocateFrom(path),
+                    Libc.O_RDONLY | Libc.O_NONBLOCK
+            );
+        } catch (Throwable e) {
+            throw new IOException("Failed to invoke open on " + path, e);
         }
-        public void close() { run = false; try { t.join(200); } catch (InterruptedException ignored) { } try { int r = (int) Libc.CLOSE.invoke(fd); } catch (Throwable ignored) { } }
+
+        if (openedFd < 0) {
+            throw new IOException("Cannot open " + path + " for reading (errno " + Libc.errno() + ")");
+        }
+        this.fd = openedFd;
+
+        MemorySegment buf = arena.allocate(BUFFER_SIZE);
+        this.readerThread = Thread.ofVirtual().name("hid-reader-" + openedFd).start(() -> {
+            try {
+                while (running) {
+                    long bytesRead = (long) Libc.READ.invoke(fd, buf, (long) BUFFER_SIZE);
+                    if (bytesRead <= 0) {
+                        LockSupport.parkNanos(40_000); // 40 microseconds backoff
+                        continue;
+                    }
+
+                    int reportId = buf.get(JAVA_BYTE, 0) & 0xFF;
+                    if (reportId == Proto.GAMEPAD_ID && bytesRead >= REQUIRED_REPORT_SIZE) {
+                        q.add(buf.asSlice(1, PAYLOAD_SIZE).toArray(JAVA_BYTE));
+                        reports++;
+                    }
+                }
+            } catch (Throwable ignored) {
+                // Thread terminates on device closure or error
+            }
+        });
     }
+
+    /**
+     * Stops the reader thread, waits for termination, and closes the native file descriptor.
+     */
+    @Override
+    public void close() {
+        running = false;
+        try {
+            readerThread.join(200);
+        } catch (InterruptedException ignored) {
+            Thread.currentThread().interrupt();
+        }
+        Libc.close(fd);
+        arena.close();
+    }
+}

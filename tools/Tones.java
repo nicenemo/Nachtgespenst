@@ -1,40 +1,117 @@
-import javax.sound.sampled.*;
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Line;
+import javax.sound.sampled.Mixer;
+import javax.sound.sampled.SourceDataLine;
+import javax.sound.sampled.TargetDataLine;
+import java.util.ArrayList;
+import java.util.List;
 
-/** Plays tones through the speaker of the PC (javax.sound, no Linux tools), to test the microphone of a board. */
+/**
+ * Pure Java audio frequency tone synthesizer using {@code javax.sound.sampled}.
+ * <p>
+ * Generates pure sine tones to stimulate the board's microphone during acoustic testing.
+ * Implements 10 ms amplitude envelope ramping at onset and offset to eliminate transient
+ * DC pops and speaker clicks.
+ * </p>
+ */
 final class Tones {
-    static final float RATE = 44100f;
-    /** The speaker the tones go to (null = the default of the system) and its volume 0..1; the demo window sets them. */
-    static volatile Mixer.Info output; static volatile double volume = 1.0;
 
-    /** The devices that can play (output) or record (input), by name, for the choice lists of the demo window. */
-    static java.util.List<Mixer.Info> devices(boolean forOutput) {
-        java.util.List<Mixer.Info> out = new java.util.ArrayList<>();
-        for (Mixer.Info mi : AudioSystem.getMixerInfo()) {
+    /** Standard CD-quality sample rate in Hz. */
+    public static final float SAMPLE_RATE = 44100.0f;
+
+    /** Selected audio output mixer (or {@code null} to use the system default). */
+    static volatile Mixer.Info output;
+
+    /** Master volume multiplier in range [0.0, 1.0]. */
+    static volatile double volume = 1.0;
+
+    private Tones() {
+        // Non-instantiable utility class
+    }
+
+    /**
+     * Enumerates available audio playback or recording devices present on the system.
+     *
+     * @param forOutput {@code true} to list output devices (speakers), {@code false} for input (microphones)
+     * @return list of matching {@link Mixer.Info} handles
+     */
+    static List<Mixer.Info> devices(boolean forOutput) {
+        List<Mixer.Info> matchedDevices = new ArrayList<>();
+        Class<?> lineClass = forOutput ? SourceDataLine.class : TargetDataLine.class;
+        Line.Info targetInfo = new Line.Info(lineClass);
+
+        for (Mixer.Info info : AudioSystem.getMixerInfo()) {
             try {
-                Mixer m = AudioSystem.getMixer(mi);
-                if (forOutput ? m.getSourceLineInfo(new Line.Info(SourceDataLine.class)).length > 0 : m.getTargetLineInfo(new Line.Info(TargetDataLine.class)).length > 0) out.add(mi);
-            } catch (RuntimeException ignored) { }
+                Mixer mixer = AudioSystem.getMixer(info);
+                Line.Info[] available = forOutput
+                        ? mixer.getSourceLineInfo(targetInfo)
+                        : mixer.getTargetLineInfo(targetInfo);
+                if (available.length > 0) {
+                    matchedDevices.add(info);
+                }
+            } catch (RuntimeException ignored) {
+                // Skip devices that cannot be queried
+            }
         }
-        return out;
+        return matchedDevices;
     }
 
-    /** A sine of hz Hz for seconds at the given level (0..1); returns when it has been played. */
-    static void play(double hz, double seconds, double level) throws Exception {
-        byte[] buf = new byte[(int) (RATE * seconds) * 2];
-        for (int i = 0; i < buf.length / 2; i++) {
-            double env = Math.min(1, Math.min(i / 441.0, (buf.length / 2 - i) / 441.0));         // 10 ms ramps against clicks
-            short v = (short) (Math.sin(2 * Math.PI * hz * i / RATE) * 32767 * level * volume * env);
-            buf[2 * i] = (byte) v; buf[2 * i + 1] = (byte) (v >> 8);
+    /**
+     * Synthesizes and plays a pure sine wave synchronously.
+     *
+     * @param frequencyHz tone frequency in Hertz
+     * @param seconds     playback duration in seconds
+     * @param level       nominal amplitude [0.0, 1.0]
+     * @throws Exception if opening or writing to the audio line fails
+     */
+    static void play(double frequencyHz, double seconds, double level) throws Exception {
+        int totalSamples = (int) (SAMPLE_RATE * seconds);
+        byte[] pcmBuffer = new byte[totalSamples * 2]; // 16-bit mono = 2 bytes per sample
+        double rampSamples = 441.0; // 10 ms at 44.1 kHz
+
+        for (int i = 0; i < totalSamples; i++) {
+            // Envelope ramp to prevent audio clicks
+            double rampIn = i / rampSamples;
+            double rampOut = (totalSamples - i) / rampSamples;
+            double envelope = Math.clamp(Math.min(rampIn, rampOut), 0.0, 1.0);
+
+            double angle = 2.0 * Math.PI * frequencyHz * i / SAMPLE_RATE;
+            short sample = (short) (Math.sin(angle) * 32767.0 * level * volume * envelope);
+
+            pcmBuffer[2 * i] = (byte) (sample & 0xFF);
+            pcmBuffer[2 * i + 1] = (byte) ((sample >> 8) & 0xFF);
         }
-        AudioFormat fmt = new AudioFormat(RATE, 16, 1, true, false);
-        Mixer.Info dev = output;
-        try (SourceDataLine line = dev != null ? AudioSystem.getSourceDataLine(fmt, dev) : AudioSystem.getSourceDataLine(fmt)) {
-            line.open(fmt, buf.length); line.start(); line.write(buf, 0, buf.length); line.drain();
+
+        AudioFormat format = new AudioFormat(SAMPLE_RATE, 16, 1, true, false);
+        Mixer.Info chosenMixer = output;
+
+        try (SourceDataLine line = (chosenMixer != null)
+                ? AudioSystem.getSourceDataLine(format, chosenMixer)
+                : AudioSystem.getSourceDataLine(format)) {
+
+            line.open(format, pcmBuffer.length);
+            line.start();
+            line.write(pcmBuffer, 0, pcmBuffer.length);
+            line.drain();
         }
     }
 
-    /** The tone starts in a virtual thread so that the caller can read the board while it sounds. */
-    static Thread playAsync(double hz, double seconds, double level) {
-        return Thread.ofVirtual().name("tone").start(() -> { try { play(hz, seconds, level); } catch (Exception e) { System.err.println("cannot play a tone: " + e); } });
+    /**
+     * Starts tone playback asynchronously on a virtual thread.
+     *
+     * @param frequencyHz tone frequency in Hertz
+     * @param seconds     duration in seconds
+     * @param level       nominal amplitude [0.0, 1.0]
+     * @return the running virtual {@link Thread}
+     */
+    static Thread playAsync(double frequencyHz, double seconds, double level) {
+        return Thread.ofVirtual().name("tone-synthesizer").start(() -> {
+            try {
+                play(frequencyHz, seconds, level);
+            } catch (Exception e) {
+                System.err.println("Cannot play audio tone: " + e.getMessage());
+            }
+        });
     }
 }

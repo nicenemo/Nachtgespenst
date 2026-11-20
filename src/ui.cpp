@@ -1,5 +1,7 @@
 #include <M5Unified.h>
 #include <FastLED.h>
+#include <math.h>
+#include <esp_heap_caps.h>
 #include <lvgl.h>
 #include "Config.h"
 #include "Keymap.h"
@@ -11,6 +13,8 @@
 #include "Settings.h"
 #include "Theme.h"
 #include "Icons.h"
+#include "ConsoleStyle.h"
+#include "Presenter.h"
 #include "IconCodes.h"
 #define LV_SYMBOL_LEFT_ICON IC_ARROW_BACK
 #define LV_SYMBOL_RIGHT_ICON IC_ARROW_FORWARD
@@ -25,10 +29,12 @@ constexpr int GAP = 3;
 constexpr int MAX_TILES = 32;
 
 struct LockDef { const char* name; uint8_t ledBit; CRGB color; };
-const LockDef LOCKS[3] = {
-    {"CAPS",   HIDManager::LED_CAPS,   LOCK_COLORS[0]},
-    {"NUM",    HIDManager::LED_NUM,    LOCK_COLORS[1]},
-    {"SCROLL", HIDManager::LED_SCROLL, LOCK_COLORS[2]},
+const LockDef LOCKS[LOCK_COUNT] = {
+    {"Caps",    HIDManager::LED_CAPS,    LOCK_COLORS[0]},
+    {"Num",     HIDManager::LED_NUM,     LOCK_COLORS[1]},
+    {"Scroll",  HIDManager::LED_SCROLL,  LOCK_COLORS[2]},
+    {"Compose", HIDManager::LED_COMPOSE, LOCK_COLORS[3]},      // on Linux the desktop sets these two LEDs (xkb indicators)
+    {"Kana",    HIDManager::LED_KANA,    LOCK_COLORS[4]},
 };
 
 // After the Locks page: the Disk demo (file transfer over the LampArray, see Disk.h) and the two LampArray test pages (see Lamps.h):
@@ -62,13 +68,39 @@ lv_obj_t* g_header = nullptr;
 lv_obj_t* g_title = nullptr;
 lv_obj_t* g_pageLbl = nullptr;
 lv_obj_t* g_body = nullptr;
-lv_obj_t* g_lockTiles[3] = {};
-lv_obj_t* g_lockState[3] = {};
+#if !NG_PRESENTER      // the Locks page (and its LEDs) exist on the CoreS3 only; the Core2 is a clicker
+lv_obj_t* g_lockTiles[LOCK_COUNT] = {};
+lv_obj_t* g_lockState[LOCK_COUNT] = {};
+// A small round LED in every lock tile, behind the same lattice as the lamps of the LED bar in the demo window. It shows the colour of that lock on the LED bar (LOCK_COLORS).
+constexpr int LED_PX = 24;
+lv_obj_t* g_lockLed[LOCK_COUNT] = {};
+uint32_t* g_ledBuf[LOCK_COUNT] = {};                                  // allocated when the Locks page is first built (the Core2 never builds it: no static RAM for it)
+void drawLed(int i, bool on) {
+    const CRGB c = LOCK_COLORS[i];
+    if (!g_ledBuf[i]) g_ledBuf[i] = (uint32_t*)heap_caps_malloc(LED_PX * LED_PX * 4, MALLOC_CAP_8BIT);
+    uint32_t* b = g_ledBuf[i]; if (!b) return;
+    const float r0 = LED_PX / 2.0f - 0.5f;
+    for (int y = 0; y < LED_PX; y++) for (int x = 0; x < LED_PX; x++) {
+        float dx = x - r0, dy = y - r0, d = sqrtf(dx * dx + dy * dy);
+        if (d > r0 + 0.5f) { b[y * LED_PX + x] = 0; continue; }                          // outside the circle: transparent
+        bool lattice = (x % 4 == 0) || (y % 4 == 0);
+        float k = on ? (lattice ? 0.16f : 1.0f) : (lattice ? 0.05f : 0.20f);             // lit: the colour behind dark lines; off: the bare lattice
+        uint8_t a = d > r0 ? 128 : 255;                                                  // a soft edge
+        b[y * LED_PX + x] = ((uint32_t)a << 24) | ((uint32_t)(c.r * k) << 16) | ((uint32_t)(c.g * k) << 8) | (uint32_t)(c.b * k);
+    }
+}
+#endif
 
 // injected touch
 bool g_swallowTouch = false; // touch that woke a dimmed screen must not press a tile
 int g_injX = 0, g_injY = 0;
 uint32_t g_injUntil = 0;
+// A touch that is held until it is released (shell: touch down / touch up). Released by first moving off every control, so no click fires.
+bool g_holdOn = false; int g_holdX = 0, g_holdY = 0; uint32_t g_holdEnd = 0;
+uint8_t g_btnDown = 0;                  // bit 0..2: Core2 button A, B, C held (really or by the shell)
+#if NG_HAS_BTNS
+lv_obj_t* g_btnPill[3] = {};            // the A, B, C indicators in the header of the Core2
+#endif
 
 CRGB g_leds[LED_COUNT];
 volatile uint32_t g_barSnap[10];   // what the bar shows, for BAR? (the demo window mirrors it)
@@ -99,6 +131,10 @@ void flushCb(lv_display_t* disp, const lv_area_t* a, uint8_t* px) {
 }
 
 void readCb(lv_indev_t*, lv_indev_data_t* d) {
+    if (g_holdOn) {
+        if (g_holdEnd && (int32_t)(millis() - g_holdEnd) >= 0) g_holdOn = false;
+        else { d->state = LV_INDEV_STATE_PRESSED; d->point.x = g_holdX; d->point.y = g_holdY; return; }
+    }
     if ((int32_t)(g_injUntil - millis()) > 0) {
         d->state = LV_INDEV_STATE_PRESSED; d->point.x = g_injX; d->point.y = g_injY; return;
     }
@@ -135,8 +171,18 @@ void updateLedsLocked() {
     }
     if (!g_barPowered) { M5.Power.setExtOutput(true); g_barPowered = true; delay(40); } // the LEDs need a moment after the rail returns
     FastLED.setBrightness(Lamps::barBrightness());
+#if NG_PRESENTER
+    {   // the clicker: the bar shows the pointer: dark while it is off, dim lavender while it sleeps, amber while it moves
+        Presenter::Ptr p = Presenter::pointer();
+        CRGB c = p == Presenter::Ptr::Active ? CRGB(255, 153, 0) : p == Presenter::Ptr::Asleep ? CRGB(24, 24, 64) : CRGB::Black;
+        fill_solid(g_leds, LED_COUNT, c);
+        for (int i = 0; i < 10 && i < LED_COUNT; i++) g_barSnap[i] = ((uint32_t)g_leds[i].r << 16) | ((uint32_t)g_leds[i].g << 8) | g_leds[i].b;
+        FastLED.show();
+        return;
+    }
+#endif
     uint8_t mask = 0; // host LED bits: num=1 caps=2 scroll=4 -> bar mask caps=1 num=2 scroll=4
-    for (int i = 0; i < 3; i++) if (g_hostLed & LOCKS[i].ledBit) mask |= 1u << i;
+    for (int i = 0; i < LOCK_COUNT; i++) if (g_hostLed & LOCKS[i].ledBit) mask |= 1u << i;
     if (g_page >= PAGE_LAMP_SCREEN) {
         for (int i = 0; i < LED_COUNT; i++) g_leds[i] = Lamps::barColor(i); // lamps 0..9 of the LampArray
     } else if (g_page == PAGE_DISK) {
@@ -177,17 +223,20 @@ void onHid(HIDManager::HIDEvent e, uint8_t led) {
 }
 
 // ---------- actions ----------
+#if !NG_PRESENTER
 void refreshLocks() {
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < LOCK_COUNT; i++) {
         if (!g_lockTiles[i]) continue;
         bool on = g_hostLed & LOCKS[i].ledBit;
-        lv_obj_set_style_bg_color(g_lockTiles[i], on ? c565(M5.Display.color565(LOCKS[i].color.r, LOCKS[i].color.g, LOCKS[i].color.b)) : lv_color_hex(0x20242c), 0);
-        lv_obj_set_style_border_width(g_lockTiles[i], g_lastLock == i ? 3 : 1, 0);
-        lv_obj_set_style_border_color(g_lockTiles[i], g_lastLock == i ? lv_color_white() : lv_color_hex(0x3a4050), 0);
-        lv_obj_set_style_text_color(g_lockTiles[i], on ? lv_color_black() : lv_color_hex(0xa0a8b8), 0);
-        lv_label_set_text(g_lockState[i], on ? "ON" : "OFF");
+        lv_obj_set_style_bg_color(g_lockTiles[i], on ? lv_color_hex(Console::AMBER) : lv_color_hex(Console::DIM), 0);   // the small LED in the tile has the colour of the lock
+        lv_obj_set_style_border_width(g_lockTiles[i], g_lastLock == i ? 3 : 0, 0);
+        lv_obj_set_style_border_color(g_lockTiles[i], lv_color_hex(Console::PEACH), 0);
+        lv_obj_set_style_text_color(g_lockTiles[i], on ? lv_color_black() : lv_color_hex(Console::PEACH), 0);
+        lv_label_set_text(g_lockState[i], on ? "On" : "Off");
+        if (g_lockLed[i]) { drawLed(i, on); lv_obj_invalidate(g_lockLed[i]); }
     }
 }
+#endif
 
 void buildPage();
 
@@ -197,6 +246,12 @@ const char* pageTitle(int page) {
 
 // Title and page counter of the header; cheap, so it follows a page change at once while the body waits for the coalescing.
 void setHeader(int page) {
+#if NG_PRESENTER
+    (void)page;
+    lv_label_set_text(g_title, "Presenter");
+    lv_label_set_text(g_pageLbl, HIDManager::isBleConnected() ? "BLE" : "no BLE");
+    return;
+#endif
     char buf[48];
     snprintf(buf, sizeof(buf), "%d/%d", page + 1, (int)ui_page_count());
 #if NG_HAS_BTNS
@@ -230,17 +285,13 @@ void onLocksToggle(lv_event_t*) { ui_toggle_locks(); }
 lv_obj_t* makeTile(lv_obj_t* parent, int x, int y, int w, int h, lv_color_t bg, lv_color_t fg, intptr_t idx) {
     lv_obj_t* t = lv_button_create(parent);
     lv_obj_set_pos(t, x, y); lv_obj_set_size(t, w, h);
-    lv_obj_set_style_bg_color(t, bg, 0);
-    lv_obj_set_style_bg_opa(t, LV_OPA_COVER, 0);
-    lv_obj_set_style_radius(t, 6, 0);
-    lv_obj_set_style_shadow_width(t, 0, 0);
-    lv_obj_set_style_border_width(t, 1, 0);
-    lv_obj_set_style_border_color(t, lv_color_hex(0x3a4050), 0);
+    Console::block(t, 0);
+    lv_obj_remove_flag(t, LV_OBJ_FLAG_PRESS_LOCK);               // sliding off the key cancels the press (no click), also for the shell command up
+    lv_obj_set_style_bg_color(t, bg, 0);                         // the colour of a key says what it does (Theme); the chrome is the console palette
     lv_obj_set_style_text_color(t, fg, 0);
     lv_obj_set_style_pad_all(t, 2, 0);
     lv_obj_set_style_transform_width(t, -2, LV_STATE_PRESSED);
     lv_obj_set_style_transform_height(t, -2, LV_STATE_PRESSED);
-    lv_obj_set_style_bg_color(t, lv_color_lighten(bg, 60), LV_STATE_PRESSED);
     lv_obj_add_event_cb(t, onTile, LV_EVENT_CLICKED, (void*)idx);
     return t;
 }
@@ -259,7 +310,7 @@ void addTileContent(lv_obj_t* t, const char* layer, const Binding& b, int cw, in
             lv_obj_t* c = lv_label_create(t);
             lv_obj_set_width(c, cw - 6);
             lv_obj_set_style_text_align(c, LV_TEXT_ALIGN_CENTER, 0);
-            lv_obj_set_style_text_font(c, &lv_font_montserrat_12, 0);
+            lv_obj_set_style_text_font(c, Console::sans(12), 0);
             lv_label_set_long_mode(c, LV_LABEL_LONG_DOT);
             lv_label_set_text(c, lk.caption);
             lv_obj_align(c, LV_ALIGN_BOTTOM_MID, 0, 0);
@@ -267,10 +318,10 @@ void addTileContent(lv_obj_t* t, const char* layer, const Binding& b, int cw, in
     } else {
         size_t n = strlen(lk.text);
         const lv_font_t* f;
-        if (n <= 1)      f = ch >= 56 ? &lv_font_montserrat_32 : (ch >= 36 ? &lv_font_montserrat_28 : &lv_font_montserrat_20);
-        else if (n <= 3) f = ch >= 56 ? &lv_font_montserrat_28 : (ch >= 36 ? &lv_font_montserrat_24 : &lv_font_montserrat_20);
-        else if (n <= 6) f = ch >= 36 ? &lv_font_montserrat_20 : &lv_font_montserrat_16;
-        else             f = ch >= 36 ? &lv_font_montserrat_16 : &lv_font_montserrat_14;
+        if (n <= 1)      f = ch >= 36 ? Console::sans(28) : Console::sans(20);
+        else if (n <= 3) f = ch >= 56 ? Console::sans(28) : Console::sans(20);
+        else if (n <= 6) f = ch >= 36 ? Console::sans(20) : Console::sans(16);
+        else             f = Console::sans(16);
         lv_obj_t* l = lv_label_create(t);
         lv_obj_set_width(l, cw - 6);
         lv_obj_set_style_text_align(l, LV_TEXT_ALIGN_CENTER, 0);
@@ -282,10 +333,10 @@ void addTileContent(lv_obj_t* t, const char* layer, const Binding& b, int cw, in
     }
     if (lk.badge[0]) {
         lv_obj_t* bl = lv_label_create(t);
-        lv_obj_set_style_text_font(bl, &lv_font_montserrat_12, 0);
-        lv_obj_set_style_text_color(bl, lv_color_hex(0xFFE08A), 0);
-        lv_obj_set_style_bg_color(bl, lv_color_black(), 0);
-        lv_obj_set_style_bg_opa(bl, LV_OPA_50, 0);
+        lv_obj_set_style_text_font(bl, Console::mono(12), 0);
+        lv_obj_set_style_text_color(bl, lv_color_hex(Console::PEACH), 0);
+        lv_obj_set_style_bg_color(bl, lv_color_hex(Console::INK), 0);
+        lv_obj_set_style_bg_opa(bl, LV_OPA_70, 0);
         lv_obj_set_style_radius(bl, 3, 0);
         lv_obj_set_style_pad_hor(bl, 2, 0);
         lv_label_set_text(bl, lk.badge);
@@ -299,23 +350,27 @@ lv_obj_t* g_diskHash = nullptr;
 
 void buildDisk(int W, int H) {
     g_diskState = lv_label_create(g_body);
-    lv_obj_set_style_text_font(g_diskState, &lv_font_montserrat_16, 0);
-    lv_obj_set_style_text_color(g_diskState, lv_color_white(), 0);
+    lv_obj_set_style_text_font(g_diskState, Console::sans(16), 0);
+    lv_obj_set_style_text_color(g_diskState, lv_color_hex(Console::AMBER), 0);
     lv_obj_align(g_diskState, LV_ALIGN_TOP_LEFT, 8, 4);
     g_diskBar = lv_bar_create(g_body);
     lv_obj_set_size(g_diskBar, W - 16, 10);
+    lv_obj_set_style_radius(g_diskBar, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_radius(g_diskBar, LV_RADIUS_CIRCLE, LV_PART_INDICATOR);
+    lv_obj_set_style_bg_color(g_diskBar, lv_color_hex(Console::DIM), 0);
+    lv_obj_set_style_bg_color(g_diskBar, lv_color_hex(Console::AMBER), LV_PART_INDICATOR);
     lv_obj_align(g_diskBar, LV_ALIGN_TOP_LEFT, 8, 28);
     lv_bar_set_range(g_diskBar, 0, 1000);
     g_diskStats = lv_label_create(g_body);
-    lv_obj_set_style_text_font(g_diskStats, &lv_font_montserrat_14, 0);
-    lv_obj_set_style_text_color(g_diskStats, lv_color_hex(0xA0C0FF), 0);
+    lv_obj_set_style_text_font(g_diskStats, Console::mono(12), 0);
+    lv_obj_set_style_text_color(g_diskStats, lv_color_hex(Console::LAVENDER), 0);
     lv_obj_align(g_diskStats, LV_ALIGN_TOP_LEFT, 8, 44);
     g_diskHash = lv_label_create(g_body);
-    lv_obj_set_style_text_font(g_diskHash, &lv_font_montserrat_12, 0);
+    lv_obj_set_style_text_font(g_diskHash, Console::mono(12), 0);
     lv_obj_set_style_text_color(g_diskHash, lv_color_hex(0xE0E4F0), 0);
     lv_obj_align(g_diskHash, LV_ALIGN_TOP_LEFT, 8, 98);
     g_diskText = lv_label_create(g_body);
-    lv_obj_set_style_text_font(g_diskText, &lv_font_montserrat_12, 0);
+    lv_obj_set_style_text_font(g_diskText, Console::mono(12), 0);
     lv_obj_set_style_text_color(g_diskText, lv_color_hex(0x9AA0B0), 0);
     lv_label_set_long_mode(g_diskText, LV_LABEL_LONG_CLIP);
     lv_obj_set_size(g_diskText, W - 16, H - 174);
@@ -356,7 +411,7 @@ void refreshDisk() {
              v.sha[0] ? v.sha : "-", v.sha[0] ? v.sha + 32 : "", v.pcSha[0] ? v.pcSha : "-", v.pcSha[0] ? v.pcSha + 32 : "",
              v.match == 1 ? "MATCH" : v.match == 0 ? "DIFFERENT" : "waiting for the hash of the PC", (unsigned long)(v.shaUs / 1000));
     lv_label_set_text(g_diskHash, h);
-    lv_obj_set_style_text_color(g_diskHash, v.match == 1 ? lv_color_hex(0x6BE08A) : v.match == 0 ? lv_color_hex(0xFF6B6B) : lv_color_hex(0xE0E4F0), 0);
+    lv_obj_set_style_text_color(g_diskHash, v.match == 1 ? lv_color_hex(Console::PEACH) : v.match == 0 ? lv_color_hex(Console::CORAL) : lv_color_hex(0xE0E4F0), 0);
     char sd[64] = "no SD card (the file stays in RAM)";
     if (v.sdPresent) snprintf(sd, sizeof(sd), "SD card %lu MB, %lu MB used%s", (unsigned long)v.sdMB, (unsigned long)v.sdUsedMB, v.saved ? ", file written" : "");
     String body = Disk::excerpt()[0] ? String(Disk::excerpt()) : (v.state == Disk::State::Idle && !sending ? Disk::dir() : String());   // no card access while a transfer runs
@@ -365,38 +420,124 @@ void refreshDisk() {
     g_ledDirty = true;
 }
 
+#if NG_PRESENTER
+// The one page of the Core2 has two modes. Clicker (the default): Next is half of the screen, Previous above the small keys. Pointer: the air mouse is on and
+// the page is built for it (a big Click, the state of the pointer, Laser, and smaller Previous and Next). The physical buttons: A previous, B switches the mode, C next.
+lv_obj_t* g_ptrTile = nullptr; lv_obj_t* g_ptrLbl = nullptr;     // the state tile of the pointer mode
+int g_ptrShown = -1; int g_bleShown = -1; int g_modeBuilt = -1;
+
+void refreshPointer() {
+    Presenter::Ptr p = Presenter::pointer();
+    g_ptrShown = (int)p; g_ledDirty = true;                               // the LED bar follows the pointer
+    if (!g_ptrTile) return;
+    lv_obj_set_style_bg_color(g_ptrTile, lv_color_hex(p == Presenter::Ptr::Active ? Console::AMBER : Console::LAVENDER), 0);
+    lv_label_set_text(g_ptrLbl, p == Presenter::Ptr::Active ? "Pointer\nmoving" : "Pointer\nstill");
+}
+void scheduleRebuild() { g_pageDirty = true; g_pageStamp = millis(); g_ledDirty = true; }
+void onAction(lv_event_t* e) {
+    Presenter::Action a = (Presenter::Action)(intptr_t)lv_event_get_user_data(e);
+    Presenter::send(a); g_pressCount++; g_lastKey = Presenter::name(a);
+}
+void onClickTile(lv_event_t*) { Presenter::click(); g_pressCount++; g_lastKey = "click"; }
+void onMode(lv_event_t*) { Presenter::togglePointer(); g_pressCount++; g_lastKey = "mode"; scheduleRebuild(); }   // the page is rebuilt from the loop, not from inside this event
+
+lv_obj_t* presenterTile(int x, int y, int w, int h, uint32_t colour, const char* text, const char* icon, int fontPx, lv_event_cb_t cb, intptr_t ud) {
+    lv_obj_t* t = lv_button_create(g_body);
+    lv_obj_set_pos(t, x, y); lv_obj_set_size(t, w, h);
+    Console::block(t, colour);
+    lv_obj_remove_flag(t, LV_OBJ_FLAG_PRESS_LOCK);
+    if (cb) lv_obj_add_event_cb(t, cb, LV_EVENT_CLICKED, (void*)ud);
+    else lv_obj_remove_flag(t, LV_OBJ_FLAG_CLICKABLE);
+    if (icon) {
+        lv_obj_t* ic = lv_label_create(t);
+        lv_obj_set_style_text_font(ic, icons_font(36), 0);
+        lv_label_set_text(ic, icon);
+        lv_obj_align(ic, LV_ALIGN_CENTER, 0, -8);
+    }
+    lv_obj_t* l = lv_label_create(t);
+    lv_obj_set_style_text_font(l, Console::sans(fontPx), 0);
+    lv_obj_set_style_text_align(l, LV_TEXT_ALIGN_RIGHT, 0);
+    lv_label_set_text(l, text);
+    lv_obj_align(l, LV_ALIGN_BOTTOM_RIGHT, -6, -4);
+    return t;
+}
+
+void buildPresenter(int W, int H) {
+    g_ptrTile = nullptr; g_ptrLbl = nullptr;
+    const bool pointerMode = Presenter::pointerEnabled();
+    g_modeBuilt = pointerMode;
+    const int ah = H - 2 * GAP;                                   // the height inside the gaps
+    if (!pointerMode) {
+        int wl = (W - 3 * GAP) / 2, wr = W - 3 * GAP - wl, xr = 2 * GAP + wl;
+        int h1 = ah * 40 / 100, hs = (ah - h1 - 2 * GAP) / 2, ws = (wl - GAP) / 2;
+        int ys1 = 2 * GAP + h1, ys2 = ys1 + hs + GAP;
+        presenterTile(xr, GAP, wr, ah, Console::AMBER, "Next", IC_ARROW_FORWARD, 28, onAction, (intptr_t)Presenter::Action::Next);   // the biggest: half of the screen
+        presenterTile(GAP, GAP, wl, h1, Console::LAVENDER, "Previous", IC_ARROW_BACK, 20, onAction, (intptr_t)Presenter::Action::Prev);
+        presenterTile(GAP, ys1, ws, hs, Console::PEACH, "Start", nullptr, 16, onAction, (intptr_t)Presenter::Action::Start);
+        presenterTile(2 * GAP + ws, ys1, ws, hs, Console::PEACH, "Blank", nullptr, 16, onAction, (intptr_t)Presenter::Action::Blank);
+        presenterTile(GAP, ys2, ws, hs, Console::CORAL, "End", nullptr, 16, onAction, (intptr_t)Presenter::Action::End);
+        presenterTile(2 * GAP + ws, ys2, ws, hs, Console::LAVENDER, "Pointer\nmode", nullptr, 16, onMode, 0);
+    } else {
+        int r1 = ah * 42 / 100, r2 = ah * 26 / 100, r3 = ah - r1 - r2 - 2 * GAP;
+        int wc = (W - 3 * GAP) * 60 / 100, wl = W - 3 * GAP - wc, wh = (W - 3 * GAP) / 2, wh2 = W - 3 * GAP - wh;
+        int y2 = 2 * GAP + r1, y3 = y2 + r2 + GAP;
+        presenterTile(GAP, GAP, wc, r1, Console::PEACH, "Click", nullptr, 28, onClickTile, 0);
+        presenterTile(2 * GAP + wc, GAP, wl, r1, Console::LAVENDER, "Laser", nullptr, 20, onAction, (intptr_t)Presenter::Action::Laser);
+        g_ptrTile = presenterTile(GAP, y2, wh, r2, Console::LAVENDER, "Pointer\nstill", nullptr, 16, nullptr, 0);
+        g_ptrLbl = lv_obj_get_child(g_ptrTile, 0);
+        presenterTile(2 * GAP + wh, y2, wh2, r2, Console::CORAL, "Clicker\nmode", nullptr, 16, onMode, 0);
+        presenterTile(GAP, y3, wh, r3, Console::PEACH, "Previous", IC_ARROW_BACK, 16, onAction, (intptr_t)Presenter::Action::Prev);
+        presenterTile(2 * GAP + wh, y3, wh2, r3, Console::AMBER, "Next", IC_ARROW_FORWARD, 16, onAction, (intptr_t)Presenter::Action::Next);
+        refreshPointer();
+    }
+}
+#endif
+
 void buildPage() {
     uint32_t perfT0 = micros();
     g_perfRenderUs = 0; g_perfFlushUs = 0; g_perfStrips = 0;
     lv_obj_clean(g_body);
-    for (int i = 0; i < 3; i++) { g_lockTiles[i] = nullptr; g_lockState[i] = nullptr; }
+#if !NG_PRESENTER
+    for (int i = 0; i < LOCK_COUNT; i++) { g_lockTiles[i] = nullptr; g_lockState[i] = nullptr; g_lockLed[i] = nullptr; }
+#endif
     int W = M5.Display.width(), H = M5.Display.height() - HEADER_H;
     Lamps::leavePage();
     Disk::leave();
     g_diskBar = g_diskState = g_diskStats = g_diskText = nullptr; g_diskLit = -1;
 
     setHeader(g_page);
+#if NG_PRESENTER
+    buildPresenter(W, H);
+#else
     if (g_page >= PAGE_LAMP_SCREEN) {
         g_lampEnter = true;                     // the body stays empty; Lamps draws on the panel in ui_loop()
     } else if (g_page == PAGE_DISK) {
         buildDisk(W, H);
     } else if (g_page == LAYER_COUNT) {
-        int w = (W - 4 * GAP) / 3, h = H - 2 * GAP;
-        static const char* const LOCK_ICONS[3] = {IC_KEYBOARD_CAPSLOCK, IC_DIALPAD, IC_LOCK};
-        for (int i = 0; i < 3; i++) {
-            lv_obj_t* t = makeTile(g_body, GAP + i * (w + GAP), GAP, w, h, lv_color_hex(0x20242c), lv_color_white(), i);
+        // two rows: Caps, Num, Scroll and below them Compose and Kana, each tile with its own small LED
+        int w3 = (W - 4 * GAP) / 3, w2 = (W - 3 * GAP) / 2, h = (H - 3 * GAP) / 2;
+        static const char* const LOCK_ICONS[LOCK_COUNT] = {IC_KEYBOARD_CAPSLOCK, IC_DIALPAD, IC_LOCK, IC_MENU, IC_LANGUAGE};
+        for (int i = 0; i < LOCK_COUNT; i++) {
+            int x = i < 3 ? GAP + i * (w3 + GAP) : GAP + (i - 3) * (w2 + GAP), y = i < 3 ? GAP : 2 * GAP + h, w = i < 3 ? w3 : w2;
+            lv_obj_t* t = makeTile(g_body, x, y, w, h, lv_color_hex(Console::DIM), lv_color_hex(Console::PEACH), i);
             lv_obj_t* ic = lv_label_create(t);
-            lv_obj_set_style_text_font(ic, icons_font(36), 0);
+            lv_obj_set_style_text_font(ic, icons_font(28), 0);
             lv_label_set_text(ic, LOCK_ICONS[i]);
-            lv_obj_align(ic, LV_ALIGN_CENTER, 0, -40);
+            lv_obj_align(ic, LV_ALIGN_CENTER, 0, -24);
             lv_obj_t* l = lv_label_create(t);
-            lv_obj_set_style_text_font(l, &lv_font_montserrat_16, 0);
+            lv_obj_set_style_text_font(l, Console::sans(16), 0);
             lv_label_set_text(l, LOCKS[i].name);
-            lv_obj_align(l, LV_ALIGN_CENTER, 0, -6);
+            lv_obj_align(l, LV_ALIGN_CENTER, 0, 2);
             lv_obj_t* s = lv_label_create(t);
-            lv_obj_set_style_text_font(s, &lv_font_montserrat_24, 0);
-            lv_obj_align(s, LV_ALIGN_CENTER, 0, 28);
+            lv_obj_set_style_text_font(s, Console::sans(20), 0);
+            lv_obj_align(s, LV_ALIGN_CENTER, 0, 26);
             g_lockTiles[i] = t; g_lockState[i] = s;
+            lv_obj_t* led = lv_canvas_create(t);
+            drawLed(i, false);
+            if (g_ledBuf[i]) lv_canvas_set_buffer(led, g_ledBuf[i], LED_PX, LED_PX, LV_COLOR_FORMAT_ARGB8888);
+            lv_obj_align(led, LV_ALIGN_TOP_RIGHT, -4, 4);
+            lv_obj_remove_flag(led, LV_OBJ_FLAG_CLICKABLE);
+            g_lockLed[i] = led;
         }
         refreshLocks();
     } else {
@@ -415,6 +556,7 @@ void buildPage() {
             addTileContent(t, L.title, b, cw, ch);
         }
     }
+#endif
     g_ledDirty = true;
     g_perfBuildUs = micros() - perfT0;
 }
@@ -424,9 +566,8 @@ lv_obj_t* navBtn(const char* txt, int dir, lv_align_t al) {
     lv_obj_t* b = lv_button_create(g_header);
     lv_obj_set_size(b, 72, HEADER_H - 4);
     lv_obj_align(b, al, al == LV_ALIGN_LEFT_MID ? 2 : -2, 0);
-    lv_obj_set_style_bg_color(b, lv_color_hex(0x2c3340), 0);
-    lv_obj_set_style_shadow_width(b, 0, 0);
-    lv_obj_set_style_bg_color(b, lv_color_hex(0x4a5570), LV_STATE_PRESSED);
+    Console::block(b, Console::LAVENDER);                       // pressed: amber
+    lv_obj_remove_flag(b, LV_OBJ_FLAG_PRESS_LOCK);
     lv_obj_t* l = lv_label_create(b);
     lv_obj_set_style_text_font(l, icons_font(28), 0);
     lv_label_set_text(l, txt);
@@ -454,9 +595,9 @@ static void checkKeymap() {
 }
 
 // ---------- public API ----------
-uint8_t ui_page_count() { return LAYER_COUNT + 4; }
+uint8_t ui_page_count() { return NG_PRESENTER ? 1 : LAYER_COUNT + 4; }
 int ui_layer() { return g_page; }
-uint8_t ui_locks_page() { return LAYER_COUNT; }
+uint8_t ui_locks_page() { return NG_PRESENTER ? 255 : LAYER_COUNT; }   // 255: this board has no Locks page
 void ui_toggle_locks() { ui_set_layer(g_page == LAYER_COUNT ? g_prevPage : LAYER_COUNT); }
 
 void ui_begin() {
@@ -481,43 +622,70 @@ void ui_begin() {
     lv_indev_set_read_cb(in, readCb);
 
     lv_obj_t* scr = lv_screen_active();
-    lv_obj_set_style_bg_color(scr, lv_color_hex(0x0b0e14), 0);
+    lv_obj_set_style_bg_color(scr, lv_color_hex(Console::INK), 0);
     lv_obj_set_style_text_color(scr, lv_color_hex(0xe6e9f0), 0);
     lv_obj_remove_flag(scr, LV_OBJ_FLAG_SCROLLABLE);
 
     icons_init();
+    Console::begin();
     g_header = lv_obj_create(scr);
     lv_obj_remove_style_all(g_header);
     lv_obj_set_size(g_header, W, HEADER_H);
     lv_obj_set_pos(g_header, 0, NG_HAS_BTNS ? 0 : H - HEADER_H);
-    lv_obj_set_style_bg_color(g_header, lv_color_hex(0x161b26), 0);
+    lv_obj_set_style_bg_color(g_header, lv_color_hex(Console::INK), 0);
     lv_obj_set_style_bg_opa(g_header, LV_OPA_COVER, 0);
     lv_obj_remove_flag(g_header, LV_OBJ_FLAG_SCROLLABLE);
-    g_title = lv_label_create(g_header);
-    lv_obj_set_style_text_font(g_title, &lv_font_montserrat_16, 0);
-    g_pageLbl = lv_label_create(g_header);
-    lv_obj_set_style_text_font(g_pageLbl, &lv_font_montserrat_16, 0);
-    lv_obj_set_style_text_color(g_pageLbl, lv_color_hex(0x9aa4ba), 0);
 #if NG_HAS_BTNS
-    lv_obj_align(g_title, LV_ALIGN_LEFT_MID, 8, 0);
-    lv_obj_align(g_pageLbl, LV_ALIGN_RIGHT_MID, -8, 0);
+    // Core2: a slim bar of rounded blocks. Title (amber), page number (lavender) and the three indicators A, B, C that light up while
+    // the capacitive buttons below the screen are held (or while the shell holds them: btn a down).
+    lv_obj_t* tp = lv_obj_create(g_header);
+    lv_obj_remove_style_all(tp); Console::pill(tp, Console::AMBER);
+    lv_obj_set_pos(tp, 2, 2); lv_obj_set_size(tp, 162, HEADER_H - 4);
+    lv_obj_remove_flag(tp, (lv_obj_flag_t)(LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE));
+    g_title = lv_label_create(tp);
+    lv_obj_set_style_text_font(g_title, Console::sans(12), 0);
+    lv_obj_set_width(g_title, 148);
+    lv_obj_set_style_text_align(g_title, LV_TEXT_ALIGN_RIGHT, 0);
+    lv_label_set_long_mode(g_title, LV_LABEL_LONG_DOT);
+    lv_obj_align(g_title, LV_ALIGN_RIGHT_MID, -8, 0);
+    lv_obj_t* pp = lv_obj_create(g_header);
+    lv_obj_remove_style_all(pp); Console::pill(pp, Console::LAVENDER);
+    lv_obj_set_pos(pp, 167, 2); lv_obj_set_size(pp, 52, HEADER_H - 4);
+    lv_obj_remove_flag(pp, (lv_obj_flag_t)(LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE));
+    g_pageLbl = lv_label_create(pp);
+    lv_obj_set_style_text_font(g_pageLbl, Console::mono(12), 0);
+    lv_obj_center(g_pageLbl);
+    static const char* const BTN_NAMES[3] = {"A", "B", "C"};
+    for (int i = 0; i < 3; i++) {
+        lv_obj_t* bp = lv_obj_create(g_header);
+        lv_obj_remove_style_all(bp); Console::pill(bp, Console::PEACH);
+        lv_obj_set_pos(bp, 222 + i * 32, 2); lv_obj_set_size(bp, 30, HEADER_H - 4);
+        lv_obj_remove_flag(bp, (lv_obj_flag_t)(LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE));
+        lv_obj_t* bl = lv_label_create(bp);
+        lv_obj_set_style_text_font(bl, Console::sans(12), 0);
+        lv_label_set_text(bl, BTN_NAMES[i]);
+        lv_obj_center(bl);
+        g_btnPill[i] = bp;
+    }
 #else
+    g_title = lv_label_create(g_header);
+    g_pageLbl = lv_label_create(g_header);
+    lv_obj_add_flag(g_pageLbl, LV_OBJ_FLAG_HIDDEN);
     navBtn(LV_SYMBOL_LEFT_ICON, -1, LV_ALIGN_LEFT_MID);
     navBtn(LV_SYMBOL_RIGHT_ICON, +1, LV_ALIGN_RIGHT_MID);
-    // centre: title above/next to the page number; tap = jump to / back from Locks
+    // centre: a peach block with the title and the page number at its right; tap = jump to / back from Locks
     lv_obj_t* mid = lv_button_create(g_header);
     lv_obj_set_size(mid, W - 2 * 76, HEADER_H - 4);
     lv_obj_align(mid, LV_ALIGN_CENTER, 0, 0);
-    lv_obj_set_style_bg_opa(mid, LV_OPA_TRANSP, 0);
-    lv_obj_set_style_shadow_width(mid, 0, 0);
+    Console::block(mid, Console::PEACH);
+    lv_obj_remove_flag(mid, LV_OBJ_FLAG_PRESS_LOCK);
     lv_obj_add_event_cb(mid, onLocksToggle, LV_EVENT_CLICKED, nullptr);
     lv_obj_set_parent(g_title, mid);
-    lv_obj_set_parent(g_pageLbl, mid);
-    lv_obj_set_style_text_font(g_title, &lv_font_montserrat_16, 0);
-    lv_obj_set_width(g_title, W - 2 * 80);
-    lv_obj_set_style_text_align(g_title, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_set_style_text_font(g_title, Console::sans(16), 0);
+    lv_obj_set_width(g_title, W - 2 * 76 - 24);
+    lv_obj_set_style_text_align(g_title, LV_TEXT_ALIGN_RIGHT, 0);
     lv_label_set_long_mode(g_title, LV_LABEL_LONG_DOT);
-    lv_obj_align(g_title, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_align(g_title, LV_ALIGN_RIGHT_MID, -8, 0);
 #endif
 
     g_body = lv_obj_create(scr);
@@ -532,7 +700,7 @@ void ui_begin() {
 
 void ui_set_layer(int n) {
     int cnt = ui_page_count();
-    int np = ((n % cnt) + cnt) % cnt;
+    int np = ((n % cnt) + cnt) % cnt;   // with one page (the presenter) this is always 0
     if (np == LAYER_COUNT && g_page != LAYER_COUNT) g_prevPage = g_page;
     g_page = np;
     // Only the target and the header change now; the body is built once in ui_loop() (see PAGE_COALESCE_MS), so a burst
@@ -545,16 +713,19 @@ void ui_set_layer(int n) {
 }
 
 bool ui_press(int layer, int idx, bool fromSerial) {
+    if (NG_PRESENTER) return false;                                  // the presenter has no keys to press by number
     if (layer < 0 || layer >= (int)ui_page_count() || layer > LAYER_COUNT) return false; // lamp pages have no keys
     if (layer == LAYER_COUNT) {
-        if (idx < 0 || idx > 2) return false;
+        if (idx < 0 || idx >= LOCK_COUNT) return false;
         g_lastLock = idx;
         g_lastKey = LOCKS[idx].name;
         g_pressCount++;
         switch (idx) {
             case LK_CAPS:   HIDManager::send(kp_CAPS_LOCK); break;
             case LK_NUM:    HIDManager::send(kp_KP_NUM_LOCK_AND_CLEAR); break;
-            default:        HIDManager::send(kp_SCROLL_LOCK); break;
+            case LK_SCROLL: HIDManager::send(kp_SCROLL_LOCK); break;
+            case LK_COMPOSE: HIDManager::send(kp_APPLICATION); break;           // KEY_COMPOSE on Linux
+            default:        HIDManager::send(kp_INTERNATIONAL2); break;         // Katakana/Hiragana: KEY_KATAKANAHIRAGANA
         }
         g_hostLed = HIDManager::getLedStatus();
         g_ledDirty = true;
@@ -577,9 +748,50 @@ void ui_bar_colors(uint32_t out[10]) { for (int i = 0; i < 10; i++) out[i] = g_b
 
 bool ui_tap(int x, int y) {
     flushPage();
-    if (g_page != LAYER_COUNT) return false;           // only the Locks page: no tile there can power down or suspend the host
+    if (g_page != LAYER_COUNT && !NG_PRESENTER) return false;   // only the Locks page (every tile of the presenter page is harmless too): no tile there can power down or suspend the host
     g_injX = x; g_injY = y; g_injUntil = millis() + 120;
     return true;
+}
+
+// Hold a touch until it is released: for tests that must see the pressed state. Locks page or header only (no key can be sent by it:
+// the release first moves off every control, so no click fires).
+bool ui_touch(int x, int y, bool down) {
+    if (down) {
+        flushPage();
+        bool inHeader = NG_HAS_BTNS ? y < HEADER_H : y >= M5.Display.height() - HEADER_H;
+        if (g_page != LAYER_COUNT && !NG_PRESENTER && !inHeader) return false;
+        g_holdX = x; g_holdY = y; g_holdOn = true; g_holdEnd = 0; g_lastActive = millis();
+        return true;
+    }
+    if (!g_holdOn) return false;
+    g_holdX = 1; g_holdY = NG_HAS_BTNS ? HEADER_H + 1 : 1;   // a gap between the tiles: leaving the control cancels the click
+    g_holdEnd = millis() + 120;
+    return true;
+}
+
+// Core2 buttons A, B, C (0..2): down runs the action of the button and lights its indicator; up puts the indicator out.
+bool ui_button(int i, bool down) {
+#if NG_HAS_BTNS
+    if (i < 0 || i > 2) return false;
+    if (down) {
+        g_btnDown |= 1u << i; g_lastActive = millis();
+        lv_obj_add_state(g_btnPill[i], LV_STATE_PRESSED);
+#if NG_PRESENTER
+        g_pressCount++;
+        if (i == 0) { Presenter::send(Presenter::Action::Prev); g_lastKey = "prev"; }
+        else if (i == 2) { Presenter::send(Presenter::Action::Next); g_lastKey = "next"; }
+        else { Presenter::togglePointer(); g_lastKey = "mode"; scheduleRebuild(); }
+#else
+        if (i == 0) ui_set_layer(g_page - 1); else if (i == 1) ui_toggle_locks(); else ui_set_layer(g_page + 1);
+#endif
+    } else {
+        g_btnDown &= ~(1u << i);
+        lv_obj_remove_state(g_btnPill[i], LV_STATE_PRESSED);
+    }
+    return true;
+#else
+    (void)i; (void)down; return false;
+#endif
 }
 
 void ui_wake() { g_lastActive = millis(); g_blOverride = -1; }
@@ -587,12 +799,12 @@ void ui_backlight(int level) { g_blOverride = level < 0 ? -1 : (level > 255 ? 25
 
 String ui_state() {
     uint8_t led = HIDManager::getLedStatus();
-    char b[220];
-    snprintf(b, sizeof(b), "STATE page=%d/%d title=%s caps=%d num=%d scroll=%d last=%s presses=%lu conn=%d usb=%d ble=%d",
+    char b[320];
+    snprintf(b, sizeof(b), "STATE page=%d/%d title=%s caps=%d num=%d scroll=%d compose=%d kana=%d last=%s presses=%lu conn=%d usb=%d ble=%d touch=%d btn=%d ptr=%s clicks=%lu",
              g_page, (int)ui_page_count(),
-             g_page == PAGE_DISK ? "Disk" : g_page == PAGE_LAMP_SCREEN ? "Lamps-screen" : g_page == PAGE_LAMP_BAR ? "Lamps-bar" : g_page == LAYER_COUNT ? "Locks" : LAYERS[g_page].title,
-             !!(led & HIDManager::LED_CAPS), !!(led & HIDManager::LED_NUM), !!(led & HIDManager::LED_SCROLL),
-             g_lastKey, (unsigned long)g_pressCount, HIDManager::isConnected(), HIDManager::isUsbConnected(), HIDManager::isBleConnected());
+             NG_PRESENTER ? "Presenter" : g_page == PAGE_DISK ? "Disk" : g_page == PAGE_LAMP_SCREEN ? "Lamps-screen" : g_page == PAGE_LAMP_BAR ? "Lamps-bar" : g_page == LAYER_COUNT ? "Locks" : LAYERS[g_page].title,
+             !!(led & HIDManager::LED_CAPS), !!(led & HIDManager::LED_NUM), !!(led & HIDManager::LED_SCROLL), !!(led & HIDManager::LED_COMPOSE), !!(led & HIDManager::LED_KANA),
+             g_lastKey, (unsigned long)g_pressCount, HIDManager::isConnected(), HIDManager::isUsbConnected(), HIDManager::isBleConnected(), (int)g_holdOn, (int)g_btnDown, NG_PRESENTER ? Presenter::pointerName() : "-", (unsigned long)Presenter::clicks());
     return String(b);
 }
 
@@ -602,6 +814,8 @@ String ui_perf() {
              g_perfBuildUs / 1000.0, g_perfRenderUs / 1000.0, g_perfFlushUs / 1000.0, (unsigned long)g_perfStrips, g_page);
     return String(b);
 }
+
+void ui_flush() { flushPage(); }
 
 void ui_screenshot(Stream& out) {
     int W = M5.Display.width(), H = M5.Display.height();
@@ -639,6 +853,11 @@ static void idleBacklight() {
 uint32_t ui_loop() {
     static uint32_t lastLedPoll = 0;
     idleBacklight();
+#if NG_PRESENTER
+    if (g_modeBuilt != (int)Presenter::pointerEnabled() && !g_pageDirty) scheduleRebuild();      // the mode was changed (shell, button, tile): build the other page
+    if (g_ptrShown != (int)Presenter::pointer()) refreshPointer();                        // the pointer fell asleep or woke up
+    if (g_bleShown != (int)HIDManager::isBleConnected()) { g_bleShown = (int)HIDManager::isBleConnected(); setHeader(g_page); }
+#endif
     if (g_pageDirty && millis() - g_pageStamp >= PAGE_COALESCE_MS) flushPage();
     // Keep in sync with the HID layer (local toggles do not always fire the listener).
     if (millis() - lastLedPoll > 100) {
@@ -650,7 +869,9 @@ uint32_t ui_loop() {
     if (lampBar) g_ledDirty = true;
     if (g_ledDirty) {
         g_ledDirty = false;
+#if !NG_PRESENTER
         if (g_page == LAYER_COUNT) refreshLocks();
+#endif
         updateLeds();
         if (lampBar) Lamps::barShown();
     }

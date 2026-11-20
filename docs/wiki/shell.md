@@ -15,6 +15,13 @@ Try it: `jbang tools/Shell.java S3` (an interactive shell) or `jbang tools/Seria
 | [`layer`](#layer) | `layer <n>` | Show page n (0 is the first key layer). |
 | [`key`](#key) | `key <layer> <tile>` | Press a tile as if it was touched. It really types on the host! |
 | [`tap`](#tap) | `tap <x> <y>` | Touch the screen at x, y (Locks page only). |
+| [`down`](#down) | `down <x> <y>` | Hold a touch at x, y until up (Locks page or the header bar only). |
+| [`up`](#up) | `up` | Release the touch that down is holding. |
+| [`btn`](#btn) | `btn <a|b|c> <down|up>` | Press or release a button of the Core2 (A previous page, B Locks, C next page). |
+| [`clicker`](#clicker) | `clicker <prev|next|start|blank|end|laser>` | Type the key of a presenter button (Core2 only). It really types on the host! |
+| [`pointer`](#pointer) | `pointer [on|off|toggle|click [left|right|middle]|scroll <n>|<setting> <value>|feed <yaw> <pitch>]` | The air mouse of the presenter (Core2 only): switch it, tune it, click. |
+| [`imu`](#imu) | `imu <x> <y> <z>` | Pretend the gyroscope turns around its three axes (degrees per second) for 0.6 s (Core2 only, for tests). |
+| [`mod`](#mod) | `mod <ctrl|shift|alt|win|cs|as|meh|hyper|off>` | Hold or release a sticky modifier of the mouse page (Core2 only). |
 | [`shot`](#shot) | `shot` | Screenshot of the screen, 24 bits per pixel. |
 | [`perf`](#perf) | `perf` | How long the last page took to build, render and flush. |
 | [`wake`](#wake) | `wake` | Restart the idle timers: screen and LED bar on again. |
@@ -125,6 +132,102 @@ Refused outside the Locks page (ERR tap), so that a stray coordinate cannot pres
 
 ```
 tap 160 120
+```
+
+## down
+
+`down <x> <y>`
+
+Hold a touch at x, y until up (Locks page or the header bar only).
+
+For tests of the pressed state: the control under the finger changes colour while the touch is held. Nothing is sent to the host: up first moves the touch off the control, so no click fires. state shows touch=1 while it is held.
+
+* Reply: `OK DOWN | ERR down`
+
+```
+down 100 120
+```
+
+## up
+
+`up`
+
+Release the touch that down is holding.
+
+* Reply: `OK UP | ERR up`
+
+```
+up
+```
+
+## btn
+
+`btn <a|b|c> <down|up>`
+
+Press or release a button of the Core2 (A previous page, B Locks, C next page).
+
+down does what the button does and lights its indicator in the header; up puts the indicator out. state shows btn=<bit mask> while held. The CoreS3 has no buttons (ERR btn).
+
+* Reply: `OK BTN DOWN | OK BTN UP | ERR btn`
+
+```
+btn b down
+```
+
+## clicker
+
+`clicker <prev|next|start|blank|end|laser>`
+
+Type the key of a presenter button (Core2 only). It really types on the host!
+
+prev is Page Up, next Page Down, start F5, blank B, end Esc and laser Ctrl+L: the keys of every presentation program and every third-party clicker. Needs a Bluetooth host.
+
+* Reply: `OK CLICKER | ERR clicker`
+
+```
+clicker next
+```
+
+## pointer
+
+`pointer [on|off|toggle|click [left|right|middle]|scroll <n>|<setting> <value>|feed <yaw> <pitch>]`
+
+The air mouse of the presenter (Core2 only): switch it, tune it, click.
+
+Without arguments it prints the state. The pointer is off until it is switched on. While on, it moves the mouse pointer of the host when the board is turned, and falls asleep by itself after a few seconds of holding still, until it is moved again. Settings: gain 1 to 100 (pixels per degree), idle 0.5 to 30 (seconds still before it sleeps), upright on|off (hold the board upright instead of flat), flipx on|off, flipy on|off. feed pretends the board turns at yaw and pitch degrees per second for 0.6 s (for tests). click presses a mouse button (left by default). scroll turns the vertical wheel n ticks (positive up, negative down).
+
+* Reply: `OK PRESENTER pointer=off|still|moving gain=.. idle=.. | OK POINTER SET | ERR pointer`
+
+```
+pointer on
+```
+
+## imu
+
+`imu <x> <y> <z>`
+
+Pretend the gyroscope turns around its three axes (degrees per second) for 0.6 s (Core2 only, for tests).
+
+The pointer uses yaw (z when the board is held flat, y when upright) and pitch (x), so imu 0 0 60 is a turn to the side and imu 40 0 0 a tilt.
+
+* Reply: `OK IMU`
+
+```
+imu 40 0 60
+```
+
+## mod
+
+`mod <ctrl|shift|alt|win|cs|as|meh|hyper|off>`
+
+Hold or release a sticky modifier of the mouse page (Core2 only).
+
+The modifiers stay held until you switch them off, so Ctrl+click and Ctrl+scroll work with the mouse. cs is Ctrl+Shift, as Alt+Shift, meh Ctrl+Shift+Alt, hyper Ctrl+Shift+Alt+Win. The same combination again lets it go; off releases all. They are released when the host goes away.
+
+* Reply: `OK MOD <bit mask> | ERR mod`
+
+```
+mod ctrl
 ```
 
 ## shot

@@ -9,36 +9,24 @@ Theme ThemeManager::getTheme() {
     if (_currentMode == ThemeMode::LIGHT) {
         return { WHITE, BLUE, LIGHTGREY, 0xE71C, BLACK, DARKGREY };
     }
-    return { BLACK, BLUE, DARKGREY, 0x2104, WHITE, LIGHTGREY };
+    return { BLACK, BLUE, DARKGREY, 0x2948, WHITE, LIGHTGREY };
 }
 
+// The colours of the keys come from the console palette (docs/wiki/design-system.md): amber, peach, lavender and coral, with black text.
+// Plain keys are peach; a chord with Ctrl is amber, with Alt lavender, with Win coral; apps are lavender, media keys coral.
 uint16_t ThemeManager::getKeyColor(const Binding& b, bool getBackground) {
     Theme t = getTheme();
-    
-    // Default for 'none' keys
-    if (b.usage.id == 0 && b.modifier == 0) {
-        return getBackground ? t.defaultKeyBg : DARKGREY;
+    if (b.usage.id == 0 && b.modifier == 0) return getBackground ? t.defaultKeyBg : DARKGREY;   // empty tile: a dim block
+    if (!getBackground) return BLACK;
+    const uint16_t AMBER = M5.Lcd.color565(255, 153, 0), PEACH = M5.Lcd.color565(255, 204, 153), LAVENDER = M5.Lcd.color565(153, 153, 255), CORAL = M5.Lcd.color565(204, 102, 102);
+    uint16_t base;
+    switch (b.usage.kind) {
+        case HID::UsageKind::CA: base = LAVENDER; break;   // applications
+        case HID::UsageKind::CP: base = CORAL; break;      // media
+        default:                 base = PEACH; break;      // plain keys and logic
     }
-
-    if (getBackground) {
-        uint16_t base;
-        switch (b.usage.kind) {
-            case HID::UsageKind::CA:  base = M5.Lcd.color565(30, 30, 150); break; // App
-            case HID::UsageKind::CP:  base = M5.Lcd.color565(150, 30, 30); break; // Media
-            case HID::UsageKind::LC:  base = M5.Lcd.color565(30, 150, 30); break; // Logic
-            default:                  base = t.defaultKeyBg; break;
-        }
-
-        // Modifier Combinations: Alter background brightness/tint
-        if (b.modifier != 0) {
-            if (b.modifier & 0x11) base = M5.Lcd.color565(100, 100, 0);   // Ctrl -> Olive
-            if (b.modifier & 0x44) base = M5.Lcd.color565(100, 0, 100);   // Alt -> Purple
-            if (b.modifier & 0x88) base = M5.Lcd.color565(0, 100, 100);   // Gui -> Teal
-        }
-        return base;
-    } else {
-        // Foreground Text Color
-        if (b.modifier & 0x22) return YELLOW; // Shifted keys always show yellow text
-        return t.defaultKeyFg;
-    }
+    if (b.modifier & 0x11) base = AMBER;                   // Ctrl
+    if (b.modifier & 0x44) base = LAVENDER;                // Alt
+    if (b.modifier & 0x88) base = CORAL;                   // Win
+    return base;
 }

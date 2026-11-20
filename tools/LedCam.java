@@ -12,442 +12,785 @@ import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.VectorSpecies;
 
 import javax.imageio.ImageIO;
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
-import java.util.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
-import java.util.regex.*;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
- * Films the LED bars of the Nachtgespenst boards with the laptop webcam (Video4Linux2 in plain Java, tools/V4l2.java) and drives the boards over serial.
- *
- * <pre>
- * jbang tools/LedCam.java pins    --port /dev/ttyACM0 --out DIR            CoreS3 pin finder (flash tools/ledtest env cores3 first)
- * jbang tools/LedCam.java colours --port /dev/ttyUSB0 --out DIR [--crop x0,y0,x1,y1] [--clean]
- *                                                                          cycle LAYER n, film the bar, write DIR/montage.png
- * common: --camera /dev/video0  --size 1280x720
- * </pre>
- * Run it as a single plain command (outside the Claude Code sandbox it needs the serial port and the camera).
- * Frame differencing uses the Vector API (jdk.incubator.vector, JDK 27 still ships it as an incubator module).
- * The camera is the bottleneck, so the speed-up is small; the numeric colour verdict is weak, judge montage.png by eye.
+ * Automated camera-assisted LED optical calibration and diagnostic test harness.
+ * <p>
+ * Controls device hardware over serial commands while simultaneously filming the LED bar
+ * via Video4Linux2 ({@link V4l2}) using the host laptop webcam.
+ * </p>
+ * <p>
+ * Supported modes:
+ * <ul>
+ *     <li>{@code pins}: CoreS3 GPIO pin discovery by cycling pin excitation and detecting luminance changes.</li>
+ *     <li>{@code colours}: Layer color verification cycling through all keymap layers and compiling a montage.</li>
+ *     <li>{@code dark}: Verifies that {@code LEDS OFF} and {@code LEDS LOCKS} fully extinguish the bar.</li>
+ *     <li>{@code locks}: Tests additive color mixing for Caps, Num, and Scroll lock states.</li>
+ * </ul>
+ * </p>
+ * <p>
+ * Acceleration: Image frame differencing is accelerated using the JDK Vector API
+ * ({@code jdk.incubator.vector}) using SIMD lane parallelism.
+ * </p>
  */
 public class LedCam {
-    // ------------------------------------------------------------------ options
-    static String port, out = "ledcam-out", camera = "/dev/video0", size = "1280x720";
-    static int[] crop = null;
-    static boolean clean = false;
-    static boolean others = true;              // switch the LED bar of the other board off during the test (LEDS OFF), back on afterwards
+
+    static String port;
+    static String outDir = "ledcam-out";
+    static String cameraDevice = "/dev/video0";
+    static String resolution = "1280x720";
+    static int[] cropArea = null;
+    static boolean cleanFrames = false;
+    static boolean switchOtherBars = true;
 
     public static void main(String[] args) throws Exception {
-        if (args.length == 0 || !(args[0].equals("pins") || args[0].equals("colours") || args[0].equals("dark") || args[0].equals("locks"))) {
-            System.err.println("usage: LedCam.java pins|colours|dark|locks --port P --out DIR [--camera DEV] [--size WxH] [--crop x0,y0,x1,y1] [--clean]");
+        if (args.length == 0) {
+            printUsageAndExit();
+        }
+
+        String command = args[0];
+        if (!switch (command) {
+            case "pins", "colours", "dark", "locks" -> true;
+            default -> false;
+        }) {
+            printUsageAndExit();
+        }
+
+        for (int i = 1; i < args.length; i++) {
+            switch (args[i]) {
+                case "--port" -> port = args[++i];
+                case "--out" -> outDir = args[++i];
+                case "--camera" -> cameraDevice = args[++i];
+                case "--size" -> resolution = args[++i];
+                case "--crop" -> cropArea = Arrays.stream(args[++i].split(",")).mapToInt(Integer::parseInt).toArray();
+                case "--clean" -> cleanFrames = true;
+                case "--keep-others" -> switchOtherBars = false;
+                default -> {
+                    System.err.println("Unknown option: " + args[i]);
+                    System.exit(2);
+                }
+            }
+        }
+
+        if (port == null) {
+            System.err.println("--port is required");
             System.exit(2);
         }
-        for (int i = 1; i < args.length; i++) switch (args[i]) {
-            case "--port" -> port = args[++i];
-            case "--out" -> out = args[++i];
-            case "--camera" -> camera = args[++i];
-            case "--size" -> size = args[++i];
-            case "--crop" -> crop = Arrays.stream(args[++i].split(",")).mapToInt(Integer::parseInt).toArray();
-            case "--clean" -> clean = true;
-            case "--keep-others" -> others = false;
-            default -> { System.err.println("unknown option " + args[i]); System.exit(2); }
+
+        Files.createDirectories(Path.of(outDir));
+        if (switchOtherBars) {
+            setOtherBarsState(port, false);
         }
-        if (port == null) { System.err.println("--port is required"); System.exit(2); }
-        Files.createDirectories(Path.of(out));
-        if (others) otherBars(port, false);
-        try (Link link = new Link(port)) {
-            if (args[0].equals("pins")) pins(link); else if (args[0].equals("dark")) dark(link); else if (args[0].equals("locks")) locks(link); else colours(link);
+
+        try (SerialLink link = new SerialLink(port)) {
+            switch (command) {
+                case "pins" -> testPins(link);
+                case "colours" -> testColours(link);
+                case "dark" -> testDark(link);
+                case "locks" -> testLocks(link);
+            }
         } finally {
-            if (others) otherBars(port, true);
+            if (switchOtherBars) {
+                setOtherBarsState(port, true);
+            }
         }
     }
 
-    // ------------------------------------------------------------------ serial
-    static class Link implements AutoCloseable {
-        final SerialPort p;
-        Link(String name) {
-            p = SerialPort.getCommPort(name);
-            p.setBaudRate(115200);
-            p.setComPortTimeouts(SerialPort.TIMEOUT_NONBLOCKING, 0, 0);
-            if (!p.openPort()) throw new IllegalStateException("cannot open " + name);
+    private static void printUsageAndExit() {
+        System.err.println("usage: LedCam.java pins|colours|dark|locks --port P --out DIR [--camera DEV] [--size WxH] [--crop x0,y0,x1,y1] [--clean]");
+        System.exit(2);
+    }
+
+    /**
+     * Minimal synchronous serial link for diagnostic commands.
+     */
+    static class SerialLink implements AutoCloseable {
+        final SerialPort port;
+
+        SerialLink(String portName) {
+            this.port = SerialPort.getCommPort(portName);
+            port.setBaudRate(115200);
+            port.setComPortTimeouts(SerialPort.TIMEOUT_NONBLOCKING, 0, 0);
+            if (!port.openPort()) {
+                throw new IllegalStateException("Cannot open serial port " + portName);
+            }
         }
-        void send(String s) { byte[] b = (s + "\n").getBytes(StandardCharsets.US_ASCII); p.writeBytes(b, b.length); }
-        /** Collect lines until one starts with prefix (or the timeout passes). */
+
+        void send(String cmd) {
+            byte[] bytes = (cmd + "\n").getBytes(StandardCharsets.US_ASCII);
+            port.writeBytes(bytes, bytes.length);
+        }
+
         List<String> readUntil(String prefix, long timeoutMs) throws InterruptedException {
             List<String> lines = new ArrayList<>();
             StringBuilder sb = new StringBuilder();
-            long end = System.currentTimeMillis() + timeoutMs;
-            byte[] one = new byte[256];
-            while (System.currentTimeMillis() < end) {
-                int n = p.bytesAvailable() > 0 ? p.readBytes(one, Math.min(one.length, p.bytesAvailable())) : 0;
-                if (n <= 0) { Thread.sleep(10); continue; }
-                for (int i = 0; i < n; i++) {
-                    char c = (char) (one[i] & 0xff);
+            long deadline = System.currentTimeMillis() + timeoutMs;
+            byte[] buf = new byte[256];
+
+            while (System.currentTimeMillis() < deadline) {
+                int count = port.bytesAvailable() > 0
+                        ? port.readBytes(buf, Math.min(buf.length, port.bytesAvailable()))
+                        : 0;
+                if (count <= 0) {
+                    Thread.sleep(10);
+                    continue;
+                }
+
+                for (int i = 0; i < count; i++) {
+                    char c = (char) (buf[i] & 0xFF);
                     if (c == '\n') {
-                        String l = sb.toString().trim(); sb.setLength(0);
-                        lines.add(l);
-                        if (l.startsWith(prefix)) return lines;
-                    } else if (c != '\r') sb.append(c);
+                        String line = sb.toString().trim();
+                        sb.setLength(0);
+                        lines.add(line);
+                        if (line.startsWith(prefix)) {
+                            return lines;
+                        }
+                    } else if (c != '\r') {
+                        sb.append(c);
+                    }
                 }
             }
             return lines;
         }
-        public void close() { p.closePort(); }
-    }
 
-    /**
-     * The LED bar of the other board lights the white sheet and the camera sees it: switch it off for the length of the test
-     * (LEDS OFF over its serial port) and back on afterwards (LEDS ON). The setting is stored on that board, so a run that is
-     * killed halfway leaves it dark: send LEDS ON to it. Opening the port can reset the board, hence the wait.
-     */
-    static void otherBars(String ownPort, boolean on) {
-        for (Boards.Board b : List.of(Boards.C2, Boards.S3)) {
-            Optional<SerialPort> sp = Boards.find(b);
-            if (sp.isEmpty() || Boards.path(sp.get()).equals(ownPort)) continue;
-            try (Link l = new Link(Boards.path(sp.get()))) {
-                for (int attempt = 0; attempt < 4; attempt++) {
-                    Thread.sleep(attempt == 0 ? 2500 : 1000);
-                    l.send(on ? "LEDS ON" : "LEDS OFF");
-                    if (l.readUntil("OK LEDS", 1500).stream().anyMatch(x -> x.startsWith("OK LEDS"))) { System.out.println(b.tag() + " bar " + (on ? "on" : "off")); break; }
-                }
-            } catch (Exception e) { System.err.println("could not switch the " + b.tag() + " bar " + (on ? "on" : "off") + ": " + e.getMessage()); }
+        @Override
+        public void close() {
+            port.closePort();
         }
     }
 
-    // ------------------------------------------------------------------ camera frames
-    /** Planar float copy of a frame, so the Vector API kernels can run over contiguous channel arrays. */
-    record Planes(int w, int h, float[] r, float[] g, float[] b) {
+    private static void setOtherBarsState(String activePort, boolean enable) {
+        String cmd = enable ? "leds on" : "leds off";
+        for (SerialPort p : SerialPort.getCommPorts()) {
+            if (p.getSystemPortPath().equals(activePort)) continue;
+            try {
+                if (p.openPort()) {
+                    p.setBaudRate(115200);
+                    p.writeBytes((cmd + "\n").getBytes(StandardCharsets.US_ASCII), cmd.length() + 1);
+                    Thread.sleep(100);
+                    p.closePort();
+                }
+            } catch (Exception ignored) {
+                // Ignore ports that cannot be opened
+            }
+        }
+    }
+
+    // --- Frame Data Structures & Vector API SIMD Kernels ---
+
+    /**
+     * Planar float image representation separating R, G, and B into contiguous flat arrays.
+     * Enables zero-overhead contiguous Vector API SIMD lane loading.
+     */
+    record Planes(int width, int height, float[] r, float[] g, float[] b) {
         static Planes of(BufferedImage img) {
-            int w = img.getWidth(), h = img.getHeight();
-            int[] px = img.getRGB(0, 0, w, h, null, 0, w);
-            float[] r = new float[px.length], g = new float[px.length], b = new float[px.length];
-            for (int i = 0; i < px.length; i++) { r[i] = (px[i] >> 16) & 255; g[i] = (px[i] >> 8) & 255; b[i] = px[i] & 255; }
+            int w = img.getWidth();
+            int h = img.getHeight();
+            int[] pixels = img.getRGB(0, 0, w, h, null, 0, w);
+            float[] r = new float[pixels.length];
+            float[] g = new float[pixels.length];
+            float[] b = new float[pixels.length];
+
+            for (int i = 0; i < pixels.length; i++) {
+                r[i] = (pixels[i] >> 16) & 0xFF;
+                g[i] = (pixels[i] >> 8) & 0xFF;
+                b[i] = pixels[i] & 0xFF;
+            }
             return new Planes(w, h, r, g, b);
         }
     }
 
-    record Frame(Path path, BufferedImage img, Planes planes) {}
+    record CapturedFrame(Path path, BufferedImage img, Planes planes) {}
 
-    /** One webcam frame, through V4l2.java (plain Java, no ffmpeg); 25 frames are read and the last kept, so the auto exposure can settle. */
-    static Frame frame(String name) throws Exception {
-        Path path = Path.of(out, name);
-        String[] wh = size.split("x");
-        V4l2 cam = new V4l2(camera, Integer.parseInt(wh[0]), Integer.parseInt(wh[1]));
+    static CapturedFrame captureFrame(String name) throws Exception {
+        Path filePath = Path.of(outDir, name);
+        String[] dims = resolution.split("x");
+        int targetW = Integer.parseInt(dims[0]);
+        int targetH = Integer.parseInt(dims[1]);
+
         BufferedImage img = null;
-        try {
-            for (int n = 0, tries = 0; n < 25 && tries < 200; tries++) { BufferedImage im = cam.next(500, 0); if (im != null) { img = im; n++; } }
-        } finally { cam.close(); }
-        if (img == null) throw new IOException("no picture from " + camera);
-        ImageIO.write(img, "png", path.toFile());
-        return new Frame(path, img, Planes.of(img));
+        try (V4l2 cam = new V4l2(cameraDevice, targetW, targetH)) {
+            // Read 25 frames to allow hardware auto-exposure and white balance to converge
+            for (int count = 0, tries = 0; count < 25 && tries < 200; tries++) {
+                BufferedImage next = cam.next(500, 0);
+                if (next != null) {
+                    img = next;
+                    count++;
+                }
+            }
+        }
+
+        if (img == null) {
+            throw new IOException("No picture captured from " + cameraDevice);
+        }
+
+        ImageIO.write(img, "png", filePath.toFile());
+        return new CapturedFrame(filePath, img, Planes.of(img));
     }
 
-    // ------------------------------------------------------------------ Vector API kernels
-    static final VectorSpecies<Float> SP = FloatVector.SPECIES_PREFERRED;
+    private static final VectorSpecies<Float> VECTOR_SPECIES = FloatVector.SPECIES_PREFERRED;
 
-    /** out[i] = |a.r-b.r| + |a.g-b.g| + |a.b-b.b| for every pixel. */
+    /**
+     * SIMD-accelerated absolute difference sum across R, G, B planes:
+     * {@code out[i] = |a.r[i] - b.r[i]| + |a.g[i] - b.g[i]| + |a.b[i] - b.b[i]|}.
+     */
     static float[] absDiffSum(Planes a, Planes b) {
-        int n = a.r.length; float[] out = new float[n];
-        int i = 0, bound = SP.loopBound(n);
-        for (; i < bound; i += SP.length()) {
-            FloatVector dr = FloatVector.fromArray(SP, a.r, i).sub(FloatVector.fromArray(SP, b.r, i)).abs();
-            FloatVector dg = FloatVector.fromArray(SP, a.g, i).sub(FloatVector.fromArray(SP, b.g, i)).abs();
-            FloatVector db = FloatVector.fromArray(SP, a.b, i).sub(FloatVector.fromArray(SP, b.b, i)).abs();
-            dr.add(dg).add(db).intoArray(out, i);
+        int length = a.r.length;
+        float[] out = new float[length];
+        int i = 0;
+        int bound = VECTOR_SPECIES.loopBound(length);
+
+        // Vectorized SIMD loop
+        for (; i < bound; i += VECTOR_SPECIES.length()) {
+            FloatVector diffR = FloatVector.fromArray(VECTOR_SPECIES, a.r, i)
+                    .sub(FloatVector.fromArray(VECTOR_SPECIES, b.r, i)).abs();
+            FloatVector diffG = FloatVector.fromArray(VECTOR_SPECIES, a.g, i)
+                    .sub(FloatVector.fromArray(VECTOR_SPECIES, b.g, i)).abs();
+            FloatVector diffB = FloatVector.fromArray(VECTOR_SPECIES, a.b, i)
+                    .sub(FloatVector.fromArray(VECTOR_SPECIES, b.b, i)).abs();
+
+            diffR.add(diffG).add(diffB).intoArray(out, i);
         }
-        for (; i < n; i++) out[i] = Math.abs(a.r[i] - b.r[i]) + Math.abs(a.g[i] - b.g[i]) + Math.abs(a.b[i] - b.b[i]);
+
+        // Scalar tail loop
+        for (; i < length; i++) {
+            out[i] = Math.abs(a.r[i] - b.r[i])
+                    + Math.abs(a.g[i] - b.g[i])
+                    + Math.abs(a.b[i] - b.b[i]);
+        }
         return out;
     }
 
-    /** Mean signed (a - b) per channel over a rectangle. */
+    /**
+     * Computes the mean signed difference {@code (a - b)} for each channel within a bounding ROI.
+     */
     static double[] roiMeanDiff(Planes a, Planes b, int x0, int y0, int x1, int y1) {
-        x0 = Math.max(0, x0); y0 = Math.max(0, y0); x1 = Math.min(a.w, x1); y1 = Math.min(a.h, y1);
-        double[] sum = new double[3];
-        for (int y = y0; y < y1; y++) {
-            int row = y * a.w, i = row + x0, end = row + x1, bound = i + SP.loopBound(x1 - x0);
-            FloatVector r = FloatVector.zero(SP), g = FloatVector.zero(SP), bl = FloatVector.zero(SP);
-            for (; i < bound; i += SP.length()) {
-                r = r.add(FloatVector.fromArray(SP, a.r, i).sub(FloatVector.fromArray(SP, b.r, i)));
-                g = g.add(FloatVector.fromArray(SP, a.g, i).sub(FloatVector.fromArray(SP, b.g, i)));
-                bl = bl.add(FloatVector.fromArray(SP, a.b, i).sub(FloatVector.fromArray(SP, b.b, i)));
+        int minX = Math.clamp(x0, 0, a.width);
+        int minY = Math.clamp(y0, 0, a.height);
+        int maxX = Math.clamp(x1, 0, a.width);
+        int maxY = Math.clamp(y1, 0, a.height);
+
+        double[] channelSums = new double[3];
+
+        for (int y = minY; y < maxY; y++) {
+            int rowOffset = y * a.width;
+            int idx = rowOffset + minX;
+            int endIdx = rowOffset + maxX;
+            int bound = idx + VECTOR_SPECIES.loopBound(maxX - minX);
+
+            FloatVector sumR = FloatVector.zero(VECTOR_SPECIES);
+            FloatVector sumG = FloatVector.zero(VECTOR_SPECIES);
+            FloatVector sumB = FloatVector.zero(VECTOR_SPECIES);
+
+            for (; idx < bound; idx += VECTOR_SPECIES.length()) {
+                sumR = sumR.add(FloatVector.fromArray(VECTOR_SPECIES, a.r, idx)
+                        .sub(FloatVector.fromArray(VECTOR_SPECIES, b.r, idx)));
+                sumG = sumG.add(FloatVector.fromArray(VECTOR_SPECIES, a.g, idx)
+                        .sub(FloatVector.fromArray(VECTOR_SPECIES, b.g, idx)));
+                sumB = sumB.add(FloatVector.fromArray(VECTOR_SPECIES, a.b, idx)
+                        .sub(FloatVector.fromArray(VECTOR_SPECIES, b.b, idx)));
             }
-            sum[0] += r.reduceLanes(VectorOperators.ADD); sum[1] += g.reduceLanes(VectorOperators.ADD); sum[2] += bl.reduceLanes(VectorOperators.ADD);
-            for (; i < end; i++) { sum[0] += a.r[i] - b.r[i]; sum[1] += a.g[i] - b.g[i]; sum[2] += a.b[i] - b.b[i]; }
+
+            channelSums[0] += sumR.reduceLanes(VectorOperators.ADD);
+            channelSums[1] += sumG.reduceLanes(VectorOperators.ADD);
+            channelSums[2] += sumB.reduceLanes(VectorOperators.ADD);
+
+            for (; idx < endIdx; idx++) {
+                channelSums[0] += a.r[idx] - b.r[idx];
+                channelSums[1] += a.g[idx] - b.g[idx];
+                channelSums[2] += a.b[idx] - b.b[idx];
+            }
         }
-        double n = Math.max(1, (double) (x1 - x0) * (y1 - y0));
-        for (int c = 0; c < 3; c++) sum[c] /= n;
-        return sum;
+
+        double pixelCount = Math.max(1, (double) (maxX - minX) * (maxY - minY));
+        for (int c = 0; c < 3; c++) {
+            channelSums[c] /= pixelCount;
+        }
+        return channelSums;
     }
 
-    /** Mean of the k largest values: a small lit area (an LED bar) still stands out, unlike with a percentile. */
-    static double topMean(float[] v, int k) {
-        float[] s = v.clone(); Arrays.sort(s);
-        double sum = 0;
-        for (int i = s.length - k; i < s.length; i++) sum += s[i];
+    /** Mean of the {@code k} largest pixel differences. */
+    static double topMean(float[] values, int k) {
+        float[] sorted = values.clone();
+        Arrays.sort(sorted);
+        double sum = 0.0;
+        for (int i = sorted.length - k; i < sorted.length; i++) {
+            sum += sorted[i];
+        }
         return sum / k;
     }
 
-    // ------------------------------------------------------------------ pins: CoreS3 pin finder
-    record PinResult(int gpio, String label, double score, double[] rgb) {}
+    record PinCandidate(int gpio, String label, double score, double[] rgb) {}
 
-    static void pins(Link l) throws Exception {
-        List<int[]> gpios = new ArrayList<>(); List<String> labels = new ArrayList<>();
-        for (int attempt = 0; attempt < 3 && gpios.isEmpty(); attempt++) {   // opening the port can reset the board: retry LIST
-            Thread.sleep(1500);
-            l.send("LIST");
-            for (String line : l.readUntil("OK LIST", 4000))
-                if (line.startsWith("CAND ")) { String[] t = line.split(" "); gpios.add(new int[]{Integer.parseInt(t[1])}); labels.add(t[2]); }
-        }
-        if (gpios.isEmpty()) throw new IllegalStateException("no candidates: is the tools/ledtest cores3 pin finder flashed?");
-        System.out.println("candidates: " + gpios.size());
-        Frame base = frame("base.jpg");
-        List<PinResult> results = new ArrayList<>();
-        for (int k = 0; k < gpios.size(); k++) {
-            int gpio = gpios.get(k)[0];
-            l.send("PIN " + gpio); Thread.sleep(150);
-            double best = 0; double[] bestRgb = {0, 0, 0};
-            for (int phase = 0; phase < 3; phase++) {          // the sketch shows R, G, B for 0.6 s each
-                Thread.sleep(450);
-                Frame f = frame(String.format("pin%02d_%d.jpg", gpio, phase));
-                float[] d = absDiffSum(f.planes, base.planes);
-                double score = topMean(d, 200);
-                if (score > best) { best = score; bestRgb = litMean(f.planes, d); }
+    static void testPins(SerialLink link) throws Exception {
+        link.send("RESET");
+        Thread.sleep(1500);
+
+        List<Integer> gpios = new ArrayList<>();
+        List<String> labels = new ArrayList<>();
+
+        link.send("LIST");
+        for (String line : link.readUntil("OK LIST", 4000)) {
+            if (line.startsWith("CAND ")) {
+                String[] parts = line.split(" ");
+                gpios.add(Integer.parseInt(parts[1]));
+                labels.add(parts[2]);
             }
-            l.readUntil("OK PIN", 4000); Thread.sleep(300);
-            results.add(new PinResult(gpio, labels.get(k), best, bestRgb));
-            System.out.printf("GPIO %2d %-8s score=%6.1f rgb=%s%n", gpio, labels.get(k), best, Arrays.toString(round(bestRgb)));
         }
-        results.sort(Comparator.comparingDouble(PinResult::score).reversed());
+
+        if (gpios.isEmpty()) {
+            throw new IllegalStateException("No pin candidates found: flash tools/ledtest cores3 pin finder first");
+        }
+
+        System.out.println("candidates: " + gpios.size());
+        CapturedFrame baseline = captureFrame("base.jpg");
+        List<PinCandidate> results = new ArrayList<>();
+
+        for (int k = 0; k < gpios.size(); k++) {
+            int gpio = gpios.get(k);
+            link.send("PIN " + gpio);
+            Thread.sleep(150);
+
+            double bestScore = 0;
+            double[] bestRgb = {0, 0, 0};
+
+            for (int phase = 0; phase < 3; phase++) {
+                Thread.sleep(450);
+                CapturedFrame f = captureFrame(String.format("pin%02d_%d.jpg", gpio, phase));
+                float[] diffs = absDiffSum(f.planes, baseline.planes);
+                double score = topMean(diffs, 200);
+
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestRgb = litMean(f.planes, diffs);
+                }
+            }
+            link.readUntil("OK PIN", 4000);
+            Thread.sleep(300);
+
+            results.add(new PinCandidate(gpio, labels.get(k), bestScore, bestRgb));
+            System.out.printf("GPIO %2d %-8s score=%6.1f rgb=%s%n",
+                    gpio, labels.get(k), bestScore, Arrays.toString(round(bestRgb)));
+        }
+
+        results.sort(Comparator.comparingDouble(PinCandidate::score).reversed());
         System.out.print("TOP:");
-        for (int i = 0; i < Math.min(3, results.size()); i++) System.out.printf(" GPIO %d (%s) %.1f;", results.get(i).gpio, results.get(i).label, results.get(i).score);
-        System.out.println();
-        if (clean) deleteFrames();
-    }
-
-    /** Mean colour of the pixels that changed noticeably (summed |diff| above 60). */
-    static double[] litMean(Planes f, float[] d) {
-        double[] s = new double[3]; int n = 0;
-        for (int i = 0; i < d.length; i++) if (d[i] > 60) { s[0] += f.r[i]; s[1] += f.g[i]; s[2] += f.b[i]; n++; }
-        if (n > 0) for (int c = 0; c < 3; c++) s[c] /= n;
-        return s;
-    }
-
-    // ------------------------------------------------------------------ colours: layer colour check
-    static final Map<String, int[]> CSS = new HashMap<>();
-    static {
-        String[] t = {"Blue 0 0 255", "Red 255 0 0", "Orange 255 165 0", "Green 0 128 0", "Purple 128 0 128", "Cyan 0 255 255",
-            "Yellow 255 255 0", "White 255 255 255", "Magenta 255 0 255", "Lime 0 255 0", "Maroon 128 0 0", "Navy 0 0 128",
-            "Olive 128 128 0", "Teal 0 128 128", "DeepPink 255 20 147", "Gold 255 215 0", "Indigo 75 0 130", "DarkGreen 0 100 0",
-            "DarkOrange 255 140 0", "DarkViolet 148 0 211", "SkyBlue 135 206 235", "LightCoral 240 128 128", "PaleGreen 152 251 152",
-            "Khaki 240 230 140", "Lavender 230 230 250", "MistyRose 255 228 225"};
-        for (String s : t) { String[] p = s.split(" "); CSS.put(p[0], new int[]{Integer.parseInt(p[1]), Integer.parseInt(p[2]), Integer.parseInt(p[3])}); }
-    }
-
-    record Expect(String name, int[] rgb) {}
-
-    /** Layer order in Keymap.h -> LAYER_COLORS index -> colour name (FastLED names equal the CSS ones used here). */
-    static List<Expect> expectations() throws IOException {
-        Path root = Files.exists(Path.of("include/Keymap.h")) ? Path.of(".") : Path.of("..");
-        String colours = Files.readString(root.resolve("include/LedColors.h"));
-        colours = colours.substring(colours.indexOf("LAYER_COLORS[]"));
-        colours = colours.substring(0, colours.indexOf("};"));
-        List<String> names = new ArrayList<>();
-        Matcher m = Pattern.compile("CRGB::(\\w+)").matcher(colours);
-        while (m.find()) names.add(m.group(1));
-        List<Expect> out = new ArrayList<>();
-        Matcher k = Pattern.compile("LAYER_COLORS\\[(\\d+)\\]").matcher(Files.readString(root.resolve("include/Keymap.h")));
-        while (k.find()) { String n = names.get(Integer.parseInt(k.group(1))); out.add(new Expect(n, CSS.get(n))); }
-        return out;
-    }
-
-    static void colours(Link l) throws Exception {
-        l.send("info");
-        int locks = -1;
-        for (String line : l.readUntil("OK INFO", 3000)) { Matcher m = Pattern.compile("locks=(\\d+)").matcher(line); if (m.find()) locks = Integer.parseInt(m.group(1)); }
-        if (locks < 0) throw new IllegalStateException("board did not answer INFO");
-        List<Expect> exp = expectations();
-        layer(l, locks);                                          // Locks page, nothing active = faint white = dark baseline
-        Frame base = frame("base.jpg");
-        int w = base.planes.w, h = base.planes.h;
-        int[][] rois = {{w / 5, h * 3 / 5, w * 3 / 5, h}, {w * 3 / 5, h * 3 / 5, w, h}};   // table glow below the left and right device
-        String[] sides = {"left", "right"};
-        List<Frame> frames = new ArrayList<>();
-        int bad = 0;
-        for (int n = 0; n < exp.size(); n++) {
-            layer(l, n);
-            Frame f = frame(String.format("L%02d.jpg", n)); frames.add(f);
-            double[][] m = new double[2][];
-            for (int s = 0; s < 2; s++) m[s] = roiMeanDiff(f.planes, base.planes, rois[s][0], rois[s][1], rois[s][2], rois[s][3]);
-            int side = mag(m[0]) >= mag(m[1]) ? 0 : 1;
-            String verdict = verdict(exp.get(n).rgb, m[side]);
-            if (verdict.startsWith("CHECK")) bad++;
-            System.out.printf("L%02d %-12s exp=%s side=%-5s glow=%s mag=%5.1f %s%n", n, exp.get(n).name, Arrays.toString(exp.get(n).rgb),
-                    sides[side], Arrays.toString(round(m[side])), mag(m[side]), verdict);
+        for (int i = 0; i < Math.min(3, results.size()); i++) {
+            PinCandidate top = results.get(i);
+            System.out.printf(" GPIO %d (%s) %.1f;", top.gpio(), top.label(), top.score());
         }
-        layer(l, 0);
-        Path png = Path.of(out, "montage.png");
-        montage(frames, exp, png);
-        System.out.println("numeric CHECKs: " + bad + " (weak signal, the glow is only a few brightness levels; judge " + png + " by eye)");
-        if (clean) deleteFrames();
+        System.out.println();
+
+        if (cleanFrames) {
+            deleteFrames();
+        }
     }
 
-    // ------------------------------------------------------------------ dark: LEDS OFF really switches the bar off
-    /** Films the bar with LEDS ON (layer 0, blue), LEDS OFF twice and LEDS LOCKS on a layer page, and compares. Restores LEDS ON. */
-    static void dark(Link l) throws Exception {
-        int fails = 0;
-        l.send("set defaults 1"); l.readUntil("OK", 1500);
-        layer(l, 0);
-        Frame on = shot(l, "LEDS ON", "on.jpg");
-        Frame off1 = shot(l, "LEDS OFF", "off1.jpg");
-        Frame off2 = shot(l, "LEDS OFF", "off2.jpg");
-        Frame locks = shot(l, "LEDS LOCKS", "locks.jpg");
-        Frame back = shot(l, "LEDS ON", "back.jpg");
-        int[] c = crop != null ? crop : new int[]{0, 0, on.planes.w, on.planes.h};
-        double onOff = mag(roiMeanDiff(on.planes, off1.planes, c[0], c[1], c[2], c[3]));
-        double noise = mag(roiMeanDiff(off1.planes, off2.planes, c[0], c[1], c[2], c[3]));
-        double locksVsOff = mag(roiMeanDiff(locks.planes, off1.planes, c[0], c[1], c[2], c[3]));
-        double backVsOn = mag(roiMeanDiff(back.planes, on.planes, c[0], c[1], c[2], c[3]));
-        System.out.printf("glow LEDS ON vs OFF: %.1f   OFF vs OFF (camera noise): %.1f   LEDS LOCKS vs OFF: %.1f   back ON vs first ON: %.1f%n", onOff, noise, locksVsOff, backVsOn);
-        fails += verdictLine("LEDS OFF is clearly darker than LEDS ON", onOff > 6 && onOff > 4 * noise);
-        fails += verdictLine("two LEDS OFF frames look the same (the bar is really dark)", noise < 3);
-        // "Locks only" shows the host lock state on every page: dark when no lock is on, lit when one is.
-        l.send("state");
-        boolean anyLock = false;
-        for (String line : l.readUntil("OK STATE", 1500)) { Matcher m = Pattern.compile("caps=(\\d) num=(\\d) scroll=(\\d)").matcher(line); if (m.find()) anyLock = !(m.group(1) + m.group(2) + m.group(3)).equals("000"); }
-        fails += verdictLine("LEDS LOCKS on a layer page " + (anyLock ? "shows the lock that is on (host lock active)" : "is as dark as OFF (no lock is on)"),
-                anyLock ? locksVsOff > Math.max(6, noise * 4) : locksVsOff < Math.max(3, noise * 2));
-        fails += verdictLine("LEDS ON brings the colours back", backVsOn < onOff * 0.35);
-        l.send("leds on"); l.readUntil("OK", 1500);
-        if (clean) deleteFrames();
-        System.out.println(fails == 0 ? "dark: PASS" : "dark: " + fails + " FAIL");
-        if (fails > 0) System.exit(1);
+    static double[] litMean(Planes planes, float[] diffs) {
+        double[] sums = new double[3];
+        int count = 0;
+        for (int i = 0; i < diffs.length; i++) {
+            if (diffs[i] > 60) {
+                sums[0] += planes.r[i];
+                sums[1] += planes.g[i];
+                sums[2] += planes.b[i];
+                count++;
+            }
+        }
+        if (count > 0) {
+            for (int c = 0; c < 3; c++) {
+                sums[c] /= count;
+            }
+        }
+        return sums;
     }
 
-    // ------------------------------------------------------------------ locks: the Locks page colours
-    /** Reads caps/num/scroll from STATE?, or null. */
-    static int[] lockState(Link l) throws Exception {
-        l.send("state");
-        for (String line : l.readUntil("OK STATE", 1500)) {
+    record LayerExpectation(String name, int[] rgb) {}
+
+    static final Map<String, int[]> CSS_COLORS = new HashMap<>();
+    static {
+        String[] definitions = {
+                "Blue 0 0 255", "Red 255 0 0", "Orange 255 165 0", "Green 0 128 0", "Purple 128 0 128", "Cyan 0 255 255",
+                "Yellow 255 255 0", "White 255 255 255", "Magenta 255 0 255", "Lime 0 255 0", "Maroon 128 0 0", "Navy 0 0 128",
+                "Olive 128 128 0", "Teal 0 128 128", "DeepPink 255 20 147", "Gold 255 215 0", "Indigo 75 0 130", "DarkGreen 0 100 0",
+                "DarkOrange 255 140 0", "DarkViolet 148 0 211", "SkyBlue 135 206 235", "LightCoral 240 128 128", "PaleGreen 152 251 152",
+                "Khaki 240 230 140", "Lavender 230 230 250", "MistyRose 255 228 225"
+        };
+        for (String def : definitions) {
+            String[] p = def.split(" ");
+            CSS_COLORS.put(p[0], new int[]{Integer.parseInt(p[1]), Integer.parseInt(p[2]), Integer.parseInt(p[3])});
+        }
+    }
+
+    static List<LayerExpectation> loadExpectations() throws IOException {
+        Path root = Files.exists(Path.of("include/Keymap.h")) ? Path.of(".") : Path.of("..");
+        String coloursText = Files.readString(root.resolve("include/LedColors.h"));
+        coloursText = coloursText.substring(coloursText.indexOf("LAYER_COLORS[]"));
+        coloursText = coloursText.substring(0, coloursText.indexOf("};"));
+
+        List<String> colorNames = new ArrayList<>();
+        Matcher m = Pattern.compile("CRGB::(\\w+)").matcher(coloursText);
+        while (m.find()) {
+            colorNames.add(m.group(1));
+        }
+
+        List<LayerExpectation> expectations = new ArrayList<>();
+        Matcher k = Pattern.compile("LAYER_COLORS\\[(\\d+)\\]").matcher(Files.readString(root.resolve("include/Keymap.h")));
+        while (k.find()) {
+            String name = colorNames.get(Integer.parseInt(k.group(1)));
+            expectations.add(new LayerExpectation(name, CSS_COLORS.get(name)));
+        }
+        return expectations;
+    }
+
+    static void testColours(SerialLink link) throws Exception {
+        link.send("info");
+        int locksPage = -1;
+        for (String line : link.readUntil("OK INFO", 3000)) {
+            Matcher m = Pattern.compile("locks=(\\d+)").matcher(line);
+            if (m.find()) {
+                locksPage = Integer.parseInt(m.group(1));
+            }
+        }
+        if (locksPage < 0) {
+            throw new IllegalStateException("Board did not reply to INFO command");
+        }
+
+        List<LayerExpectation> expectations = loadExpectations();
+        setLayer(link, locksPage);
+
+        CapturedFrame baseline = captureFrame("base.jpg");
+        int w = baseline.planes.width;
+        int h = baseline.planes.height;
+        int[][] rois = {
+                {w / 5, h * 3 / 5, w * 3 / 5, h},     // Left device table glow
+                {w * 3 / 5, h * 3 / 5, w, h}          // Right device table glow
+        };
+        String[] sideNames = {"left", "right"};
+
+        List<CapturedFrame> frames = new ArrayList<>();
+        int anomalies = 0;
+
+        for (int layerIdx = 0; layerIdx < expectations.size(); layerIdx++) {
+            setLayer(link, layerIdx);
+            CapturedFrame frame = captureFrame(String.format("L%02d.jpg", layerIdx));
+            frames.add(frame);
+
+            double[][] diffs = new double[2][];
+            for (int s = 0; s < 2; s++) {
+                diffs[s] = roiMeanDiff(frame.planes, baseline.planes, rois[s][0], rois[s][1], rois[s][2], rois[s][3]);
+            }
+
+            int dominantSide = magnitude(diffs[0]) >= magnitude(diffs[1]) ? 0 : 1;
+            LayerExpectation exp = expectations.get(layerIdx);
+            String verdictText = evaluateColorMatch(exp.rgb(), diffs[dominantSide]);
+            if (verdictText.startsWith("CHECK")) {
+                anomalies++;
+            }
+
+            System.out.printf("L%02d %-12s exp=%s side=%-5s glow=%s mag=%5.1f %s%n",
+                    layerIdx, exp.name(), Arrays.toString(exp.rgb()),
+                    sideNames[dominantSide], Arrays.toString(round(diffs[dominantSide])),
+                    magnitude(diffs[dominantSide]), verdictText);
+        }
+
+        setLayer(link, 0);
+        Path montagePath = Path.of(outDir, "montage.png");
+        renderMontage(frames, expectations, montagePath);
+        System.out.println("numeric CHECKs: " + anomalies + " (weak signal; inspect " + montagePath + " by eye)");
+
+        if (cleanFrames) {
+            deleteFrames();
+        }
+    }
+
+    static void testDark(SerialLink link) throws Exception {
+        int failures = 0;
+        link.send("set defaults 1");
+        link.readUntil("OK", 1500);
+
+        setLayer(link, 0);
+        CapturedFrame on = captureCommandShot(link, "LEDS ON", "on.jpg");
+        CapturedFrame off1 = captureCommandShot(link, "LEDS OFF", "off1.jpg");
+        CapturedFrame off2 = captureCommandShot(link, "LEDS OFF", "off2.jpg");
+        CapturedFrame locks = captureCommandShot(link, "LEDS LOCKS", "locks.jpg");
+        CapturedFrame back = captureCommandShot(link, "LEDS ON", "back.jpg");
+
+        int[] c = cropArea != null ? cropArea : new int[]{0, 0, on.planes.width, on.planes.height};
+        double onOffMag = magnitude(roiMeanDiff(on.planes, off1.planes, c[0], c[1], c[2], c[3]));
+        double noiseMag = magnitude(roiMeanDiff(off1.planes, off2.planes, c[0], c[1], c[2], c[3]));
+        double locksVsOffMag = magnitude(roiMeanDiff(locks.planes, off1.planes, c[0], c[1], c[2], c[3]));
+        double backVsOnMag = magnitude(roiMeanDiff(back.planes, on.planes, c[0], c[1], c[2], c[3]));
+
+        System.out.printf("glow LEDS ON vs OFF: %.1f   OFF vs OFF (noise): %.1f   LEDS LOCKS vs OFF: %.1f   back ON vs ON: %.1f%n",
+                onOffMag, noiseMag, locksVsOffMag, backVsOnMag);
+
+        failures += printVerdict("LEDS OFF is clearly darker than LEDS ON", onOffMag > 6 && onOffMag > 4 * noiseMag);
+        failures += printVerdict("two LEDS OFF frames look the same (the bar is really dark)", noiseMag < 3);
+
+        link.send("state");
+        boolean anyLockActive = false;
+        for (String line : link.readUntil("OK STATE", 1500)) {
             Matcher m = Pattern.compile("caps=(\\d) num=(\\d) scroll=(\\d)").matcher(line);
-            if (m.find()) return new int[]{Integer.parseInt(m.group(1)), Integer.parseInt(m.group(2)), Integer.parseInt(m.group(3))};
+            if (m.find()) {
+                anyLockActive = !(m.group(1) + m.group(2) + m.group(3)).equals("000");
+            }
+        }
+
+        failures += printVerdict(
+                "LEDS LOCKS on a layer page " + (anyLockActive ? "shows active lock" : "is as dark as OFF"),
+                anyLockActive ? locksVsOffMag > Math.max(6, noiseMag * 4) : locksVsOffMag < Math.max(3, noiseMag * 2)
+        );
+        failures += printVerdict("LEDS ON restores colors", backVsOnMag < onOffMag * 0.35);
+
+        link.send("leds on");
+        link.readUntil("OK", 1500);
+
+        if (cleanFrames) {
+            deleteFrames();
+        }
+        System.out.println(failures == 0 ? "dark: PASS" : "dark: " + failures + " FAIL");
+        if (failures > 0) {
+            System.exit(1);
+        }
+    }
+
+    static int[] queryLockState(SerialLink link) throws Exception {
+        link.send("state");
+        for (String line : link.readUntil("OK STATE", 1500)) {
+            Matcher m = Pattern.compile("caps=(\\d) num=(\\d) scroll=(\\d)").matcher(line);
+            if (m.find()) {
+                return new int[]{
+                        Integer.parseInt(m.group(1)),
+                        Integer.parseInt(m.group(2)),
+                        Integer.parseInt(m.group(3))
+                };
+            }
         }
         return null;
     }
 
-    /**
-     * Films the bar on the Locks page for none, each single lock and some mixes, and compares the hue with the colours the
-     * firmware uses (caps orange, num green, scroll blue, additive mix). The locks are toggled with KEY on the Locks page,
-     * which types the real keys on the host and, on a Bluetooth-only board, toggles the shown state at once (the Core2); the
-     * original lock state is restored. A board with a USB host (CoreS3) follows the host's own LED report instead.
-     */
-    static void locks(Link l) throws Exception {
-        l.send("info");
+    static void testLocks(SerialLink link) throws Exception {
+        link.send("info");
         int lockPage = -1;
-        for (String line : l.readUntil("OK INFO", 3000)) { Matcher m = Pattern.compile("locks=(\\d+)").matcher(line); if (m.find()) lockPage = Integer.parseInt(m.group(1)); }
-        if (lockPage < 0) throw new IllegalStateException("board did not answer INFO");
-        layer(l, lockPage);
-        int[] start = lockState(l);
-        if (start == null) throw new IllegalStateException("no STATE? answer");
-        int[][] combos = {{0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {1, 1, 0}, {0, 1, 1}, {1, 1, 1}};
-        String[] names = {"none", "caps", "num", "scroll", "caps+num", "num+scroll", "all three"};
-        int[][] rgb = {{255, 80, 0}, {0, 220, 60}, {40, 80, 255}};
-        List<Frame> frames = new ArrayList<>(); List<Expect> exp = new ArrayList<>();
-        Frame base = null; int bad = 0, unreachable = 0;
-        for (int k = 0; k < combos.length; k++) {
-            int[] want = combos[k];
+        for (String line : link.readUntil("OK INFO", 3000)) {
+            Matcher m = Pattern.compile("locks=(\\d+)").matcher(line);
+            if (m.find()) {
+                lockPage = Integer.parseInt(m.group(1));
+            }
+        }
+        if (lockPage < 0) {
+            throw new IllegalStateException("Board did not answer INFO command");
+        }
+
+        setLayer(link, lockPage);
+        int[] initialLocks = queryLockState(link);
+        if (initialLocks == null) {
+            throw new IllegalStateException("Failed to query initial lock state");
+        }
+
+        int[][] combinations = {
+                {0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1},
+                {1, 1, 0}, {0, 1, 1}, {1, 1, 1}
+        };
+        String[] comboNames = {"none", "caps", "num", "scroll", "caps+num", "num+scroll", "all three"};
+        int[][] lockColorValues = {{255, 80, 0}, {0, 220, 60}, {40, 80, 255}};
+
+        List<CapturedFrame> frames = new ArrayList<>();
+        List<LayerExpectation> expectations = new ArrayList<>();
+        CapturedFrame baseline = null;
+        int checkFailures = 0;
+        int unreachableCount = 0;
+
+        for (int k = 0; k < combinations.length; k++) {
+            int[] targetState = combinations[k];
             for (int attempt = 0; attempt < 3; attempt++) {
-                int[] st = lockState(l);
-                if (st == null || Arrays.equals(st, want)) break;
-                for (int b = 0; b < 3; b++) if (st[b] != want[b]) { l.send("key " + lockPage + " " + b); l.readUntil("OK", 1500); Thread.sleep(500); }
+                int[] current = queryLockState(link);
+                if (current == null || Arrays.equals(current, targetState)) break;
+                for (int b = 0; b < 3; b++) {
+                    if (current[b] != targetState[b]) {
+                        link.send("key " + lockPage + " " + b);
+                        link.readUntil("OK", 1500);
+                        Thread.sleep(500);
+                    }
+                }
                 Thread.sleep(600);
             }
-            int[] got = lockState(l);
-            if (got == null || !Arrays.equals(got, want)) { System.out.printf("%-10s state %s could not be reached (board shows %s): skipped%n", names[k], Arrays.toString(want), Arrays.toString(got)); unreachable++; continue; }
+
+            int[] achieved = queryLockState(link);
+            if (achieved == null || !Arrays.equals(achieved, targetState)) {
+                System.out.printf("%-10s state %s could not be reached (board shows %s): skipped%n",
+                        comboNames[k], Arrays.toString(targetState), Arrays.toString(achieved));
+                unreachableCount++;
+                continue;
+            }
+
             Thread.sleep(700);
-            Frame f = frame("lock" + k + ".jpg");
-            int[] e = {0, 0, 0}; int n = 0;
-            for (int b = 0; b < 3; b++) if (want[b] == 1) { for (int c = 0; c < 3; c++) e[c] = Math.min(255, e[c] + rgb[b][c]); n++; }
-            if (k == 0) { base = f; System.out.println("baseline (no lock on): captured"); frames.add(f); exp.add(new Expect(names[k], new int[]{128, 128, 128})); continue; }
-            int w = f.planes.w, h = f.planes.h;
+            CapturedFrame frame = captureFrame("lock" + k + ".jpg");
+
+            int[] expectedRgb = {0, 0, 0};
+            for (int b = 0; b < 3; b++) {
+                if (targetState[b] == 1) {
+                    for (int c = 0; c < 3; c++) {
+                        expectedRgb[c] = Math.min(255, expectedRgb[c] + lockColorValues[b][c]);
+                    }
+                }
+            }
+
+            if (k == 0) {
+                baseline = frame;
+                System.out.println("baseline (no lock active): captured");
+                frames.add(frame);
+                expectations.add(new LayerExpectation(comboNames[k], new int[]{128, 128, 128}));
+                continue;
+            }
+
+            int w = frame.planes.width;
+            int h = frame.planes.height;
             int[][] rois = {{w / 5, h * 3 / 5, w * 3 / 5, h}, {w * 3 / 5, h * 3 / 5, w, h}};
-            double[] m0 = roiMeanDiff(f.planes, base.planes, rois[0][0], rois[0][1], rois[0][2], rois[0][3]);
-            double[] m1 = roiMeanDiff(f.planes, base.planes, rois[1][0], rois[1][1], rois[1][2], rois[1][3]);
-            double[] m = mag(m0) >= mag(m1) ? m0 : m1;
-            String v = verdict(e, m);
-            if (v.startsWith("CHECK")) bad++;
-            System.out.printf("%-10s exp=%s glow=%s mag=%5.1f %s%n", names[k], Arrays.toString(e), Arrays.toString(round(m)), mag(m), v);
-            frames.add(f); exp.add(new Expect(names[k], e));
+            double[] m0 = roiMeanDiff(frame.planes, baseline.planes, rois[0][0], rois[0][1], rois[0][2], rois[0][3]);
+            double[] m1 = roiMeanDiff(frame.planes, baseline.planes, rois[1][0], rois[1][1], rois[1][2], rois[1][3]);
+            double[] m = magnitude(m0) >= magnitude(m1) ? m0 : m1;
+
+            String verdict = evaluateColorMatch(expectedRgb, m);
+            if (verdict.startsWith("CHECK")) {
+                checkFailures++;
+            }
+            System.out.printf("%-10s exp=%s glow=%s mag=%5.1f %s%n",
+                    comboNames[k], Arrays.toString(expectedRgb), Arrays.toString(round(m)), magnitude(m), verdict);
+            frames.add(frame);
+            expectations.add(new LayerExpectation(comboNames[k], expectedRgb));
         }
-        ensureState(l, lockPage, start);
-        Path png = Path.of(out, "locks.png");
-        montage(frames, exp, png);
-        System.out.println("locks: " + bad + " numeric CHECKs, " + unreachable + " states not reachable; judge " + png + " by eye");
-        if (clean) deleteFrames();
+
+        restoreLockState(link, lockPage, initialLocks);
+        Path pngPath = Path.of(outDir, "locks.png");
+        renderMontage(frames, expectations, pngPath);
+        System.out.println("locks: " + checkFailures + " numeric CHECKs, " + unreachableCount + " unreachable; inspect " + pngPath + " by eye");
+
+        if (cleanFrames) {
+            deleteFrames();
+        }
     }
 
-    /** Toggles the locks back to the state they had at the start. */
-    static void ensureState(Link l, int lockPage, int[] want) throws Exception {
+    static void restoreLockState(SerialLink link, int lockPage, int[] target) throws Exception {
         for (int attempt = 0; attempt < 3; attempt++) {
-            int[] st = lockState(l);
-            if (st == null || Arrays.equals(st, want)) return;
-            for (int b = 0; b < 3; b++) if (st[b] != want[b]) { l.send("key " + lockPage + " " + b); l.readUntil("OK", 1500); Thread.sleep(500); }
+            int[] current = queryLockState(link);
+            if (current == null || Arrays.equals(current, target)) return;
+            for (int b = 0; b < 3; b++) {
+                if (current[b] != target[b]) {
+                    link.send("key " + lockPage + " " + b);
+                    link.readUntil("OK", 1500);
+                    Thread.sleep(500);
+                }
+            }
             Thread.sleep(500);
         }
     }
 
-    static Frame shot(Link l, String cmd, String name) throws Exception {
-        l.send(cmd); l.readUntil("OK", 1500);
+    static CapturedFrame captureCommandShot(SerialLink link, String cmd, String filename) throws Exception {
+        link.send(cmd);
+        link.readUntil("OK", 1500);
         Thread.sleep(1500);
-        return frame(name);
+        return captureFrame(filename);
     }
 
-    static int verdictLine(String what, boolean ok) { System.out.println((ok ? "PASS " : "FAIL ") + what); return ok ? 0 : 1; }
-
-    static void layer(Link l, int n) throws Exception { l.send("layer " + n); Thread.sleep(1200); }
-
-    static double mag(double[] v) { return Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]); }
-
-    /** Chromaticity comparison: remove the grey component of both colours and compare directions. */
-    static String verdict(int[] exp, double[] glow) {
-        if (exp == null) return "?";
-        double em = (exp[0] + exp[1] + exp[2]) / 3.0, gm = (glow[0] + glow[1] + glow[2]) / 3.0;
-        double[] e = {exp[0] - em, exp[1] - em, exp[2] - em}, g = {glow[0] - gm, glow[1] - gm, glow[2] - gm};
-        if (mag(e) < 25 || mag(glow) < 6) return "dim/neutral";
-        double cos = (e[0] * g[0] + e[1] * g[1] + e[2] * g[2]) / (mag(e) * mag(g) + 1e-9);
-        return cos > 0.7 ? "ok" : String.format("CHECK cos=%.2f", cos);
+    static int printVerdict(String description, boolean conditionMet) {
+        System.out.println((conditionMet ? "PASS " : "FAIL ") + description);
+        return conditionMet ? 0 : 1;
     }
 
-    /** Contact sheet: every layer's frame (cropped) with a swatch of the expected colour. */
-    static void montage(List<Frame> frames, List<Expect> exp, Path png) throws IOException {
-        int tw = 240, th = 150, cols = 6, rows = (frames.size() + cols - 1) / cols, lab = 18;
-        BufferedImage m = new BufferedImage(cols * tw, rows * (th + lab), BufferedImage.TYPE_INT_RGB);
-        Graphics2D g = m.createGraphics();
-        g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-        g.setColor(new Color(20, 20, 20)); g.fillRect(0, 0, m.getWidth(), m.getHeight());
-        for (int i = 0; i < frames.size(); i++) {
-            BufferedImage im = frames.get(i).img;
-            int[] c = crop != null ? crop : new int[]{0, 0, im.getWidth(), im.getHeight()};
-            BufferedImage sub = im.getSubimage(c[0], c[1], c[2] - c[0], c[3] - c[1]);
-            int x = (i % cols) * tw, y = (i / cols) * (th + lab);
-            g.drawImage(sub, x, y + lab, tw, th, null);
-            int[] rgb = exp.get(i).rgb != null ? exp.get(i).rgb : new int[]{128, 128, 128};
-            g.setColor(new Color(rgb[0], rgb[1], rgb[2])); g.fillRect(x + 2, y + 2, 14, 14);
-            g.setColor(Color.WHITE); g.drawString("L" + i + " " + exp.get(i).name, x + 22, y + 14);
+    static void setLayer(SerialLink link, int layerIndex) throws Exception {
+        link.send("layer " + layerIndex);
+        Thread.sleep(1200);
+    }
+
+    static double magnitude(double[] vector) {
+        return Math.sqrt(vector[0] * vector[0] + vector[1] * vector[1] + vector[2] * vector[2]);
+    }
+
+    /**
+     * Compares chromaticity direction between expected colour and camera-captured glow.
+     */
+    static String evaluateColorMatch(int[] expectedRgb, double[] capturedGlow) {
+        if (expectedRgb == null) return "?";
+
+        double expectedMean = (expectedRgb[0] + expectedRgb[1] + expectedRgb[2]) / 3.0;
+        double glowMean = (capturedGlow[0] + capturedGlow[1] + capturedGlow[2]) / 3.0;
+
+        double[] e = {expectedRgb[0] - expectedMean, expectedRgb[1] - expectedMean, expectedRgb[2] - expectedMean};
+        double[] g = {capturedGlow[0] - glowMean, capturedGlow[1] - glowMean, capturedGlow[2] - glowMean};
+
+        if (magnitude(e) < 25.0 || magnitude(capturedGlow) < 6.0) {
+            return "dim/neutral";
         }
-        g.dispose();
-        ImageIO.write(m, "png", png.toFile());
+
+        double cosTheta = (e[0] * g[0] + e[1] * g[1] + e[2] * g[2]) / (magnitude(e) * magnitude(g) + 1e-9);
+        return (cosTheta > 0.7) ? "ok" : String.format("CHECK cos=%.2f", cosTheta);
     }
 
-    // ------------------------------------------------------------------ helpers
-    static int[] round(double[] v) { return Arrays.stream(v).mapToInt(x -> (int) Math.round(x)).toArray(); }
+    /**
+     * Compiles a tiled contact sheet thumbnail montage of captured test frames.
+     */
+    static void renderMontage(List<CapturedFrame> frames, List<LayerExpectation> expectations, Path outputPng) throws IOException {
+        int thumbW = 240;
+        int thumbH = 150;
+        int cols = 6;
+        int rows = (frames.size() + cols - 1) / cols;
+        int labelH = 18;
+
+        BufferedImage sheet = new BufferedImage(cols * thumbW, rows * (thumbH + labelH), BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = sheet.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        g.setColor(new Color(20, 20, 20));
+        g.fillRect(0, 0, sheet.getWidth(), sheet.getHeight());
+
+        for (int i = 0; i < frames.size(); i++) {
+            BufferedImage img = frames.get(i).img();
+            int[] crop = (cropArea != null) ? cropArea : new int[]{0, 0, img.getWidth(), img.getHeight()};
+            BufferedImage cropped = img.getSubimage(crop[0], crop[1], crop[2] - crop[0], crop[3] - crop[1]);
+
+            int cellX = (i % cols) * thumbW;
+            int cellY = (i / cols) * (thumbH + labelH);
+
+            g.drawImage(cropped, cellX, cellY + labelH, thumbW, thumbH, null);
+
+            int[] swatchRgb = (expectations.get(i).rgb() != null) ? expectations.get(i).rgb() : new int[]{128, 128, 128};
+            g.setColor(new Color(swatchRgb[0], swatchRgb[1], swatchRgb[2]));
+            g.fillRect(cellX + 2, cellY + 2, 14, 14);
+
+            g.setColor(Color.WHITE);
+            g.drawString("L" + i + " " + expectations.get(i).name(), cellX + 22, cellY + 14);
+        }
+
+        g.dispose();
+        ImageIO.write(sheet, "png", outputPng.toFile());
+    }
+
+    static int[] round(double[] vals) {
+        return Arrays.stream(vals).mapToInt(x -> (int) Math.round(x)).toArray();
+    }
 
     static void deleteFrames() throws IOException {
-        try (var s = Files.list(Path.of(out))) {
-            for (Path p : (Iterable<Path>) s.filter(p -> p.toString().endsWith(".jpg"))::iterator) Files.delete(p);
+        try (var s = Files.list(Path.of(outDir))) {
+            for (Path p : (Iterable<Path>) s.filter(p -> p.toString().endsWith(".jpg"))::iterator) {
+                Files.delete(p);
+            }
         }
     }
 }

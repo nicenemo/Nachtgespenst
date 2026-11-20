@@ -51,4 +51,5 @@ namespace Disk {
     bool sdMount();              // true when a card is in and readable (tries again on every call until it works)
     String sdStatus();           // "SD present=1 type=SDHC size_mb=.. used_mb=.." for the serial command SD?
     String dir();                // root directory of the card, one "name size" line per file (at most 8)
+    bool helpSection(const char* name, Print& out);   // the section "== name" of /help.txt on the card (the manual of the shell); false without a card or section
 }

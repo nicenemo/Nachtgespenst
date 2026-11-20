@@ -1,61 +1,189 @@
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Consumer;
 
 /**
- * A grid of lamps on the Lamps: screen page of a board, painted over the LampArray. set() changes the picture, present() sends only the
- * lamps that differ from what the board shows: runs of one colour as range updates (one report for many lamps), the rest as multi
- * updates (eight lamps per report), the last report carrying "update complete".
+ * 2D virtual canvas mapped onto the board's on-screen LampArray grid.
+ * <p>
+ * Optimizes network/USB bandwidth during {@link #present()} by transmitting only
+ * lamps that changed since the last frame:
+ * <ul>
+ *     <li>Contiguous runs of &ge; 4 identical color changes are collapsed into a single
+ *         {@link Proto#REPORT_RANGE_UPDATE} report (Report ID 9).</li>
+ *     <li>Remaining changes are batched into {@link Proto#REPORT_MULTI_UPDATE} reports
+ *         (Report ID 8), up to 8 lamps per packet.</li>
+ *     <li>The final report of the frame asserts the "update complete" clock edge flag.</li>
+ * </ul>
+ * </p>
  */
 final class Canvas {
-    final Hid h; final int cols, rows;
-    final int[] cur, next;                     // 0xRRGGBB per lamp; cur is what the board shows (-1 = not known yet)
-    long reports = 0, lamps = 0;
-    volatile java.util.function.Consumer<int[]> listener;    // gets a copy of the picture (0xRRGGBB per lamp) after every present()
 
-    Canvas(Ser s, Hid h, int cols, int rows) throws Exception {
-        this.h = h; this.cols = cols; this.rows = rows;
-        String r = s.cmd("lamps grid " + cols + " " + rows, 3000);
-        if (r == null || !r.startsWith("OK")) throw new IllegalStateException("the board refused a grid of " + cols + " x " + rows + ": " + r);
-        h.write(Proto.control(false));
-        cur = new int[cols * rows]; next = new int[cols * rows];
+    private final Hid hid;
+    final int cols;
+    final int rows;
+
+    /** Framebuffer currently shown on the device (0xRRGGBB per pixel; -1 indicates unknown state). */
+    final int[] cur;
+
+    /** Next framebuffer to be presented (0xRRGGBB per pixel). */
+    final int[] next;
+
+    long reports = 0;
+    long lamps = 0;
+
+    /** Optional listener receiving a defensive copy of the presented 0xRRGGBB pixels after each frame. */
+    volatile Consumer<int[]> listener;
+
+    /**
+     * Initializes the grid dimensions on the device and configures host control.
+     *
+     * @param ser  serial interface to configure display mode
+     * @param hid  HID interface to transmit lamp updates
+     * @param cols number of horizontal columns
+     * @param rows number of vertical rows
+     * @throws Exception if the board rejects the grid configuration
+     */
+    Canvas(Ser ser, Hid hid, int cols, int rows) throws Exception {
+        this.hid = hid;
+        this.cols = cols;
+        this.rows = rows;
+
+        String reply = ser.cmd("lamps grid " + cols + " " + rows, 3000);
+        if (reply == null || !reply.startsWith("OK")) {
+            throw new IllegalStateException("The board refused a grid of " + cols + " x " + rows + ": " + reply);
+        }
+
+        hid.write(Proto.control(false));
+
+        int totalPixels = cols * rows;
+        this.cur = new int[totalPixels];
+        this.next = new int[totalPixels];
         Arrays.fill(cur, -1);
     }
 
-    void set(int x, int y, int rgb) { if (x >= 0 && y >= 0 && x < cols && y < rows) next[y * cols + x] = rgb; }
-    void fill(int rgb) { Arrays.fill(next, rgb); }
-    void setAll(int[] pic) { System.arraycopy(pic, 0, next, 0, next.length); }
+    /**
+     * Sets the colour of a single lamp at (x, y). Out-of-bounds coordinates are ignored.
+     *
+     * @param x   column index (0..cols-1)
+     * @param y   row index (0..rows-1)
+     * @param rgb 24-bit 0xRRGGBB colour
+     */
+    void set(int x, int y, int rgb) {
+        if (x >= 0 && y >= 0 && x < cols && y < rows) {
+            next[y * cols + x] = rgb;
+        }
+    }
 
-    /** Sends what changed; returns the number of reports. */
+    /**
+     * Fills the entire canvas with a single colour.
+     *
+     * @param rgb 24-bit 0xRRGGBB colour
+     */
+    void fill(int rgb) {
+        Arrays.fill(next, rgb);
+    }
+
+    /**
+     * Copies an entire pixel array into the next framebuffer.
+     *
+     * @param pic array of length {@code cols * rows} in 0xRRGGBB format
+     */
+    void setAll(int[] pic) {
+        System.arraycopy(pic, 0, next, 0, next.length);
+    }
+
+    /**
+     * Computes the difference between {@code cur} and {@code next}, compiles optimal
+     * range and multi-lamp HID reports, transmits them to the device, and marks
+     * the frame complete.
+     *
+     * @return total number of HID reports sent
+     */
     int present() {
-        List<byte[]> out = new ArrayList<>();
-        List<int[]> singles = new ArrayList<>();                 // {id, rgb}
-        int n = next.length;
-        for (int i = 0; i < n; ) {
-            if (next[i] == cur[i]) { i++; continue; }
+        List<byte[]> reportsToSend = new ArrayList<>();
+        List<int[]> singleUpdates = new ArrayList<>(); // Pairs of [lampId, rgb]
+        int totalLamps = next.length;
+
+        for (int i = 0; i < totalLamps; ) {
+            if (next[i] == cur[i]) {
+                i++;
+                continue;
+            }
+
             int j = i + 1;
-            while (j < n && next[j] == next[i] && next[j] != cur[j]) j++;   // a run of lamps that all change to the same colour
-            if (j - i >= 4) {
-                int c = next[i];
-                out.add(Proto.range(Proto.Disk_FIRST + i, Proto.Disk_FIRST + j - 1, (c >> 16) & 255, (c >> 8) & 255, c & 255, 255, false));
-                lamps += j - i;
-            } else for (int k = i; k < j; k++) singles.add(new int[]{Proto.Disk_FIRST + k, next[k]});
+            while (j < totalLamps && next[j] == next[i] && next[j] != cur[j]) {
+                j++;
+            }
+
+            int runLength = j - i;
+            if (runLength >= 4) {
+                // Range update: 1 report updates many lamps
+                int color = next[i];
+                int firstId = Proto.Disk_FIRST + i;
+                int lastId = Proto.Disk_FIRST + j - 1;
+                reportsToSend.add(Proto.range(
+                        firstId,
+                        lastId,
+                        (color >> 16) & 0xFF,
+                        (color >> 8) & 0xFF,
+                        color & 0xFF,
+                        0xFF,
+                        false
+                ));
+                lamps += runLength;
+            } else {
+                for (int k = i; k < j; k++) {
+                    singleUpdates.add(new int[]{Proto.Disk_FIRST + k, next[k]});
+                }
+            }
             i = j;
         }
-        lamps += singles.size();
-        int total = out.size() + (singles.size() + 7) / 8;
-        if (total == 0) return 0;
-        List<byte[]> multis = new ArrayList<>();
-        for (int base = 0; base < singles.size(); base += 8) {
-            int cnt = Math.min(8, singles.size() - base); int[] ids = new int[8]; int[][] c = new int[8][4];
-            for (int k = 0; k < cnt; k++) { int[] s = singles.get(base + k); ids[k] = s[0]; c[k] = new int[]{(s[1] >> 16) & 255, (s[1] >> 8) & 255, s[1] & 255, 255}; }
-            multis.add(Proto.multi(ids, c, cnt, false));
+
+        lamps += singleUpdates.size();
+        int totalReports = reportsToSend.size() + (singleUpdates.size() + 7) / 8;
+        if (totalReports == 0) {
+            return 0;
         }
-        out.addAll(multis);
-        byte[] last = out.get(out.size() - 1);
-        if ((last[0] & 255) == 9) last[1] = 1; else last[2] = 1;          // update complete on the last report
-        for (byte[] r : out) h.write(r);
-        System.arraycopy(next, 0, cur, 0, n);
-        reports += out.size();
-        java.util.function.Consumer<int[]> l = listener; if (l != null) l.accept(next.clone());
-        return out.size();
+
+        // Batch individual changes into 8-lamp multi updates
+        for (int base = 0; base < singleUpdates.size(); base += 8) {
+            int count = Math.min(8, singleUpdates.size() - base);
+            int[] ids = new int[8];
+            int[][] rgbi = new int[8][4];
+
+            for (int k = 0; k < count; k++) {
+                int[] entry = singleUpdates.get(base + k);
+                ids[k] = entry[0];
+                int color = entry[1];
+                rgbi[k][0] = (color >> 16) & 0xFF;
+                rgbi[k][1] = (color >> 8) & 0xFF;
+                rgbi[k][2] = color & 0xFF;
+                rgbi[k][3] = 0xFF;
+            }
+            reportsToSend.add(Proto.multi(ids, rgbi, count, false));
+        }
+
+        // Set "update complete" flag on the very last report to latch changes
+        byte[] lastReport = reportsToSend.getLast();
+        if ((lastReport[0] & 0xFF) == Proto.REPORT_RANGE_UPDATE) {
+            lastReport[1] = 1; // Range update 'complete' offset is byte 1
+        } else {
+            lastReport[2] = 1; // Multi update 'complete' offset is byte 2
+        }
+
+        for (byte[] report : reportsToSend) {
+            hid.write(report);
+        }
+
+        System.arraycopy(next, 0, cur, 0, totalLamps);
+        reports += reportsToSend.size();
+
+        Consumer<int[]> l = listener;
+        if (l != null) {
+            l.accept(next.clone());
+        }
+
+        return reportsToSend.size();
     }
 }

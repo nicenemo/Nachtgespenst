@@ -1,7 +1,7 @@
 ///usr/bin/env jbang "$0" "$@" ; exit $?
 //DEPS com.fazecast:jSerialComm:2.11.0
 //SOURCES Boards.java
-//JAVA 17+
+//JAVA 27
 //JAVA_OPTIONS --enable-native-access=ALL-UNNAMED
 
 import com.fazecast.jSerialComm.SerialPort;
@@ -10,87 +10,139 @@ import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
 /**
- * Send one or more serial commands to a board and print each reply.
- *
+ * Command-line utility to send one or more text commands to a Nachtgespenst board
+ * over its serial command shell and display the responses.
  * <pre>
- * jbang tools/Serial.java S3 "layer 26" "state"       # S3 or C2 (core2/cores3 also work); see "help" and docs/wiki/shell.md
+ *   jbang tools/Serial.java S3 "layer 26" "state"
  * </pre>
- *
- * Text commands only (help lists them; see docs/wiki/shell.md). SHOT is binary: use
- * {@code jbang tools/SerialTest.java --shot DIR}. A command that gets no reply within 3 seconds is reported and the
- * exit code is 1 (the very first command is retried once: opening the CoreS3 port can reset the chip).
- *
- * Run it as ONE plain command (no pipe, cd, &amp;&amp;, ;, VAR=x prefix) so that it matches "*jbang*Serial.java*" in
- * sandbox.excludedCommands and runs outside the Claude Code sandbox. Exit codes: 0 all answered, 1 no reply,
- * 2 usage, 3 port cannot be opened (sandbox or permissions).
  */
 public class Serial {
-    static void die(String msg, int code) { System.err.println("error: " + msg); System.exit(code); }
+
+    private static void fail(String message, int exitCode) {
+        System.err.println("error: " + message);
+        System.exit(exitCode);
+    }
 
     public static void main(String[] args) throws Exception {
-        if (args.length < 2) die("usage: jbang tools/Serial.java S3|C2 \"COMMAND\" [\"COMMAND\" ...]", 2);
-        Boards.Board b = null;
-        try { b = Boards.parse(args[0]); } catch (IllegalArgumentException e) { die(e.getMessage(), 2); }
-        Optional<SerialPort> found = Boards.find(b);
-        if (found.isEmpty()) die("no " + b.tag() + " board on USB (looked for " + b.usbId() + ")", 1);
-        SerialPort p = found.get();
-        p.setBaudRate(115200);
-        p.setComPortTimeouts(SerialPort.TIMEOUT_NONBLOCKING, 0, 0);
-        if (!p.openPort()) die(Boards.SANDBOX_HINT, 3);
+        if (args.length < 2) {
+            fail("usage: jbang tools/Serial.java S3|C2 \"COMMAND\" [\"COMMAND\" ...]", 2);
+        }
 
-        int missed = 0;
+        Boards.Board board = null;
+        try {
+            board = Boards.parse(args[0]);
+        } catch (IllegalArgumentException e) {
+            fail(e.getMessage(), 2);
+        }
+
+        Optional<SerialPort> portOpt = Boards.find(board);
+        if (portOpt.isEmpty()) {
+            fail("No " + board.tag() + " board detected on USB (expected VID:PID " + board.usbId() + ")", 1);
+        }
+
+        SerialPort port = portOpt.get();
+        port.setBaudRate(115200);
+        port.setComPortTimeouts(SerialPort.TIMEOUT_NONBLOCKING, 0, 0);
+
+        if (!port.openPort()) {
+            fail(Boards.SANDBOX_HINT, 3);
+        }
+
+        int missedCommands = 0;
         try {
             for (int i = 0; i < args.length - 1; i++) {
                 String cmd = args[i + 1];
-                if (cmd.trim().toUpperCase().startsWith("SHOT")) { System.out.println(cmd + " -> skipped: SHOT is binary, use SerialTest --shot"); continue; }
-                String reply = ask(p, cmd, 3000);
-                if (reply == null && i == 0) { Thread.sleep(1500); reply = ask(p, cmd, 3000); }   // the first command may race a reset
-                if (reply == null) { missed++; System.out.println(cmd + " -> (no reply)"); }
-                else { System.out.println(reply); String more; while ((more = more(p, 250)) != null) System.out.println(more); }   // help and disk dir print more lines
+                if (cmd.trim().toUpperCase().startsWith("SHOT")) {
+                    System.out.println(cmd + " -> skipped: SHOT is binary; use SerialTest --shot");
+                    continue;
+                }
+
+                String reply = sendAndReceive(port, cmd, 3000);
+                if (reply == null && i == 0) {
+                    // Port open on CoreS3 can cause a reset race; retry the first command once
+                    Thread.sleep(1500);
+                    reply = sendAndReceive(port, cmd, 3000);
+                }
+
+                if (reply == null) {
+                    missedCommands++;
+                    System.out.println(cmd + " -> (no reply)");
+                } else {
+                    System.out.println(reply);
+                    String continuation;
+                    while ((continuation = readContinuationLine(port, 250)) != null) {
+                        System.out.println(continuation);
+                    }
+                }
             }
         } finally {
-            p.closePort();
+            port.closePort();
         }
-        System.exit(missed == 0 ? 0 : 1);
+
+        System.exit(missedCommands == 0 ? 0 : 1);
     }
 
-    /** Sends a command and returns the first reply line that starts with OK or ERR; log lines in between are skipped. */
-    static String ask(SerialPort p, String cmd, long timeoutMs) throws InterruptedException {
-        drain(p);
-        byte[] out = (cmd + "\n").getBytes(StandardCharsets.US_ASCII);
-        p.writeBytes(out, out.length);
-        StringBuilder line = new StringBuilder();
-        byte[] one = new byte[1];
-        long end = System.currentTimeMillis() + timeoutMs;
-        while (System.currentTimeMillis() < end) {
-            if (p.bytesAvailable() > 0 && p.readBytes(one, 1) == 1) {
-                char c = (char) (one[0] & 0xff);
+    /**
+     * Transmits a command and returns the primary status line starting with {@code OK} or {@code ERR}.
+     */
+    static String sendAndReceive(SerialPort port, String command, long timeoutMs) throws InterruptedException {
+        flushReceiveBuffer(port);
+        byte[] payload = (command + "\n").getBytes(StandardCharsets.US_ASCII);
+        port.writeBytes(payload, payload.length);
+
+        StringBuilder lineBuffer = new StringBuilder();
+        byte[] singleByte = new byte[1];
+        long deadline = System.currentTimeMillis() + timeoutMs;
+
+        while (System.currentTimeMillis() < deadline) {
+            if (port.bytesAvailable() > 0 && port.readBytes(singleByte, 1) == 1) {
+                char c = (char) (singleByte[0] & 0xFF);
                 if (c == '\n') {
-                    String s = line.toString().trim(); line.setLength(0);
-                    if (s.startsWith("OK") || s.startsWith("ERR")) return s;
-                } else if (c != '\r') line.append(c);
-            } else Thread.sleep(2);
+                    String line = lineBuffer.toString().trim();
+                    lineBuffer.setLength(0);
+                    if (line.startsWith("OK") || line.startsWith("ERR")) {
+                        return line;
+                    }
+                } else if (c != '\r') {
+                    lineBuffer.append(c);
+                }
+            } else {
+                Thread.sleep(2);
+            }
         }
         return null;
     }
 
-    /** The next line of a reply that goes on after its first line, or null once the board has been quiet for ms. */
-    static String more(SerialPort p, long ms) throws InterruptedException {
-        StringBuilder line = new StringBuilder(); byte[] one = new byte[1]; long end = System.currentTimeMillis() + ms;
-        while (System.currentTimeMillis() < end) {
-            if (p.bytesAvailable() > 0 && p.readBytes(one, 1) == 1) {
-                char c = (char) (one[0] & 0xff);
-                if (c == '\n') { return line.toString(); }
-                if (c != '\r') line.append(c);
-                end = System.currentTimeMillis() + ms;
-            } else Thread.sleep(2);
+    /**
+     * Reads subsequent lines of a multi-line response until the board has been silent for {@code silenceMs}.
+     */
+    static String readContinuationLine(SerialPort port, long silenceMs) throws InterruptedException {
+        StringBuilder lineBuffer = new StringBuilder();
+        byte[] singleByte = new byte[1];
+        long deadline = System.currentTimeMillis() + silenceMs;
+
+        while (System.currentTimeMillis() < deadline) {
+            if (port.bytesAvailable() > 0 && port.readBytes(singleByte, 1) == 1) {
+                char c = (char) (singleByte[0] & 0xFF);
+                if (c == '\n') {
+                    return lineBuffer.toString();
+                }
+                if (c != '\r') {
+                    lineBuffer.append(c);
+                }
+                deadline = System.currentTimeMillis() + silenceMs; // Reset quiet timer on character arrival
+            } else {
+                Thread.sleep(2);
+            }
         }
-        return line.length() > 0 ? line.toString() : null;
+        return !lineBuffer.isEmpty() ? lineBuffer.toString() : null;
     }
 
-    static void drain(SerialPort p) throws InterruptedException {
+    private static void flushReceiveBuffer(SerialPort port) throws InterruptedException {
         Thread.sleep(50);
-        byte[] b = new byte[4096];
-        while (p.bytesAvailable() > 0) p.readBytes(b, Math.min(b.length, p.bytesAvailable()));
+        byte[] trash = new byte[4096];
+        while (port.bytesAvailable() > 0) {
+            port.readBytes(trash, Math.min(trash.length, port.bytesAvailable()));
+        }
     }
 }

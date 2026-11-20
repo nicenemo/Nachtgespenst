@@ -27,7 +27,7 @@ The header shows the title, whether a host is connected (`BLE` or `no BLE`) and 
 
 ## Pairing
 
-The report map changed (a mouse was added), so a host that knew the Core2 before has to forget it and pair again: on Linux `bluetoothctl remove <address>`, on Windows remove the device in the Bluetooth settings. The Core2 advertises as the moon and ghost followed by `-c2`.
+The report map changed (a mouse was added), so a host that knew the Core2 before has to forget it and pair again: on Linux `bluetoothctl remove <address>`, on Windows remove the device in the Bluetooth settings. The Core2 advertises as the moon and ghost followed by `-c2-clicker`.
 
 ## Tests
 

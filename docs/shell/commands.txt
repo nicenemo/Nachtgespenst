@@ -55,6 +55,55 @@ Refused outside the Locks page (ERR tap), so that a stray coordinate cannot pres
 reply: OK TAP | ERR tap
 example: tap 160 120
 
+== down
+usage: down <x> <y>
+summary: Hold a touch at x, y until up (Locks page or the header bar only).
+For tests of the pressed state: the control under the finger changes colour while the touch is held. Nothing is sent to the host: up first moves
+the touch off the control, so no click fires. state shows touch=1 while it is held.
+reply: OK DOWN | ERR down
+example: down 100 120
+
+== up
+usage: up
+summary: Release the touch that down is holding.
+reply: OK UP | ERR up
+example: up
+
+== btn
+usage: btn <a|b|c> <down|up>
+summary: Press or release a button of the Core2 (A previous page, B Locks, C next page).
+down does what the button does and lights its indicator in the header; up puts the indicator out. state shows btn=<bit mask> while held. The CoreS3 has no buttons (ERR btn).
+reply: OK BTN DOWN | OK BTN UP | ERR btn
+example: btn b down
+
+== clicker
+usage: clicker <prev|next|start|blank|end|laser>
+summary: Type the key of a presenter button (Core2 only). It really types on the host!
+prev is Page Up, next Page Down, start F5, blank B, end Esc and laser Ctrl+L: the keys of every presentation program and every third-party clicker. Needs a Bluetooth host.
+reply: OK CLICKER | ERR clicker
+example: clicker next
+
+== pointer
+usage: pointer [on|off|toggle|click [left|right|middle]|scroll <n>|<setting> <value>|feed <yaw> <pitch>]
+summary: The air mouse of the presenter (Core2 only): switch it, tune it, click.
+Without arguments it prints the state. The pointer is off until it is switched on. While on, it moves the mouse pointer of the host when the board is turned, and falls asleep by itself after a few seconds of holding still, until it is moved again. Settings: gain 1 to 100 (pixels per degree), idle 0.5 to 30 (seconds still before it sleeps), upright on|off (hold the board upright instead of flat), flipx on|off, flipy on|off. feed pretends the board turns at yaw and pitch degrees per second for 0.6 s (for tests). click presses a mouse button (left by default). scroll turns the vertical wheel n ticks (positive up, negative down).
+reply: OK PRESENTER pointer=off|still|moving gain=.. idle=.. | OK POINTER SET | ERR pointer
+example: pointer on
+
+== imu
+usage: imu <x> <y> <z>
+summary: Pretend the gyroscope turns around its three axes (degrees per second) for 0.6 s (Core2 only, for tests).
+The pointer uses yaw (z when the board is held flat, y when upright) and pitch (x), so imu 0 0 60 is a turn to the side and imu 40 0 0 a tilt.
+reply: OK IMU
+example: imu 40 0 60
+
+== mod
+usage: mod <ctrl|shift|alt|win|cs|as|meh|hyper|off>
+summary: Hold or release a sticky modifier of the mouse page (Core2 only).
+The modifiers stay held until you switch them off, so Ctrl+click and Ctrl+scroll work with the mouse. cs is Ctrl+Shift, as Alt+Shift, meh Ctrl+Shift+Alt, hyper Ctrl+Shift+Alt+Win. The same combination again lets it go; off releases all. They are released when the host goes away.
+reply: OK MOD <bit mask> | ERR mod
+example: mod ctrl
+
 == shot
 usage: shot
 summary: Screenshot of the screen, 24 bits per pixel.

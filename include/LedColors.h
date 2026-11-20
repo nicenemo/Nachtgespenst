@@ -35,9 +35,11 @@ inline constexpr CRGB LAYER_COLORS[] = {
 };
 
 // ---------- Lock indicator colours (Core2 LED bar + Locks page) ----------
-enum LockId : uint8_t { LK_CAPS = 0, LK_NUM = 1, LK_SCROLL = 2, LK_NONE = 255 };
-// activeMask bits: caps=1, num=2, scroll=4 (not the HID LED bits)
-inline constexpr CRGB LOCK_COLORS[3] = { CRGB(255, 80, 0), CRGB(0, 220, 60), CRGB(40, 80, 255) };
+enum LockId : uint8_t { LK_CAPS = 0, LK_NUM = 1, LK_SCROLL = 2, LK_COMPOSE = 3, LK_KANA = 4, LK_NONE = 255 };
+constexpr uint8_t LOCK_COUNT = 5;
+// activeMask bits: caps=1, num=2, scroll=4, compose=8, kana=16 (not the HID LED bits)
+// The Locks page draws a small LED in every tile in these colours.
+inline constexpr CRGB LOCK_COLORS[LOCK_COUNT] = { CRGB(255, 80, 0), CRGB(0, 220, 60), CRGB(40, 80, 255), CRGB(230, 0, 200), CRGB(0, 200, 230) };
 
 // Additive mix of n colours (saturating)
 inline CRGB mixColors(const CRGB* c, uint8_t n) {
@@ -48,15 +50,13 @@ inline CRGB mixColors(const CRGB* c, uint8_t n) {
     return out;
 }
 
-// Bar in segments 4/3/3 (caps/num/scroll). One active lock fills its segment; with several active
+// Bar in five segments of two LEDs (caps, num, scroll, compose, kana). One active lock fills its segment; with several active
 // the colours add up over the whole bar. Nothing active: faint white (or dark in the "locks only" LED mode).
 inline void ledBarLocks(CRGB* leds, uint8_t count, uint8_t activeMask, bool faintWhenIdle = true) {
-    CRGB act[3]; uint8_t n = 0;
-    for (uint8_t i = 0; i < 3; i++) if (activeMask & (1u << i)) act[n++] = LOCK_COLORS[i];
+    CRGB act[LOCK_COUNT]; uint8_t n = 0, first = 0;
+    for (uint8_t i = 0; i < LOCK_COUNT; i++) if (activeMask & (1u << i)) { if (!n) first = i; act[n++] = LOCK_COLORS[i]; }
     if (n == 0) { fill_solid(leds, count, faintWhenIdle ? CRGB(6, 6, 6) : CRGB::Black); return; }
     if (n > 1)  { fill_solid(leds, count, mixColors(act, n)); return; }
     fill_solid(leds, count, CRGB::Black);
-    uint8_t seg = (activeMask & 1) ? 0 : (activeMask & 2) ? 1 : 2;
-    static const uint8_t from[3] = {0, 4, 7}, to[3] = {4, 7, 10};
-    for (uint8_t i = from[seg]; i < to[seg] && i < count; i++) leds[i] = act[0];
+    for (uint8_t i = first * count / LOCK_COUNT; i < (first + 1) * count / LOCK_COUNT && i < count; i++) leds[i] = act[0];
 }

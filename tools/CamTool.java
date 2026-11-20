@@ -9,80 +9,190 @@
 //JAVA_OPTIONS --enable-native-access=ALL-UNNAMED
 
 import javax.imageio.ImageIO;
-import java.awt.*;
+import java.awt.Graphics2D;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
-import java.nio.file.*;
-import java.util.*;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The cameras of the demo window from the command line, for scripts and tests (no window needed).
- *
+ * Command-line camera capture and testing tool.
+ * <p>
+ * Allows scripts and automated tests to inspect video capture devices, grab snapshots,
+ * and compose side-by-side verification sheets without launching a graphical user interface.
+ * </p>
  * <pre>
- * jbang tools/CamTool.java list                           the cameras: number, device and name
- * jbang tools/CamTool.java snap OUT.png [CAM...] [--turn N] [--mirror] [--flip] [--wait SECONDS] [--size WxH]
- *                                                         open one or two cameras (number or /dev/videoN; the same one twice is fine),
- *                                                         wait for a frame, write them side by side to OUT.png, release the cameras
+ *   jbang tools/CamTool.java list
+ *   jbang tools/CamTool.java snap output.png [CAM...] [--turn N] [--mirror] [--flip] [--wait S] [--size WxH]
  * </pre>
- * A camera that is missing or in use is reported on the line for that camera and the exit code is 1; nothing crashes. Run it as ONE plain command (the cameras are not visible in the sandbox; plain Java through Video4Linux2, no ffmpeg).
  */
 public class CamTool {
+
     public static void main(String[] args) throws Exception {
         if (args.length == 0 || args[0].equals("list")) {
-            List<Cams.Device> d = Cams.list();
-            if (d.isEmpty()) System.out.println("no cameras found");
-            for (int i = 0; i < d.size(); i++) System.out.println(i + "  " + d.get(i).node() + "  " + d.get(i).name());
+            listCameras();
             return;
         }
-        if (!args[0].equals("snap") || args.length < 2) { System.err.println("usage: CamTool.java list | snap OUT.png [CAM...] [--turn N] [--mirror] [--flip] [--wait S] [--size WxH]"); System.exit(2); }
-        Path out = Path.of(args[1]); List<String> wants = new ArrayList<>(); int turn = 0; boolean mirror = false, flip = false; double wait = 6; int capW = 640, capH = 360;
-        for (int i = 2; i < args.length; i++) switch (args[i]) {
-            case "--turn" -> turn = Integer.parseInt(args[++i]) & 3;
-            case "--mirror" -> mirror = true;
-            case "--flip" -> flip = true;
-            case "--wait" -> wait = Double.parseDouble(args[++i]);
-            case "--size" -> { String[] wh = args[++i].split("x"); capW = Integer.parseInt(wh[0]); capH = Integer.parseInt(wh[1]); }
-            default -> wants.add(args[i]);
+
+        if (!args[0].equals("snap") || args.length < 2) {
+            System.err.println("usage: CamTool.java list | snap OUT.png [CAM...] [--turn N] [--mirror] [--flip] [--wait S] [--size WxH]");
+            System.exit(2);
         }
-        List<Cams.Device> devs = Cams.list();
-        if (wants.isEmpty()) wants.add("0");
-        List<Cams.Cam> cams = new ArrayList<>(); List<String> names = new ArrayList<>();
-        for (String w : wants) {
-            String node = w.startsWith("/dev/") ? w : (w.matches("\\d+") && Integer.parseInt(w) < devs.size() ? devs.get(Integer.parseInt(w)).node() : null);
-            if (node == null) { System.out.println(w + ": no such camera"); cams.add(null); names.add(w); continue; }
-            cams.add(new Cams.Cam(node, capW, capH, () -> { })); names.add(node);
+
+        Path outputPath = Path.of(args[1]);
+        List<String> requestedCams = new ArrayList<>();
+        int turn = 0;
+        boolean mirror = false;
+        boolean flip = false;
+        double waitSeconds = 6.0;
+        int captureW = 640;
+        int captureH = 360;
+
+        for (int i = 2; i < args.length; i++) {
+            switch (args[i]) {
+                case "--turn" -> turn = Integer.parseInt(args[++i]) & 3;
+                case "--mirror" -> mirror = true;
+                case "--flip" -> flip = true;
+                case "--wait" -> waitSeconds = Double.parseDouble(args[++i]);
+                case "--size" -> {
+                    String[] wh = args[++i].split("x");
+                    captureW = Integer.parseInt(wh[0]);
+                    captureH = Integer.parseInt(wh[1]);
+                }
+                default -> requestedCams.add(args[i]);
+            }
         }
-        long end = System.currentTimeMillis() + (long) (wait * 1000);
-        boolean ok = true;
-        while (System.currentTimeMillis() < end) {
-            boolean all = true;
-            for (Cams.Cam c : cams) if (c != null && c.frame() == null && c.problem() == null) all = false;
-            if (all) break;
+
+        List<Cams.Device> availableDevices = Cams.list();
+        if (requestedCams.isEmpty()) {
+            requestedCams.add("0"); // Default to first camera
+        }
+
+        List<Cams.Cam> activeCams = new ArrayList<>();
+        List<String> cameraNames = new ArrayList<>();
+
+        for (String target : requestedCams) {
+            String node = null;
+            if (target.startsWith("/dev/")) {
+                node = target;
+            } else if (target.matches("\\d+")) {
+                int index = Integer.parseInt(target);
+                if (index < availableDevices.size()) {
+                    node = availableDevices.get(index).node();
+                }
+            }
+
+            if (node == null) {
+                System.out.println(target + ": no such camera");
+                activeCams.add(null);
+                cameraNames.add(target);
+                continue;
+            }
+
+            activeCams.add(new Cams.Cam(node, captureW, captureH, () -> {}));
+            cameraNames.add(node);
+        }
+
+        // Wait for frames to be delivered
+        long deadline = System.currentTimeMillis() + (long) (waitSeconds * 1000.0);
+        while (System.currentTimeMillis() < deadline) {
+            boolean allReady = true;
+            for (Cams.Cam cam : activeCams) {
+                if (cam != null && cam.frame() == null && cam.problem() == null) {
+                    allReady = false;
+                    break;
+                }
+            }
+            if (allReady) {
+                break;
+            }
             Thread.sleep(100);
         }
-        List<BufferedImage> imgs = new ArrayList<>();
-        for (int i = 0; i < cams.size(); i++) {
-            Cams.Cam c = cams.get(i);
-            if (c == null) { ok = false; continue; }
-            BufferedImage im = c.frame();
-            if (im == null) { System.out.println(names.get(i) + ": " + (c.problem() != null ? c.problem() : "no frame within " + wait + " s")); ok = false; }
-            else { System.out.println(names.get(i) + ": " + im.getWidth() + "x" + im.getHeight()); imgs.add(transform(im, turn, mirror, flip)); }
+
+        boolean success = true;
+        List<BufferedImage> frames = new ArrayList<>();
+        for (int i = 0; i < activeCams.size(); i++) {
+            Cams.Cam cam = activeCams.get(i);
+            String name = cameraNames.get(i);
+
+            if (cam == null) {
+                success = false;
+                continue;
+            }
+
+            BufferedImage frame = cam.frame();
+            if (frame == null) {
+                String prob = cam.problem() != null ? cam.problem() : "no frame within " + waitSeconds + " s";
+                System.out.println(name + ": " + prob);
+                success = false;
+            } else {
+                System.out.println(name + ": " + frame.getWidth() + "x" + frame.getHeight());
+                frames.add(transform(frame, turn, mirror, flip));
+            }
         }
-        for (Cams.Cam c : cams) if (c != null) c.close();          // the devices are free again
-        if (!imgs.isEmpty()) {
-            int w = imgs.stream().mapToInt(BufferedImage::getWidth).sum(), h = imgs.stream().mapToInt(BufferedImage::getHeight).max().getAsInt();
-            BufferedImage sheet = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB); Graphics2D g = sheet.createGraphics(); int x = 0;
-            for (BufferedImage im : imgs) { g.drawImage(im, x, 0, null); x += im.getWidth(); }
-            g.dispose(); ImageIO.write(sheet, "png", out.toFile()); System.out.println("wrote " + out);
+
+        // Release hardware resources immediately
+        for (Cams.Cam cam : activeCams) {
+            if (cam != null) {
+                cam.close();
+            }
         }
-        System.exit(ok ? 0 : 1);
+
+        // Compose side-by-side contact sheet
+        if (!frames.isEmpty()) {
+            int totalW = frames.stream().mapToInt(BufferedImage::getWidth).sum();
+            int maxH = frames.stream().mapToInt(BufferedImage::getHeight).max().orElse(0);
+
+            BufferedImage sheet = new BufferedImage(totalW, maxH, BufferedImage.TYPE_INT_RGB);
+            Graphics2D g = sheet.createGraphics();
+            int currentX = 0;
+            for (BufferedImage img : frames) {
+                g.drawImage(img, currentX, 0, null);
+                currentX += img.getWidth();
+            }
+            g.dispose();
+
+            ImageIO.write(sheet, "png", outputPath.toFile());
+            System.out.println("wrote " + outputPath);
+        }
+
+        System.exit(success ? 0 : 1);
     }
 
-    static BufferedImage transform(BufferedImage im, int q, boolean mirror, boolean flip) {
-        boolean odd = (q & 1) == 1; int iw = im.getWidth(), ih = im.getHeight(), w = odd ? ih : iw, h = odd ? iw : ih;
-        BufferedImage o = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB); Graphics2D g = o.createGraphics();
-        AffineTransform at = new AffineTransform(); at.translate(w / 2.0, h / 2.0); if (mirror) at.scale(-1, 1); if (flip) at.scale(1, -1); at.rotate(q * Math.PI / 2); at.translate(-iw / 2.0, -ih / 2.0);
-        g.drawImage(im, at, null); g.dispose(); return o;
+    private static void listCameras() {
+        List<Cams.Device> devices = Cams.list();
+        if (devices.isEmpty()) {
+            System.out.println("no cameras found");
+            return;
+        }
+        for (int i = 0; i < devices.size(); i++) {
+            System.out.printf("%d  %-16s  %s%n", i, devices.get(i).node(), devices.get(i).name());
+        }
+    }
+
+    /**
+     * Applies geometric transforms (rotation by quarter turns, mirroring, flipping) to an image.
+     */
+    static BufferedImage transform(BufferedImage src, int turns, boolean mirror, boolean flip) {
+        boolean transposed = ((turns & 1) == 1);
+        int srcW = src.getWidth();
+        int srcH = src.getHeight();
+        int dstW = transposed ? srcH : srcW;
+        int dstH = transposed ? srcW : srcH;
+
+        BufferedImage dst = new BufferedImage(dstW, dstH, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = dst.createGraphics();
+
+        AffineTransform transform = new AffineTransform();
+        transform.translate(dstW / 2.0, dstH / 2.0);
+        if (mirror) transform.scale(-1, 1);
+        if (flip) transform.scale(1, -1);
+        transform.rotate(turns * Math.PI / 2.0);
+        transform.translate(-srcW / 2.0, -srcH / 2.0);
+
+        g.drawImage(src, transform, null);
+        g.dispose();
+        return dst;
     }
 }

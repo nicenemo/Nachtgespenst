@@ -9,6 +9,7 @@
 #include "Telem.h"
 #include "Settings.h"
 #include "ShellHelp.h"
+#include "Presenter.h"
 
 // The shell of the boards. Commands and their arguments are lower case, nothing else is accepted. Replies are "OK ..." or "ERR ...". The manual is docs/shell/commands.txt
 // (tools/Manual.java generates ShellHelp.h from it; the same file is help.txt on the SD card, where "help <command>" reads the full text).
@@ -57,9 +58,9 @@ void handle(char* line) {
     if (is("help") && !b) help(a);
     else if (is("ping") && !a) Serial.println("OK PONG");
     else if (is("info") && !a)
-        Serial.printf("OK INFO board=%s name=%s fw=%s_%s w=%d h=%d pages=%d locks=%d\n", NG_BOARD_ID, K_DEVICE_NAME,
+        Serial.printf("OK INFO board=%s name=%s fw=%s_%s w=%d h=%d pages=%d locks=%d presenter=%d\n", NG_BOARD_ID, K_DEVICE_NAME,
                       __DATE__, __TIME__, (int)M5.Display.width(), (int)M5.Display.height(),
-                      (int)ui_page_count(), (int)ui_locks_page());
+                      (int)ui_page_count(), (int)ui_locks_page(), NG_PRESENTER);
     else if (is("state") && !a) Serial.printf("OK %s\n", ui_state().c_str());
     else if (is("wake") && !a) { ui_wake(); ui_leds_refresh(); Serial.println("OK WAKE"); }
     else if (is("bl") && a && !b) {
@@ -129,13 +130,44 @@ void handle(char* line) {
         int m = !strcmp(a, "off") ? 0 : !strcmp(a, "bar") ? 1 : !strcmp(a, "wave") ? 2 : !strcmp(a, "both") ? 3 : -1;
         if (m < 0) Serial.println("ERR telem"); else { Telem::set((uint8_t)m); Serial.printf("OK TELEM %s\n", up(a).c_str()); }
     }
-    else if (is("shot") && !a) { Serial.print("OK "); ui_screenshot(Serial); }
+#if NG_PRESENTER
+    else if (is("pointer") && !a) Serial.printf("OK %s\n", Presenter::status().c_str());
+    else if (is("pointer") && a && !b && !strcmp(a, "on")) { Presenter::setPointerEnabled(true); Serial.printf("OK %s\n", Presenter::status().c_str()); }
+    else if (is("pointer") && a && !b && !strcmp(a, "off")) { Presenter::setPointerEnabled(false); Serial.printf("OK %s\n", Presenter::status().c_str()); }
+    else if (is("pointer") && a && !b && !strcmp(a, "toggle")) { Presenter::togglePointer(); Serial.printf("OK %s\n", Presenter::status().c_str()); }
+    else if (is("pointer") && a && b && extra && !strcmp(a, "feed")) { Presenter::feed(atof(b), atof(extra), 600); Serial.println("OK POINTER FEED"); }
+    else if (is("pointer") && a && b && !extra) { Serial.println(Presenter::set(a, b) ? "OK POINTER SET" : "ERR pointer"); }
+#endif
+    else if (is("shot") && !a) { ui_flush(); Serial.print("OK "); ui_screenshot(Serial); }   // the page is built first: its log lines must not come between "OK" and the header
     else if (is("layer") && num(a, x) && !b) {
         if (x < 0 || x >= (int)ui_page_count()) Serial.println("ERR range");
         else { ui_set_layer(x); Serial.printf("OK LAYER %d\n", ui_layer()); }
     }
 #if NG_SERIAL_INPUT   // tap and key really type on the host: build with -D NG_SERIAL_INPUT=0 to leave them out
     else if (is("tap") && num(a, x) && num(b, y) && !extra) Serial.println(ui_tap(x, y) ? "OK TAP" : "ERR tap");
+    else if (is("down") && num(a, x) && num(b, y) && !extra) Serial.println(ui_touch(x, y, true) ? "OK DOWN" : "ERR down");
+    else if (is("up") && !a) Serial.println(ui_touch(0, 0, false) ? "OK UP" : "ERR up");
+    else if (is("btn") && a && b && !extra && a[1] == 0 && a[0] >= 'a' && a[0] <= 'c' && (!strcmp(b, "down") || !strcmp(b, "up")))
+        Serial.println(ui_button(a[0] - 'a', !strcmp(b, "down")) ? (!strcmp(b, "down") ? "OK BTN DOWN" : "OK BTN UP") : "ERR btn");
+#if NG_PRESENTER
+    else if (is("clicker") && a && !b) {
+        static const char* const names[] = {"prev", "next", "start", "blank", "end", "laser"};
+        int k = -1; for (int i = 0; i < 6; i++) if (!strcmp(a, names[i])) k = i;
+        if (k >= 0) Serial.println(Presenter::send((Presenter::Action)k) ? "OK CLICKER" : "ERR clicker"); else Serial.println("ERR clicker");
+    }
+    else if (is("pointer") && a && !strcmp(a, "click") && (!b || !strcmp(b, "left") || !strcmp(b, "right") || !strcmp(b, "middle")) && !extra)
+        Serial.println(Presenter::click(!b || !strcmp(b, "left") ? 1 : !strcmp(b, "right") ? 2 : 4) ? "OK POINTER CLICK" : "ERR pointer");
+    else if (is("pointer") && a && b && !extra && !strcmp(a, "scroll") && num(b, x) && x >= -127 && x <= 127) { Presenter::scroll(x); Serial.println("OK POINTER SCROLL"); }
+    else if (is("imu") && a && b && extra) { Presenter::feedRaw(atof(a), atof(b), atof(extra), 600); Serial.println("OK IMU"); }          // pretend the three axes of the gyroscope turn (degrees per second) for 0.6 s
+    else if (is("mod") && a && !b) {
+        static const char* const n[] = {"ctrl", "shift", "alt", "win", "cs", "as", "meh", "hyper"};
+        static const uint8_t m[] = {Presenter::M_CTRL, Presenter::M_SHIFT, Presenter::M_ALT, Presenter::M_WIN, Presenter::M_CS, Presenter::M_AS, Presenter::M_MEH, Presenter::M_HYPER};
+        int k = -1; for (int i = 0; i < 8; i++) if (!strcmp(a, n[i])) k = i;
+        if (!strcmp(a, "off")) { Presenter::releaseModifiers(); Serial.printf("OK MOD %u\n", (unsigned)Presenter::modifiers()); }
+        else if (k >= 0) { Presenter::toggleModifiers(m[k]); Serial.printf("OK MOD %u\n", (unsigned)Presenter::modifiers()); }
+        else Serial.println("ERR mod");
+    }
+#endif
     else if (is("key") && num(a, x) && num(b, y) && !extra) Serial.println(ui_press(x, y, true) ? "OK KEY" : "ERR key");
 #endif
     else Serial.println("ERR unknown");

@@ -1,4 +1,5 @@
 #pragma once
+#include "Config.h"
 #include <stdint.h>
 #include <vector>
 #include <string>
@@ -55,7 +56,9 @@ namespace HID {
             LAMP_RANGE = 0x09, // output: LampRangeUpdateReport (one colour for a range of lamps)
             LAMP_CTRL  = 0x0A, // output: LampArrayControlReport (autonomous mode)
             // Game pad: 384 buttons (48 bytes) as parallel data lines, the way back of the Disk demo (src/Disk.cpp)
-            GAMEPAD    = 0x0B
+            GAMEPAD    = 0x0B,
+            // Mouse (only in the report map of the presenter build): buttons, X, Y, wheel
+            MOUSE      = 0x0C
         };
 
         // --- PAGE 0x07 & 0x08: Keyboard + LEDs ---
@@ -128,6 +131,30 @@ namespace HID {
             0x75, 0x01,         //   Report Size (1 bit)
             0x96, 0x80, 0x01,   //   Report Count (384)
             0x81, 0x02,         //   Input (Data, Variable, Absolute)
+            0xC0                // End Collection
+        };
+
+        // --- PAGE 0x01 / 0x02: Mouse. Three buttons, relative X and Y and a wheel, 4 bytes after the report ID. The air mouse of the presenter sends these. ---
+        inline constexpr uint8_t MouseBlock[] = {
+            0x05, 0x01,         // Usage Page (Generic Desktop)
+            0x09, 0x02,         // Usage (Mouse)
+            0xA1, 0x01,         // Collection (Application)
+            0x85, ID::MOUSE,    //   REPORT ID (12)
+            0x09, 0x01,         //   Usage (Pointer)
+            0xA1, 0x00,         //   Collection (Physical)
+            0x05, 0x09,         //     Usage Page (Button)
+            0x19, 0x01, 0x29, 0x03, //   Usage Minimum (1), Maximum (3)
+            0x15, 0x00, 0x25, 0x01, //   Logical Minimum (0), Maximum (1)
+            0x95, 0x03, 0x75, 0x01, //   3 bits
+            0x81, 0x02,         //     Input (Data, Variable, Absolute)
+            0x95, 0x01, 0x75, 0x05, //   5 bits of padding
+            0x81, 0x01,         //     Input (Constant)
+            0x05, 0x01,         //     Usage Page (Generic Desktop)
+            0x09, 0x30, 0x09, 0x31, 0x09, 0x38, // X, Y, Wheel
+            0x15, 0x81, 0x25, 0x7F, //   Logical Minimum (-127), Maximum (127)
+            0x75, 0x08, 0x95, 0x03, //   3 bytes
+            0x81, 0x06,         //     Input (Data, Variable, Relative)
+            0xC0,               //   End Collection
             0xC0                // End Collection
         };
 
@@ -230,6 +257,12 @@ namespace HID {
 
         add(Reports::KeyboardBlock, sizeof(Reports::KeyboardBlock));
         add(Reports::ConsumerBlock, sizeof(Reports::ConsumerBlock));
+#if NG_PRESENTER
+        // The presenter (Core2) is a clicker and a mouse: keyboard, consumer control and mouse, nothing else. A small, ordinary report map
+        // that every host accepts (a LampArray and a 384 button game pad gave a driver error on Windows).
+        add(Reports::MouseBlock, sizeof(Reports::MouseBlock));     // report ID 12: the air mouse of the presenter
+        return map;
+#endif
         add(Reports::SystemBlock, sizeof(Reports::SystemBlock));   // report ID 3: power down, sleep, wake up
         add(Reports::GamepadBlock, sizeof(Reports::GamepadBlock)); // report ID 11: 384 buttons, the data way back
         Reports::AddLampArray(map);

@@ -33,12 +33,15 @@
 #ifndef NG_HAS_BTNS
 #define NG_HAS_BTNS 0
 #endif
+// 1 when the board is a presentation clicker and air mouse (Core2): one page, a mouse report in the report map, the gyroscope as a pointer.
+#ifndef NG_PRESENTER
+#define NG_PRESENTER NG_HAS_BTNS
+#endif
 
-// Bluetooth name: moon and ghost emoji (UTF-8 bytes, so no source encoding can mangle them) and the board in lower case,
-// e.g. "<moon><ghost>-cs3". USB, INFO and the HID names stay ASCII (K_DEVICE_NAME). See ADR 0015.
-#define K_BLE_EMOJI "\xF0\x9F\x8C\x99" "\xF0\x9F\x91\xBB"
+// Bluetooth name: plain ASCII (NG), no emoji: some hosts (Windows) cope badly with it. The Core2 is a presentation clicker and says so.
+// This supersedes the emoji names of ADR 0015. USB, INFO and the HID names are K_DEVICE_NAME.
 #if NG_HAS_BTNS
-#define K_BLE_NAME K_BLE_EMOJI "-c2"
+#define K_BLE_NAME "NG-C2-clicker"
 #else
-#define K_BLE_NAME K_BLE_EMOJI "-cs3"
+#define K_BLE_NAME "NG-S3-ble"
 #endif

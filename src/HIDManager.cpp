@@ -95,6 +95,7 @@ namespace HIDManager {
     static NimBLECharacteristic* inputConsumer = nullptr;
     static NimBLECharacteristic* inputSystem = nullptr;
     static NimBLECharacteristic* inputGamepad = nullptr;
+    static NimBLECharacteristic* inputMouse = nullptr;
     static NimBLECharacteristic* outputKeyboard = nullptr;
     static std::atomic<bool> _bleConnected{false};
 
@@ -170,10 +171,16 @@ namespace HIDManager {
         // 3. Reports. The IDs must match the Report IDs in the report map.
         inputKeyboard  = hid->getInputReport(HID::Reports::KEYBOARD);
         inputConsumer  = hid->getInputReport(HID::Reports::CONSUMER);
+#if !NG_PRESENTER      // only reports that are in the report map get a characteristic: the presenter has keyboard, consumer and mouse
         inputSystem    = hid->getInputReport(HID::Reports::SYSTEM);
         inputGamepad   = hid->getInputReport(HID::Reports::GAMEPAD);
+#endif
+#if NG_PRESENTER
+        inputMouse     = hid->getInputReport(HID::Reports::MOUSE);
+#endif
         outputKeyboard = hid->getOutputReport(HID::Reports::KEYBOARD);
         if (outputKeyboard) outputKeyboard->setCallbacks(new MyOutputCallbacks());
+#if !NG_PRESENTER
         // LampArray reports (see HID_Specs.h): feature 5 to 7 and output 8 to 10.
         {
             auto* lcb = new LampCallbacks();
@@ -182,6 +189,7 @@ namespace HIDManager {
                 if (lampChar[id]) lampChar[id]->setCallbacks(lcb);
             }
         }
+#endif
 
         // 4. Device info
         hid->setManufacturer(manufacturer);
@@ -208,7 +216,7 @@ namespace HIDManager {
         return _bleConnected && server && server->getConnectedCount() > 0;
     }
     static bool bleReport(uint8_t id, const uint8_t* data, size_t len) {
-        NimBLECharacteristic* c = (id == HID::Reports::KEYBOARD) ? inputKeyboard : (id == HID::Reports::SYSTEM) ? inputSystem : (id == HID::Reports::GAMEPAD) ? inputGamepad : inputConsumer;
+        NimBLECharacteristic* c = (id == HID::Reports::KEYBOARD) ? inputKeyboard : (id == HID::Reports::SYSTEM) ? inputSystem : (id == HID::Reports::GAMEPAD) ? inputGamepad : (id == HID::Reports::MOUSE) ? inputMouse : inputConsumer;
         if (!c) return false;
         c->setValue(data, len);
         return c->notify();

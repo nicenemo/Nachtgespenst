@@ -1,96 +1,251 @@
 ///usr/bin/env jbang "$0" "$@" ; exit $?
 //JAVA 27
 
-import java.io.*;
-import java.nio.file.*;
-import java.util.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
- * Tests the demo window through its control interface (DemoApp --control --headless): the talk, the slides, the camera toggles with the rule that only
- * one video stream runs, the black screen, the toolbar and a screenshot. With --board it also runs a short demo on the real board.
- *
+ * Automated test harness exercising {@code DemoApp} through its IPC control interface.
+ * <p>
+ * Spawns {@code DemoApp --control --headless} as a child process and communicates
+ * over stdin/stdout pipes to verify:
+ * <ul>
+ *     <li>Presentation slides navigation, timing, and pause/resume transitions.</li>
+ *     <li>Single-camera exclusivity rule (switching cameras guarantees only one active stream).</li>
+ *     <li>Blank screen mode and toolbar toggle states.</li>
+ *     <li>Off-screen window screenshot capture.</li>
+ *     <li>Hardware demo triggers (when {@code --board} is provided).</li>
+ * </ul>
+ * </p>
  * <pre>
- * jbang tools/DemoTest.java [--board] [--shot DIR]
+ *   jbang tools/DemoTest.java [--board] [--shot DIR]
  * </pre>
- * Run it as ONE plain command (a camera and the serial port are not visible in the sandbox; without them the camera checks still pass: the panel only says no camera).
  */
 public class DemoTest {
-    static int pass, fail;
-    static BufferedWriter out; static BufferedReader in;
 
-    static String ask(String cmd) throws IOException { out.write(cmd + "\n"); out.flush(); String r = in.readLine(); return r == null ? "ERR no reply" : r; }
-    static Map<String, String> kv(String r) {
-        Map<String, String> m = new HashMap<>(); java.util.regex.Matcher x = java.util.regex.Pattern.compile("(\\w+)=(\"[^\"]*\"|\\S+)").matcher(r);
-        while (x.find()) m.put(x.group(1), x.group(2).replace("\"", "")); return m;
+    private static int passCount = 0;
+    private static int failCount = 0;
+    private static BufferedWriter processIn;
+    private static BufferedReader processOut;
+
+    /** Sends a control command line and returns the first response line. */
+    static String sendCommand(String cmd) throws IOException {
+        processIn.write(cmd + "\n");
+        processIn.flush();
+        String reply = processOut.readLine();
+        return (reply != null) ? reply : "ERR no reply";
     }
-    static void check(String name, boolean ok, String detail) { if (ok) pass++; else fail++; System.out.println((ok ? "PASS " : "FAIL ") + name + (detail.isEmpty() ? "" : "  (" + detail + ")")); }
+
+    /** Parses a key=value response line into a dictionary map. */
+    static Map<String, String> parseKeyValue(String line) {
+        Map<String, String> map = new HashMap<>();
+        Matcher matcher = Pattern.compile("(\\w+)=(\"[^\"]*\"|\\S+)").matcher(line);
+        while (matcher.find()) {
+            map.put(matcher.group(1), matcher.group(2).replace("\"", ""));
+        }
+        return map;
+    }
+
+    static void check(String assertionName, boolean conditionMet, String detail) {
+        if (conditionMet) {
+            passCount++;
+        } else {
+            failCount++;
+        }
+        String status = conditionMet ? "PASS " : "FAIL ";
+        String suffix = detail.isEmpty() ? "" : "  (" + detail + ")";
+        System.out.println(status + assertionName + suffix);
+    }
 
     public static void main(String[] args) throws Exception {
-        boolean board = false; Path shotDir = null;
-        for (int i = 0; i < args.length; i++) { if (args[i].equals("--board")) board = true; else if (args[i].equals("--shot")) shotDir = Path.of(args[++i]); }
-        if (shotDir != null) Files.createDirectories(shotDir);
-        List<String> cmd = new ArrayList<>(List.of("jbang", Path.of("tools/DemoApp.java").toAbsolutePath().toString(), "--control", "--headless"));
-        if (!board) cmd.add("--no-board");
-        Process p = new ProcessBuilder(cmd).redirectError(ProcessBuilder.Redirect.DISCARD).start();
-        out = new BufferedWriter(new OutputStreamWriter(p.getOutputStream())); in = new BufferedReader(new InputStreamReader(p.getInputStream()));
+        boolean testRealBoard = false;
+        Path screenshotDir = null;
 
-        Map<String, String> s = kv(ask("state"));
-        int slides = Integer.parseInt(s.get("slide").split("/")[1]);
-        check("state: the first slide is shown, nothing runs", s.get("slide").startsWith("1/") && "stopped".equals(s.get("talk")) && "off".equals(s.get("camera")) && "0".equals(s.get("streams")) && slides >= 10, s.toString());
-
-        check("talk start", ask("talk start").startsWith("OK"), "");
-        s = kv(ask("state"));
-        check("the talk runs on slide 1", "running".equals(s.get("talk")) && s.get("slide").startsWith("1/"), s.get("slide") + " " + s.get("talk"));
-        ask("talk next"); ask("talk next");
-        check("next, next: slide 3", kv(ask("state")).get("slide").startsWith("3/"), "");
-        ask("talk prev");
-        check("prev: slide 2", kv(ask("state")).get("slide").startsWith("2/"), "");
-        ask("talk pause");
-        check("pause", "1".equals(kv(ask("state")).get("paused")), "");
-        ask("talk pause");
-        check("resume", "0".equals(kv(ask("state")).get("paused")), "");
-        ask("talk goto 5");
-        check("goto 5", kv(ask("state")).get("slide").startsWith("5/"), "");
-        check("goto beyond the last slide -> ERR", ask("talk goto 999").startsWith("ERR"), "");
-        ask("talk stop");
-        check("stop", "stopped".equals(kv(ask("state")).get("talk")), "");
-
-        // the black screen and the toolbar
-        ask("blank"); check("blank on", "1".equals(kv(ask("state")).get("blank")), ""); ask("blank"); check("blank off", "0".equals(kv(ask("state")).get("blank")), "");
-        ask("toolbar"); check("toolbar hidden", "0".equals(kv(ask("state")).get("toolbar")), ""); ask("toolbar"); check("toolbar shown", "1".equals(kv(ask("state")).get("toolbar")), "");
-
-        // cameras: one stream at a time
-        ask("camera tripod"); s = kv(ask("state"));
-        check("camera tripod: shown, one stream", "tripod".equals(s.get("camera")) && "1".equals(s.get("streams")), s.get("camera") + " streams=" + s.get("streams"));
-        ask("camera laptop"); s = kv(ask("state"));
-        check("camera laptop replaces the tripod camera: still one stream", "laptop".equals(s.get("camera")) && "1".equals(s.get("streams")), s.get("camera") + " streams=" + s.get("streams"));
-        check("turn, mirror and flip of the shown camera", ask("camera turn right").equals("OK") && ask("camera turn left").equals("OK") && ask("camera turn half").equals("OK") && ask("camera mirror").equals("OK") && ask("camera flip").equals("OK"), "");
-        ask("camera off"); s = kv(ask("state"));
-        check("camera off frees the device: no stream", "off".equals(s.get("camera")) && "0".equals(s.get("streams")), s.toString());
-        check("turn without a camera -> ERR", ask("camera turn right").startsWith("ERR"), "");
-        check("unknown camera command -> ERR", ask("camera banana").startsWith("ERR"), "");
-
-        // a screenshot of the window
-        if (shotDir != null) {
-            Path f = shotDir.resolve("demo-window.png"); String r = ask("shot " + f);
-            check("shot writes a picture", r.startsWith("OK") && Files.exists(f) && Files.size(f) > 5000, r);
+        for (int i = 0; i < args.length; i++) {
+            switch (args[i]) {
+                case "--board" -> testRealBoard = true;
+                case "--shot" -> screenshotDir = Path.of(args[++i]);
+            }
         }
 
-        // the demos need the board
-        if (board) {
-            s = kv(ask("state"));
-            if (!"connected".equals(s.get("board"))) check("board connected", false, s.get("board") + " " + s.get("info"));
-            else {
-                check("demo bar:nightrider starts", ask("demo bar:nightrider").equals("OK"), "");
-                check("it runs", "running".equals(kv(ask("state")).get("demo")), "");
-                check("and ends", ask("wait 90").equals("OK"), "");
+        if (screenshotDir != null) {
+            Files.createDirectories(screenshotDir);
+        }
+
+        List<String> launchCmd = resolveLaunchCommand(testRealBoard);
+        Process process = new ProcessBuilder(launchCmd)
+                .redirectError(ProcessBuilder.Redirect.DISCARD)
+                .start();
+
+        processIn = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()));
+        processOut = new BufferedReader(new InputStreamReader(process.getInputStream()));
+
+        // --- 1. Initial State Checks ---
+        Map<String, String> state = parseKeyValue(sendCommand("state"));
+        int slideCount = Integer.parseInt(state.get("slide").split("/")[1]);
+        check("state: the first slide is shown, nothing runs",
+                state.get("slide").startsWith("1/")
+                        && "stopped".equals(state.get("talk"))
+                        && "off".equals(state.get("camera"))
+                        && "0".equals(state.get("streams"))
+                        && slideCount >= 10,
+                state.toString());
+
+        // --- 2. Talk Sequencer Navigation ---
+        check("talk start", sendCommand("talk start").startsWith("OK"), "");
+        state = parseKeyValue(sendCommand("state"));
+        check("the talk runs on slide 1",
+                "running".equals(state.get("talk")) && state.get("slide").startsWith("1/"),
+                state.get("slide") + " " + state.get("talk"));
+
+        sendCommand("talk next");
+        sendCommand("talk next");
+        check("next, next: slide 3", parseKeyValue(sendCommand("state")).get("slide").startsWith("3/"), "");
+
+        sendCommand("talk prev");
+        check("prev: slide 2", parseKeyValue(sendCommand("state")).get("slide").startsWith("2/"), "");
+
+        sendCommand("talk pause");
+        check("pause", "1".equals(parseKeyValue(sendCommand("state")).get("paused")), "");
+
+        sendCommand("talk pause");
+        check("resume", "0".equals(parseKeyValue(sendCommand("state")).get("paused")), "");
+
+        sendCommand("talk goto 5");
+        check("goto 5", parseKeyValue(sendCommand("state")).get("slide").startsWith("5/"), "");
+
+        check("goto beyond the last slide -> ERR", sendCommand("talk goto 999").startsWith("ERR"), "");
+
+        sendCommand("talk stop");
+        check("stop", "stopped".equals(parseKeyValue(sendCommand("state")).get("talk")), "");
+
+        // --- 3. Screen Blanking & Toolbar Toggles ---
+        sendCommand("blank");
+        check("blank on", "1".equals(parseKeyValue(sendCommand("state")).get("blank")), "");
+        sendCommand("blank");
+        check("blank off", "0".equals(parseKeyValue(sendCommand("state")).get("blank")), "");
+
+        sendCommand("toolbar");
+        check("toolbar hidden", "0".equals(parseKeyValue(sendCommand("state")).get("toolbar")), "");
+        sendCommand("toolbar");
+        check("toolbar shown", "1".equals(parseKeyValue(sendCommand("state")).get("toolbar")), "");
+
+        // --- 4. Camera Stream Exclusivity Rules ---
+        sendCommand("camera tripod");
+        state = parseKeyValue(sendCommand("state"));
+        check("camera tripod: shown, one stream",
+                "tripod".equals(state.get("camera")) && "1".equals(state.get("streams")),
+                state.get("camera") + " streams=" + state.get("streams"));
+
+        sendCommand("camera laptop");
+        state = parseKeyValue(sendCommand("state"));
+        check("camera laptop replaces tripod: strictly one active stream",
+                "laptop".equals(state.get("camera")) && "1".equals(state.get("streams")),
+                state.get("camera") + " streams=" + state.get("streams"));
+
+        check("turn, mirror and flip of the shown camera",
+                sendCommand("camera turn right").equals("OK")
+                        && sendCommand("camera turn left").equals("OK")
+                        && sendCommand("camera turn half").equals("OK")
+                        && sendCommand("camera mirror").equals("OK")
+                        && sendCommand("camera flip").equals("OK"),
+                "");
+
+        sendCommand("camera off");
+        state = parseKeyValue(sendCommand("state"));
+        check("camera off frees device: zero active streams",
+                "off".equals(state.get("camera")) && "0".equals(state.get("streams")),
+                state.toString());
+
+        check("turn without camera -> ERR", sendCommand("camera turn right").startsWith("ERR"), "");
+        check("unknown camera command -> ERR", sendCommand("camera invalid").startsWith("ERR"), "");
+
+        // --- 5. Screenshot Capture ---
+        if (screenshotDir != null) {
+            Path targetFile = screenshotDir.resolve("demo-window.png");
+            String reply = sendCommand("shot " + targetFile);
+            check("shot writes picture file",
+                    reply.startsWith("OK") && Files.exists(targetFile) && Files.size(targetFile) > 5000,
+                    reply);
+        }
+
+        // --- 6. Hardware Demos ---
+        if (testRealBoard) {
+            state = parseKeyValue(sendCommand("state"));
+            if (!"connected".equals(state.get("board"))) {
+                check("board connected", false, state.get("board") + " " + state.get("info"));
+            } else {
+                check("demo bar:nightrider starts", sendCommand("demo bar:nightrider").equals("OK"), "");
+                check("it runs", "running".equals(parseKeyValue(sendCommand("state")).get("demo")), "");
+                check("and ends cleanly", sendCommand("wait 90").equals("OK"), "");
             }
         } else {
-            check("demo without a board -> ERR", ask("demo disk").startsWith("ERR"), "");
+            check("demo without board -> ERR", sendCommand("demo disk").startsWith("ERR"), "");
         }
-        check("unknown command -> ERR", ask("banana").startsWith("ERR"), "");
-        ask("quit"); p.waitFor();
-        System.out.println("SUMMARY pass=" + pass + " fail=" + fail + (fail == 0 ? " -> PASS" : " -> FAIL"));
-        System.exit(fail == 0 ? 0 : 1);
+
+        check("unknown command -> ERR", sendCommand("unknown_cmd").startsWith("ERR"), "");
+
+        sendCommand("quit");
+        process.waitFor();
+
+        System.out.printf("SUMMARY pass=%d fail=%d -> %s%n",
+                passCount, failCount, (failCount == 0) ? "PASS" : "FAIL");
+        System.exit(failCount == 0 ? 0 : 1);
+    }
+
+    private static List<String> resolveLaunchCommand(boolean withBoard) {
+        String jbangPath = findExecutable("jbang");
+        List<String> cmd = new ArrayList<>();
+
+        if (jbangPath != null) {
+            cmd.addAll(List.of(
+                    jbangPath,
+                    Path.of("tools/DemoApp.java").toAbsolutePath().toString(),
+                    "--control",
+                    "--headless"
+            ));
+        } else {
+            // Direct JVM launch fallback if jbang is not installed in system PATH
+            String javaBin = ProcessHandle.current().info().command().orElse("java");
+            String classPath = System.getProperty("java.class.path");
+            cmd.addAll(List.of(
+                    javaBin,
+                    "--enable-native-access=ALL-UNNAMED",
+                    "--add-modules=jdk.incubator.vector",
+                    "-cp", classPath,
+                    "DemoApp",
+                    "--control",
+                    "--headless"
+            ));
+        }
+
+        if (!withBoard) {
+            cmd.add("--no-board");
+        }
+        return cmd;
+    }
+
+    private static String findExecutable(String name) {
+        String pathEnv = System.getenv("PATH");
+        if (pathEnv == null) return null;
+        for (String dir : pathEnv.split(File.pathSeparator)) {
+            File f = new File(dir, name);
+            if (f.isFile() && f.canExecute()) {
+                return f.getAbsolutePath();
+            }
+        }
+        return null;
     }
 }

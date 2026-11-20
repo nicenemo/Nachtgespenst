@@ -51,6 +51,13 @@
 <tr><td><a href="#cmd-layer"><code>layer</code></a></td><td><code>layer &lt;n&gt;</code></td><td>Show page n (0 is the first key layer).</td></tr>
 <tr><td><a href="#cmd-key"><code>key</code></a></td><td><code>key &lt;layer&gt; &lt;tile&gt;</code></td><td>Press a tile as if it was touched. It really types on the host!</td></tr>
 <tr><td><a href="#cmd-tap"><code>tap</code></a></td><td><code>tap &lt;x&gt; &lt;y&gt;</code></td><td>Touch the screen at x, y (Locks page only).</td></tr>
+<tr><td><a href="#cmd-down"><code>down</code></a></td><td><code>down &lt;x&gt; &lt;y&gt;</code></td><td>Hold a touch at x, y until up (Locks page or the header bar only).</td></tr>
+<tr><td><a href="#cmd-up"><code>up</code></a></td><td><code>up</code></td><td>Release the touch that down is holding.</td></tr>
+<tr><td><a href="#cmd-btn"><code>btn</code></a></td><td><code>btn &lt;a|b|c&gt; &lt;down|up&gt;</code></td><td>Press or release a button of the Core2 (A previous page, B Locks, C next page).</td></tr>
+<tr><td><a href="#cmd-clicker"><code>clicker</code></a></td><td><code>clicker &lt;prev|next|start|blank|end|laser&gt;</code></td><td>Type the key of a presenter button (Core2 only). It really types on the host!</td></tr>
+<tr><td><a href="#cmd-pointer"><code>pointer</code></a></td><td><code>pointer [on|off|toggle|click [left|right|middle]|scroll &lt;n&gt;|&lt;setting&gt; &lt;value&gt;|feed &lt;yaw&gt; &lt;pitch&gt;]</code></td><td>The air mouse of the presenter (Core2 only): switch it, tune it, click.</td></tr>
+<tr><td><a href="#cmd-imu"><code>imu</code></a></td><td><code>imu &lt;x&gt; &lt;y&gt; &lt;z&gt;</code></td><td>Pretend the gyroscope turns around its three axes (degrees per second) for 0.6 s (Core2 only, for tests).</td></tr>
+<tr><td><a href="#cmd-mod"><code>mod</code></a></td><td><code>mod &lt;ctrl|shift|alt|win|cs|as|meh|hyper|off&gt;</code></td><td>Hold or release a sticky modifier of the mouse page (Core2 only).</td></tr>
 <tr><td><a href="#cmd-shot"><code>shot</code></a></td><td><code>shot</code></td><td>Screenshot of the screen, 24 bits per pixel.</td></tr>
 <tr><td><a href="#cmd-perf"><code>perf</code></a></td><td><code>perf</code></td><td>How long the last page took to build, render and flush.</td></tr>
 <tr><td><a href="#cmd-wake"><code>wake</code></a></td><td><code>wake</code></td><td>Restart the idle timers: screen and LED bar on again.</td></tr>
@@ -108,6 +115,47 @@
 <p>Refused outside the Locks page (ERR tap), so that a stray coordinate cannot press a key on another page.</p>
 <p>Reply:</p><ul><li><code>OK TAP | ERR tap</code></li></ul>
 <pre>tap 160 120</pre>
+<h2 id="cmd-down">down</h2>
+<p><code>down &lt;x&gt; &lt;y&gt;</code></p>
+<p>Hold a touch at x, y until up (Locks page or the header bar only).</p>
+<p>For tests of the pressed state: the control under the finger changes colour while the touch is held. Nothing is sent to the host: up first moves the touch off the control, so no click fires. state shows touch=1 while it is held.</p>
+<p>Reply:</p><ul><li><code>OK DOWN | ERR down</code></li></ul>
+<pre>down 100 120</pre>
+<h2 id="cmd-up">up</h2>
+<p><code>up</code></p>
+<p>Release the touch that down is holding.</p>
+<p>Reply:</p><ul><li><code>OK UP | ERR up</code></li></ul>
+<pre>up</pre>
+<h2 id="cmd-btn">btn</h2>
+<p><code>btn &lt;a|b|c&gt; &lt;down|up&gt;</code></p>
+<p>Press or release a button of the Core2 (A previous page, B Locks, C next page).</p>
+<p>down does what the button does and lights its indicator in the header; up puts the indicator out. state shows btn=&lt;bit mask&gt; while held. The CoreS3 has no buttons (ERR btn).</p>
+<p>Reply:</p><ul><li><code>OK BTN DOWN | OK BTN UP | ERR btn</code></li></ul>
+<pre>btn b down</pre>
+<h2 id="cmd-clicker">clicker</h2>
+<p><code>clicker &lt;prev|next|start|blank|end|laser&gt;</code></p>
+<p>Type the key of a presenter button (Core2 only). It really types on the host!</p>
+<p>prev is Page Up, next Page Down, start F5, blank B, end Esc and laser Ctrl+L: the keys of every presentation program and every third-party clicker. Needs a Bluetooth host.</p>
+<p>Reply:</p><ul><li><code>OK CLICKER | ERR clicker</code></li></ul>
+<pre>clicker next</pre>
+<h2 id="cmd-pointer">pointer</h2>
+<p><code>pointer [on|off|toggle|click [left|right|middle]|scroll &lt;n&gt;|&lt;setting&gt; &lt;value&gt;|feed &lt;yaw&gt; &lt;pitch&gt;]</code></p>
+<p>The air mouse of the presenter (Core2 only): switch it, tune it, click.</p>
+<p>Without arguments it prints the state. The pointer is off until it is switched on. While on, it moves the mouse pointer of the host when the board is turned, and falls asleep by itself after a few seconds of holding still, until it is moved again. Settings: gain 1 to 100 (pixels per degree), idle 0.5 to 30 (seconds still before it sleeps), upright on|off (hold the board upright instead of flat), flipx on|off, flipy on|off. feed pretends the board turns at yaw and pitch degrees per second for 0.6 s (for tests). click presses a mouse button (left by default). scroll turns the vertical wheel n ticks (positive up, negative down).</p>
+<p>Reply:</p><ul><li><code>OK PRESENTER pointer=off|still|moving gain=.. idle=.. | OK POINTER SET | ERR pointer</code></li></ul>
+<pre>pointer on</pre>
+<h2 id="cmd-imu">imu</h2>
+<p><code>imu &lt;x&gt; &lt;y&gt; &lt;z&gt;</code></p>
+<p>Pretend the gyroscope turns around its three axes (degrees per second) for 0.6 s (Core2 only, for tests).</p>
+<p>The pointer uses yaw (z when the board is held flat, y when upright) and pitch (x), so imu 0 0 60 is a turn to the side and imu 40 0 0 a tilt.</p>
+<p>Reply:</p><ul><li><code>OK IMU</code></li></ul>
+<pre>imu 40 0 60</pre>
+<h2 id="cmd-mod">mod</h2>
+<p><code>mod &lt;ctrl|shift|alt|win|cs|as|meh|hyper|off&gt;</code></p>
+<p>Hold or release a sticky modifier of the mouse page (Core2 only).</p>
+<p>The modifiers stay held until you switch them off, so Ctrl+click and Ctrl+scroll work with the mouse. cs is Ctrl+Shift, as Alt+Shift, meh Ctrl+Shift+Alt, hyper Ctrl+Shift+Alt+Win. The same combination again lets it go; off releases all. They are released when the host goes away.</p>
+<p>Reply:</p><ul><li><code>OK MOD &lt;bit mask&gt; | ERR mod</code></li></ul>
+<pre>mod ctrl</pre>
 <h2 id="cmd-shot">shot</h2>
 <p><code>shot</code></p>
 <p>Screenshot of the screen, 24 bits per pixel.</p>

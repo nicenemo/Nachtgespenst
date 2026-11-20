@@ -1,85 +1,226 @@
 ///usr/bin/env jbang "$0" "$@" ; exit $?
 //JAVA 27
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
-import java.util.*;
-import java.util.regex.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Turns docs/shell/commands.txt, the single source of the manual of the shell, into
- * include/ShellHelp.h (the built-in help of the firmware), docs/wiki/shell.md and site/shell.html (the manual on the site).
- * The same file is help.txt on the SD card (jbang tools/Shell.java install-help). Run from the repository root:
- *   jbang tools/Manual.java
+ * Generator producing shell documentation and firmware embedded help tables from a single source.
+ * <p>
+ * Parses {@code docs/shell/commands.txt} and generates:
+ * <ul>
+ *     <li>{@code include/ShellHelp.h}: Embedded C++ constexpr lookup table for firmware shell help.</li>
+ *     <li>{@code docs/wiki/shell.md}: Complete markdown reference manual for GitHub wiki.</li>
+ *     <li>{@code site/shell.html}: Online documentation page styled consistently with the website.</li>
+ * </ul>
+ * </p>
  */
 public class Manual {
-    record Cmd(String name, String usage, String summary, List<String> text, List<String> replies, List<String> examples) { }
 
-    static List<Cmd> parse(List<String> lines) {
-        List<Cmd> out = new ArrayList<>();
-        String name = null, usage = "", summary = ""; List<String> text = new ArrayList<>(), replies = new ArrayList<>(), examples = new ArrayList<>();
-        for (String l : lines) {
-            if (l.startsWith("#")) continue;
-            if (l.startsWith("== ")) {
-                if (name != null) out.add(new Cmd(name, usage, summary, text, replies, examples));
-                name = l.substring(3).trim(); usage = ""; summary = ""; text = new ArrayList<>(); replies = new ArrayList<>(); examples = new ArrayList<>();
-            } else if (name != null) {
-                if (l.startsWith("usage:")) usage = l.substring(6).trim();
-                else if (l.startsWith("summary:")) summary = l.substring(8).trim();
-                else if (l.startsWith("reply:")) replies.add(l.substring(6).trim());
-                else if (l.startsWith("example:")) examples.add(l.substring(8).trim());
-                else if (!l.isBlank()) text.add(l.trim());
+    /**
+     * Data record describing a single shell command specification.
+     *
+     * @param name     command name (lowercase identifier)
+     * @param usage    argument syntax signature
+     * @param summary  concise one-line summary description
+     * @param text     extended explanatory text lines
+     * @param replies  expected response patterns
+     * @param examples verbatim usage examples
+     */
+    record ShellCommand(
+            String name,
+            String usage,
+            String summary,
+            List<String> text,
+            List<String> replies,
+            List<String> examples
+    ) {}
+
+    /**
+     * Parses the command definitions text file into structured {@link ShellCommand} records.
+     */
+    static List<ShellCommand> parse(List<String> lines) {
+        List<ShellCommand> commands = new ArrayList<>();
+        String currentName = null;
+        String usage = "";
+        String summary = "";
+        List<String> text = new ArrayList<>();
+        List<String> replies = new ArrayList<>();
+        List<String> examples = new ArrayList<>();
+
+        for (String line : lines) {
+            if (line.startsWith("#")) {
+                continue;
+            }
+
+            if (line.startsWith("== ")) {
+                if (currentName != null) {
+                    commands.add(new ShellCommand(currentName, usage, summary, text, replies, examples));
+                }
+                currentName = line.substring(3).trim();
+                usage = "";
+                summary = "";
+                text = new ArrayList<>();
+                replies = new ArrayList<>();
+                examples = new ArrayList<>();
+            } else if (currentName != null) {
+                if (line.startsWith("usage:")) {
+                    usage = line.substring(6).trim();
+                } else if (line.startsWith("summary:")) {
+                    summary = line.substring(8).trim();
+                } else if (line.startsWith("reply:")) {
+                    replies.add(line.substring(6).trim());
+                } else if (line.startsWith("example:")) {
+                    examples.add(line.substring(8).trim());
+                } else if (!line.isBlank()) {
+                    text.add(line.trim());
+                }
             }
         }
-        if (name != null) out.add(new Cmd(name, usage, summary, text, replies, examples));
-        return out;
+
+        if (currentName != null) {
+            commands.add(new ShellCommand(currentName, usage, summary, text, replies, examples));
+        }
+        return commands;
     }
 
-    static String c(String s) { return s.replace("\\", "\\\\").replace("\"", "\\\""); }
-    static String h(String s) { return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"); }
+    /** Escapes string for inclusion inside a C/C++ string literal. */
+    static String escapeCString(String str) {
+        return str.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
 
-    public static void main(String[] args) throws Exception {
-        List<Cmd> cmds = parse(Files.readAllLines(Path.of("docs/shell/commands.txt")));
+    /** Escapes string for inclusion inside HTML markup. */
+    static String escapeHtml(String str) {
+        return str.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+    }
 
-        // ---- the built-in help of the firmware
-        StringBuilder hh = new StringBuilder("#pragma once\n// Generated by tools/Manual.java from docs/shell/commands.txt: do not edit. The built-in help of the shell\n// (the full text comes from help.txt on the SD card when there is one).\nstruct ShellHelp { const char* name; const char* usage; const char* summary; };\ninline constexpr ShellHelp SHELL_HELP[] = {\n");
-        for (Cmd k : cmds) hh.append("    {\"").append(c(k.name())).append("\", \"").append(c(k.usage())).append("\", \"").append(c(k.summary())).append("\"},\n");
-        hh.append("};\ninline constexpr int SHELL_HELP_COUNT = sizeof(SHELL_HELP) / sizeof(SHELL_HELP[0]);\n");
-        Files.writeString(Path.of("include/ShellHelp.h"), hh.toString(), StandardCharsets.UTF_8);
+    public static void main(String[] args) throws IOException {
+        Path commandsFile = Path.of("docs/shell/commands.txt");
+        if (!Files.exists(commandsFile)) {
+            System.err.println("Error: " + commandsFile + " not found. Run from the repository root.");
+            System.exit(1);
+        }
 
-        // ---- the wiki page
-        StringBuilder md = new StringBuilder("# The shell\n\nThe serial port of both boards (USB, 115200 baud) is a small shell: commands and arguments in lower case, `help` for the list and `help <command>` for one command. Every reply starts with `OK` or `ERR`; some commands print more lines after the first.\n\nThis page is generated from `docs/shell/commands.txt` by `tools/Manual.java`, which also writes the built-in help of the firmware (`include/ShellHelp.h`) and the manual on the site. The same file is `help.txt` on the SD card of the CoreS3 (`jbang tools/Shell.java install-help`), where `help <command>` reads its text from.\n\nTry it: `jbang tools/Shell.java S3` (an interactive shell) or `jbang tools/Serial.java S3 \"help\"`.\n\n| Command | Usage | What it does |\n|---|---|---|\n");
-        for (Cmd k : cmds) md.append("| [`").append(k.name()).append("`](#").append(k.name()).append(") | `").append(k.usage()).append("` | ").append(k.summary()).append(" |\n");
-        for (Cmd k : cmds) {
-            md.append("\n## ").append(k.name()).append("\n\n`").append(k.usage()).append("`\n\n").append(k.summary()).append("\n");
-            if (!k.text().isEmpty()) md.append("\n").append(String.join(" ", k.text())).append("\n");
-            for (String r : k.replies()) md.append("\n* Reply: `").append(r).append("`");
-            if (!k.replies().isEmpty()) md.append("\n");
-            for (String e : k.examples()) md.append("\n```\n").append(e).append("\n```\n");
+        List<ShellCommand> commands = parse(Files.readAllLines(commandsFile));
+
+        // 1. Generate C++ firmware header (include/ShellHelp.h)
+        StringBuilder header = new StringBuilder();
+        header.append("""
+                #pragma once
+                // Generated by tools/Manual.java from docs/shell/commands.txt: do not edit.
+                // The built-in help of the shell (full extended text loaded from help.txt on SD card).
+                struct ShellHelp { const char* name; const char* usage; const char* summary; };
+                inline constexpr ShellHelp SHELL_HELP[] = {
+                """);
+
+        for (ShellCommand cmd : commands) {
+            header.append(String.format("    {\"%s\", \"%s\", \"%s\"},%n",
+                    escapeCString(cmd.name()), escapeCString(cmd.usage()), escapeCString(cmd.summary())));
+        }
+        header.append("""
+                };
+                inline constexpr int SHELL_HELP_COUNT = sizeof(SHELL_HELP) / sizeof(SHELL_HELP[0]);
+                """);
+        Files.writeString(Path.of("include/ShellHelp.h"), header.toString(), StandardCharsets.UTF_8);
+
+        // 2. Generate Markdown manual (docs/wiki/shell.md)
+        StringBuilder md = new StringBuilder("""
+                # The shell
+
+                The serial port of both boards (USB, 115200 baud) is a small shell: commands and arguments in lower case, `help` for the list and `help <command>` for one command. Every reply starts with `OK` or `ERR`; some commands print more lines after the first.
+
+                This page is generated from `docs/shell/commands.txt` by `tools/Manual.java`, which also writes the built-in help of the firmware (`include/ShellHelp.h`) and the manual on the site. The same file is `help.txt` on the SD card of the CoreS3 (`jbang tools/Shell.java install-help`), where `help <command>` reads its text from.
+
+                Try it: `jbang tools/Shell.java S3` (an interactive shell) or `jbang tools/Serial.java S3 "help"`.
+
+                | Command | Usage | What it does |
+                |---|---|---|
+                """);
+
+        for (ShellCommand cmd : commands) {
+            md.append(String.format("| [`%s`](#%s) | `%s` | %s |%n",
+                    cmd.name(), cmd.name(), cmd.usage(), cmd.summary()));
+        }
+
+        for (ShellCommand cmd : commands) {
+            md.append(String.format("%n## %s%n%n`%s`%n%n%s%n", cmd.name(), cmd.usage(), cmd.summary()));
+            if (!cmd.text().isEmpty()) {
+                md.append("\n").append(String.join(" ", cmd.text())).append("\n");
+            }
+            for (String reply : cmd.replies()) {
+                md.append("\n* Reply: `").append(reply).append("`");
+            }
+            if (!cmd.replies().isEmpty()) {
+                md.append("\n");
+            }
+            for (String example : cmd.examples()) {
+                md.append("\n```\n").append(example).append("\n```\n");
+            }
         }
         Files.writeString(Path.of("docs/wiki/shell.md"), md.toString(), StandardCharsets.UTF_8);
 
-        // ---- the page on the site, in the layout of the lamps page
-        String page = Files.readString(Path.of("site/lamps.html"), StandardCharsets.UTF_8);
-        StringBuilder body = new StringBuilder("<main class=\"wrap\">\n<section id=\"shell\">\n<p>The serial port of both boards (USB, 115200 baud) is a small shell. Commands and arguments are lower case, <code>help</code> lists them and <code>help &lt;command&gt;</code> explains one. Every reply starts with <code>OK</code> or <code>ERR</code>; some commands print more lines after it. On the CoreS3 the long texts come from <code>help.txt</code> on the SD card; without the card (or on the Core2) <code>help &lt;command&gt;</code> prints the usage line and the summary that are built into the firmware.</p>\n<p>Try it: <code>jbang tools/Shell.java S3</code> opens an interactive shell on the board, <code>jbang tools/Serial.java S3 \"help\"</code> sends one command.</p>\n<table>\n<tr><th>Command</th><th>Usage</th><th>What it does</th></tr>\n");
-        for (Cmd k : cmds) body.append("<tr><td><a href=\"#cmd-").append(k.name()).append("\"><code>").append(k.name()).append("</code></a></td><td><code>").append(h(k.usage())).append("</code></td><td>").append(h(k.summary())).append("</td></tr>\n");
-        body.append("</table>\n");
-        for (Cmd k : cmds) {
-            body.append("<h2 id=\"cmd-").append(k.name()).append("\">").append(k.name()).append("</h2>\n<p><code>").append(h(k.usage())).append("</code></p>\n<p>").append(h(k.summary())).append("</p>\n");
-            if (!k.text().isEmpty()) body.append("<p>").append(h(String.join(" ", k.text()))).append("</p>\n");
-            if (!k.replies().isEmpty()) { body.append("<p>Reply:</p><ul>"); for (String r : k.replies()) body.append("<li><code>").append(h(r)).append("</code></li>"); body.append("</ul>\n"); }
-            for (String e : k.examples()) body.append("<pre>").append(h(e)).append("</pre>\n");
+        // 3. Generate HTML documentation (site/shell.html)
+        Path lampsHtmlPath = Path.of("site/lamps.html");
+        if (Files.exists(lampsHtmlPath)) {
+            String template = Files.readString(lampsHtmlPath, StandardCharsets.UTF_8);
+            StringBuilder body = new StringBuilder("""
+                    <main class="wrap">
+                    <section id="shell">
+                    <p>The serial port of both boards (USB, 115200 baud) is a small shell. Commands and arguments are lower case, <code>help</code> lists them and <code>help &lt;command&gt;</code> explains one. Every reply starts with <code>OK</code> or <code>ERR</code>; some commands print more lines after it. On the CoreS3 the long texts come from <code>help.txt</code> on the SD card; without the card (or on the Core2) <code>help &lt;command&gt;</code> prints the usage line and the summary that are built into the firmware.</p>
+                    <p>Try it: <code>jbang tools/Shell.java S3</code> opens an interactive shell on the board, <code>jbang tools/Serial.java S3 "help"</code> sends one command.</p>
+                    <table>
+                    <tr><th>Command</th><th>Usage</th><th>What it does</th></tr>
+                    """);
+
+            for (ShellCommand cmd : commands) {
+                body.append(String.format("<tr><td><a href=\"#cmd-%s\"><code>%s</code></a></td><td><code>%s</code></td><td>%s</td></tr>%n",
+                        cmd.name(), cmd.name(), escapeHtml(cmd.usage()), escapeHtml(cmd.summary())));
+            }
+            body.append("</table>\n");
+
+            for (ShellCommand cmd : commands) {
+                body.append(String.format("<h2 id=\"cmd-%s\">%s</h2>%n<p><code>%s</code></p>%n<p>%s</p>%n",
+                        cmd.name(), cmd.name(), escapeHtml(cmd.usage()), escapeHtml(cmd.summary())));
+                if (!cmd.text().isEmpty()) {
+                    body.append("<p>").append(escapeHtml(String.join(" ", cmd.text()))).append("</p>\n");
+                }
+                if (!cmd.replies().isEmpty()) {
+                    body.append("<p>Reply:</p><ul>");
+                    for (String reply : cmd.replies()) {
+                        body.append("<li><code>").append(escapeHtml(reply)).append("</code></li>");
+                    }
+                    body.append("</ul>\n");
+                }
+                for (String example : cmd.examples()) {
+                    body.append("<pre>").append(escapeHtml(example)).append("</pre>\n");
+                }
+            }
+            body.append("""
+                    </section>
+                    <nav class="pager" aria-label="Previous and next page"><a class="prev" href="lamps.html"><small>&larr; Previous</small><br>LampArray bench</a><a class="next" href="setup.html"><small>Next &rarr;</small><br>Set-up</a></nav>
+
+                    </main>""");
+
+            int mainStart = template.indexOf("<main class=\"wrap\">");
+            int mainEnd = template.indexOf("</main>") + "</main>".length();
+            if (mainStart >= 0 && mainEnd > mainStart) {
+                String htmlOutput = template.substring(0, mainStart) + body + template.substring(mainEnd);
+                htmlOutput = htmlOutput.replaceAll("<title>[^<]*</title>", "<title>Shell manual</title>");
+                htmlOutput = htmlOutput.replaceAll("(<h1>(?:<img[^>]*>)?)[^<]*(</h1>)", "$1Shell manual$2");
+                htmlOutput = htmlOutput.replaceAll("<p class=\"tag\">[^<]*</p>", "<p class=\"tag\">The commands of the boards, from <code>help</code> to <code>telem</code>.</p>");
+                htmlOutput = htmlOutput.replace("<meta name=\"description\" content=\"", "<meta name=\"description\" content=\"Shell manual: ");
+                htmlOutput = htmlOutput.replace(" aria-current=\"page\">LampArray bench", ">LampArray bench");
+                if (!htmlOutput.contains("href=\"shell.html\" aria-current")) {
+                    htmlOutput = htmlOutput.replace("<li><a href=\"shell.html\">Shell manual</a></li>", "<li><a href=\"shell.html\" aria-current=\"page\">Shell manual</a></li>");
+                }
+                Files.writeString(Path.of("site/shell.html"), htmlOutput, StandardCharsets.UTF_8);
+            }
         }
-        body.append("</section>\n<nav class=\"pager\" aria-label=\"Previous and next page\"><a class=\"prev\" href=\"lamps.html\"><small>&larr; Previous</small><br>LampArray bench</a><a class=\"next\" href=\"setup.html\"><small>Next &rarr;</small><br>Set-up</a></nav>\n\n</main>");
-        int a = page.indexOf("<main class=\"wrap\">"), b = page.indexOf("</main>") + "</main>".length();
-        String out = page.substring(0, a) + body + page.substring(b);
-        out = out.replaceAll("<title>[^<]*</title>", "<title>Shell manual</title>");
-        out = out.replaceAll("(<h1>(?:<img[^>]*>)?)[^<]*(</h1>)", "$1Shell manual$2");
-        out = out.replaceAll("<p class=\"tag\">[^<]*</p>", "<p class=\"tag\">The commands of the boards, from <code>help</code> to <code>telem</code>.</p>");
-        out = out.replace("<meta name=\"description\" content=\"", "<meta name=\"description\" content=\"Shell manual: ");
-        out = out.replace(" aria-current=\"page\">LampArray bench", ">LampArray bench");
-        if (!out.contains("href=\"shell.html\" aria-current")) out = out.replace("<li><a href=\"shell.html\">Shell manual</a></li>", "<li><a href=\"shell.html\" aria-current=\"page\">Shell manual</a></li>");
-        Files.writeString(Path.of("site/shell.html"), out, StandardCharsets.UTF_8);
-        System.out.println("wrote include/ShellHelp.h, docs/wiki/shell.md and site/shell.html for " + cmds.size() + " commands");
+
+        System.out.printf("wrote include/ShellHelp.h, docs/wiki/shell.md and site/shell.html for %d commands%n", commands.size());
     }
 }
